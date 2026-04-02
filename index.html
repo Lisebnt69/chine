@@ -334,22 +334,6 @@ select.fi{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.o
 .rc-tab{padding:6px 14px;border-radius:20px;font-size:.7rem;font-weight:600;border:1px solid var(--border);background:var(--card);color:var(--muted);cursor:pointer;transition:all .2s;font-family:var(--fs);}
 .rc-tab.on{background:var(--or-dim);border-color:rgba(201,168,76,.32);color:var(--or);}
 
-/* ── QUICK ACTIONS BAR ── */
-.qa-bar {
-  display: flex;
-  gap: 10px;
-  padding: 10px 14px;
-  overflow-x: auto;
-  scrollbar-width: none;
-  background: rgba(9, 9, 15, 0.85); /* Un peu de transparence */
-  backdrop-filter: blur(20px);      /* Effet glassmorphism */
-  border-bottom: 1px solid var(--border);
-  position: fixed;                  /* On la fixe en haut */
-  top: var(--hdr);                  /* Juste en dessous du header */
-  left: 0;
-  right: 0;
-  z-index: 850;                     /* Sous le header mais sur le reste */
-}
 
 /* ── STATS ── */
 .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 16px 12px;}
@@ -417,16 +401,7 @@ select.fi{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.o
   <div class="hdr-ico" onclick="openOverlay('pp-sheet')">⚙</div>
 </header>
 
-<!-- QUICK ACTIONS BAR -->
-<div class="qa-bar" id="qaBar">
-  <button class="qa-btn" onclick="openBudgetSheet()"><span class="qi">💰</span>Dépense</button>
-  <button class="qa-btn" onclick="goTabByName('planning')"><span class="qi">📅</span>Aujourd'hui</button>
-  <button class="qa-btn" onclick="openItemSheet('activite')"><span class="qi">🎯</span>Activité</button>
-  <button class="qa-btn" onclick="openItemSheet('restaurant')"><span class="qi">🍜</span>Resto</button>
-  <button class="qa-btn" onclick="openItemSheet('transport')"><span class="qi">🚄</span>Transport</button>
-  <button class="qa-btn" onclick="goTabByName('stats')"><span class="qi">📊</span>Stats</button>
 
-</div>
 
 <div class="search-bar" id="searchBar">
   <div style="position:relative;">
