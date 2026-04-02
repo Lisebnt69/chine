@@ -1937,39 +1937,62 @@ function printPDF(){window.print();}
 
 init();
 function updateNextStep() {
-    const now = new Date();
-    const today = now.toISOString().split('T')[0];
-    const container = document.getElementById('nextStepWidget');
-    if (!container) return;
-  
-    // On cherche le prochain transport ou activité pas encore "fait"
-    const next = D.items
-      .filter(x => (x.type === 'transport' || x.type === 'activite') && !x.fait && (x.adresse >= today || x.ville))
-      .sort((a,b) => (a.adresse || '').localeCompare(b.adresse || ''))[0];
-  
-    if (!next) {
-      container.style.display = 'none';
-      return;
+  const now = new Date();
+  // Formatage de la date locale pour comparaison (YYYY-MM-DD)
+  const todayStr = now.toLocaleDateString('sv-SE'); 
+  const container = document.getElementById('nextStepWidget');
+  if (!container) return;
+
+  // 1. On cherche d'abord s'il y a un transport ou une activité AUJOURD'HUI qui n'est pas "fait"
+  let next = D.items
+    .filter(x => (x.type === 'transport' || x.type === 'activite') && !x.fait && x.adresse === todayStr)
+    .sort((a, b) => (a.quartier || '00h00').localeCompare(b.quartier || '00h00'))[0];
+
+  // 2. Si rien aujourd'hui, on cherche le tout prochain événement dans le futur
+  if (!next) {
+    next = D.items
+      .filter(x => (x.type === 'transport' || x.type === 'activite') && !x.fait && x.adresse > todayStr)
+      .sort((a, b) => a.adresse.localeCompare(b.adresse) || (a.quartier || '00h00').localeCompare(b.quartier || '00h00'))[0];
+  }
+
+  // 3. Si on ne trouve toujours rien, on regarde le planning pour afficher la ville du jour
+  if (!next) {
+    const dayPlan = D.planning.find(p => p.date_voyage === todayStr);
+    if (dayPlan) {
+      next = { 
+        nom: "Aujourd'hui : " + (dayPlan.matin_lieu || dayPlan.ville || "En vadrouille"),
+        ville: dayPlan.matin_lieu,
+        type: 'planning',
+        adresse: todayStr
+      };
     }
-  
-    container.style.display = 'block';
-    container.innerHTML = `
-      <div style="background: linear-gradient(135deg, var(--card3), var(--bg)); border: 1px solid var(--or); border-radius: 15px; padding: 15px; position: relative; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
-        <div style="position: absolute; right: -10px; top: -10px; font-size: 4rem; opacity: 0.1;">🏮</div>
-        <div style="font-size: 0.55rem; text-transform: uppercase; letter-spacing: 1px; color: var(--or); margin-bottom: 5px; font-weight: 700;">📍 Prochaine étape</div>
-        <div style="font-family: var(--ft); font-size: 1.15rem; font-weight: 600; color: var(--txt);">${esc(next.nom)}</div>
-        
-        <div style="font-size: 0.75rem; color: var(--muted); margin-top: 5px; display: flex; align-items: center; gap: 5px;">
-          ${next.type === 'transport' ? '🛫 Départ : ' + esc(next.quartier) : '🏢 Ville : ' + esc(next.ville)}
-          ${next.adresse ? ' • 📅 ' + esc(next.adresse) : ''}
-        </div>
-  
-        <div style="display: flex; gap: 8px; margin-top: 12px;">
-          <button class="qa-btn" onclick="goTabByName('${next.type === 'transport' ? 'transport' : 'activites'}')" style="background: var(--card2); flex: 1; justify-content: center;">Voir détails</button>
-          <button class="qa-btn" style="border-color: var(--or); color: var(--or); flex: 1; justify-content: center;" onclick="window.open('https://www.amap.com/search?query=${encodeURIComponent(next.nom + ' ' + (next.ville || ''))}', '_blank')">🗺️ Carte Amap</button>
-        </div>
+  }
+
+  if (!next) {
+    container.style.display = 'none';
+    return;
+  }
+
+  container.style.display = 'block';
+  container.innerHTML = `
+    <div style="background: linear-gradient(135deg, var(--card3), var(--bg)); border: 1px solid var(--or); border-radius: 15px; padding: 15px; position: relative; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.4);">
+      <div style="position: absolute; right: -10px; top: -10px; font-size: 4rem; opacity: 0.15;">🏮</div>
+      <div style="font-size: 0.55rem; text-transform: uppercase; letter-spacing: 1.2px; color: var(--or); margin-bottom: 5px; font-weight: 700;">
+        ${next.adresse === todayStr ? '🚀 En cours / À venir' : '📅 Étape suivante'}
       </div>
-    `;
+      <div style="font-family: var(--ft); font-size: 1.2rem; font-weight: 600; color: var(--txt); line-height: 1.2;">${esc(next.nom)}</div>
+      
+      <div style="font-size: 0.75rem; color: var(--muted); margin-top: 6px; display: flex; align-items: center; gap: 8px;">
+        <span>${next.type === 'transport' ? '🚄 ' + esc(next.quartier || 'Heure à préciser') : '📍 ' + esc(next.ville || next.adresse)}</span>
+        ${next.adresse !== todayStr ? `<span style="background:var(--or-dim); color:var(--or); padding:1px 5px; border-radius:4px; font-size:0.6rem;">${next.adresse.split('-').reverse().slice(0,2).join('/')}</span>` : ''}
+      </div>
+
+      <div style="display: flex; gap: 8px; margin-top: 12px;">
+        <button class="qa-btn" onclick="goTabByName('${next.type === 'transport' ? 'transport' : 'activites'}')" style="flex: 1; background: rgba(255,255,255,0.05);">Détails</button>
+        <button class="qa-btn" style="border-color: var(--or); color: var(--or); flex: 1.2;" onclick="window.open('https://www.amap.com/search?query=${encodeURIComponent(next.nom)}', '_blank')">🗺️ Carte Amap</button>
+      </div>
+    </div>
+  `;
 }
 </script>
 </body>
