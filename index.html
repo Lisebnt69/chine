@@ -1109,7 +1109,7 @@ function buildItemForm(type,item){
     ${!isNew?`<button class="btn-d" onclick="deleteItem()">Supprimer</button>`:''}
     <button class="btn-c" onclick="closeOverlay('item-overlay')">Annuler</button>
     <div style="height:4px;"></div>`;
-  if(type==='transport'){
+ if(type==='transport'){
     return `<div class="sh"></div><div class="st">${title}</div>
       <input type="hidden" id="if-id" value="${id}"><input type="hidden" id="if-type" value="transport">
       <div class="fg"><div class="fl">Trajet</div><input class="fi" id="if-nom" value="${v('nom')}" placeholder="Paris → Shanghai…"></div>
@@ -1117,24 +1117,33 @@ function buildItemForm(type,item){
         <select class="fi" id="if-prix-type"><option value="">Type…</option>${TRANSPORT_TYPES.map(t=>`<option ${item&&item.prix_type===t?'selected':''}>${t}</option>`).join('')}</select>
       </div>
       <div class="fg"><div class="fl">Date de départ</div><input class="fi" id="if-date" type="date" value="${v('adresse')}"></div>
+      
       <div class="row2">
-        <div class="fg"><div class="fl">Heure départ</div><input class="fi" id="if-dep" value="${v('quartier')}" placeholder="10h30"></div>
-        <div class="fg"><div class="fl">Heure arrivée</div><input class="fi" id="if-arr" value="${v('description')}" placeholder="14h45"></div>
-      </div>
-      <div class="row2">
-        <div class="fg"><div class="fl">Durée</div><input class="fi" id="if-duree" value="${v('notes')}" placeholder="4h15"></div>
-        <div class="fg"><div class="fl">Prix total (€)</div><input class="fi" id="if-prix" type="number" value="${n('prix')||''}" placeholder="0.00"></div>
-      </div>
-      <div class="fg"><div class="fl">Fait / réservé</div>
-        <label style="font-size:.74rem;display:flex;align-items:center;gap:6px;cursor:pointer;">
-          <input type="checkbox" id="if-fait" ${item&&item.fait?'checked':''} style="width:14px;height:14px;"> Billet acheté
-        </label>
+        <div class="fg">
+          <div class="fl">Départ (Heure + Fuseau)</div>
+          <div style="display:flex;gap:4px;">
+            <input class="fi" id="if-dep" value="${v('quartier')}" placeholder="20h20" style="flex:2;">
+            <select class="fi" id="if-tz-dep" style="flex:1;padding:5px;">
+              <option value="🇫🇷 FR" ${v('notes').includes('D:FR')?'selected':''}>🇫🇷 FR</option>
+              <option value="🇨🇳 CN" ${v('notes').includes('D:CN')?'selected':''}>🇨🇳 CN</option>
+            </select>
+          </div>
+        </div>
+        <div class="fg">
+          <div class="fl">Arrivée (Heure + Fuseau)</div>
+          <div style="display:flex;gap:4px;">
+            <input class="fi" id="if-arr" value="${v('description')}" placeholder="15h10" style="flex:2;">
+            <select class="fi" id="if-tz-arr" style="flex:1;padding:5px;">
+              <option value="🇨🇳 CN" ${v('notes').includes('A:CN')?'selected':''}>🇨🇳 CN</option>
+              <option value="🇫🇷 FR" ${v('notes').includes('A:FR')?'selected':''}>🇫🇷 FR</option>
+            </select>
+          </div>
+        </div>
       </div>
       <button class="btn-s" onclick="saveItem()">Enregistrer</button>
       ${!isNew?`<button class="btn-d" onclick="deleteItem()">Supprimer</button>`:''}
-      <button class="btn-c" onclick="closeOverlay('item-overlay')">Annuler</button>
-      <div style="height:4px;"></div>`;
-  }
+      <button class="btn-c" onclick="closeOverlay('item-overlay')">Annuler</button>`;
+}
   if(type==='hotel'){
     return commonTop+`
       <div class="row2">
