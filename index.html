@@ -1577,7 +1577,7 @@ function renderTransports() {
     const tzDep = parts[0] ? parts[0].replace('D:', '').trim() : "";
     const tzArr = parts[1] ? parts[1].replace('A:', '').trim() : "";
     const duree = parts[2] ? parts[2].replace('Durée:', '').trim() : "";
-
+    const imgUrl = notesRaw.includes('IMG:') ? notesRaw.split('IMG:')[1].split('|')[0] : null;
     const d = document.createElement('div');
     d.className = 'tr-item';
     d.innerHTML = `
@@ -1592,6 +1592,7 @@ function renderTransports() {
           <span class="tr-tag">🛫 ${esc(t.quartier)} <small style="opacity:0.8;">${tzDep}</small></span>
           ${t.description ? `<span class="tr-tag">🛬 ${esc(t.description)} <small style="opacity:0.8;">${tzArr}</small></span>` : ''}
           <span class="tr-prix">${fmtE(parseFloat(t.prix || 0))}</span>
+          ${imgUrl ? `<button class="qa-btn" onclick="window.open('${imgUrl}', '_blank')" style="margin-top:5px; padding:4px 8px; font-size:0.6rem;">🖼️ Voir la preuve</button>` : ''}
         </div>
         <div class="tr-detail">
           ${duree ? `⏱ Durée : ${esc(duree)}` : ''}
