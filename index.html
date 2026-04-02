@@ -478,6 +478,7 @@ select.fi{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.o
 
 <!-- PLANNING TIMELINE -->
 <div class="tab" id="tab-planning">
+  <div id="nextStepWidget" style="display:none; margin-bottom: 15px;"></div>
   <div class="ph"><h1>Planning</h1><p>Timeline complète · Cliquer pour dérouler</p></div>
   <button class="gcal-btn" onclick="exportGoogleCal()">📅 Exporter vers Google Calendar</button>
   <div class="tl-wrap" id="tlWrap"></div>
@@ -929,7 +930,7 @@ function doSearch(q){
 
 // ── RENDER ALL ──
 function renderAll(){
-  renderBudget();renderPlanning();
+  renderBudget();renderPlanning();updateNextStep();
   ['activite','restaurant','cafe','hotel'].forEach(renderItems);
   renderTransports();renderChecklist();renderNotes();
   renderPhrases();
@@ -1941,6 +1942,41 @@ function renderStats(){
 function printPDF(){window.print();}
 
 init();
+function updateNextStep() {
+    const now = new Date();
+    const today = now.toISOString().split('T')[0];
+    const container = document.getElementById('nextStepWidget');
+    if (!container) return;
+  
+    // On cherche le prochain transport ou activité pas encore "fait"
+    const next = D.items
+      .filter(x => (x.type === 'transport' || x.type === 'activite') && !x.fait && (x.adresse >= today || x.ville))
+      .sort((a,b) => (a.adresse || '').localeCompare(b.adresse || ''))[0];
+  
+    if (!next) {
+      container.style.display = 'none';
+      return;
+    }
+  
+    container.style.display = 'block';
+    container.innerHTML = `
+      <div style="background: linear-gradient(135deg, var(--card3), var(--bg)); border: 1px solid var(--or); border-radius: 15px; padding: 15px; position: relative; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+        <div style="position: absolute; right: -10px; top: -10px; font-size: 4rem; opacity: 0.1;">🏮</div>
+        <div style="font-size: 0.55rem; text-transform: uppercase; letter-spacing: 1px; color: var(--or); margin-bottom: 5px; font-weight: 700;">📍 Prochaine étape</div>
+        <div style="font-family: var(--ft); font-size: 1.15rem; font-weight: 600; color: var(--txt);">${esc(next.nom)}</div>
+        
+        <div style="font-size: 0.75rem; color: var(--muted); margin-top: 5px; display: flex; align-items: center; gap: 5px;">
+          ${next.type === 'transport' ? '🛫 Départ : ' + esc(next.quartier) : '🏢 Ville : ' + esc(next.ville)}
+          ${next.adresse ? ' • 📅 ' + esc(next.adresse) : ''}
+        </div>
+  
+        <div style="display: flex; gap: 8px; margin-top: 12px;">
+          <button class="qa-btn" onclick="goTabByName('${next.type === 'transport' ? 'transport' : 'activites'}')" style="background: var(--card2); flex: 1; justify-content: center;">Voir détails</button>
+          <button class="qa-btn" style="border-color: var(--or); color: var(--or); flex: 1; justify-content: center;" onclick="window.open('https://www.amap.com/search?query=${encodeURIComponent(next.nom + ' ' + (next.ville || ''))}', '_blank')">🗺️ Carte Amap</button>
+        </div>
+      </div>
+    `;
+}
 </script>
 </body>
 </html>
