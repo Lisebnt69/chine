@@ -361,44 +361,29 @@ select.fi{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.o
 .stat-kpi-v{font-family:var(--ft);font-size:1.3rem;font-weight:600;}
 .stat-kpi-l{font-size:.54rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:2px;}
 /* Style Premium pour le Widget Prochaine Étape */
-.widget-card {
-  background: linear-gradient(135deg, rgba(28, 28, 46, 0.8), rgba(20, 20, 32, 0.9));
-  border: 1px solid var(--or-dim);
-  border-radius: 20px;
-  padding: 18px;
-  position: relative;
-  overflow: hidden;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(15px);
-  -webkit-backdrop-filter: blur(15px);
-  
-  /* --- LES FIXES ICI --- */
-  margin: 0 auto 20px; /* Centre le widget */
-  max-width: 500px;    /* Empêche l'étirement sur PC */
-  width: calc(100% - 32px); /* Garde une marge sur mobile */
-  /* -------------------- */
-  
-  animation: slideInWidget 0.5s ease-out;
-}
+container.innerHTML = `
+    <div class="widget-card">
+      <div class="widget-icon-bg">
+        ${next.type === 'transport' ? '✈️' : '🏮'}
+      </div>
 
-.widget-btn {
-  flex: 1;
-  padding: 10px;
-  height: 38px;        /* Hauteur fixe pour éviter l'effet "gros pavé" */
-  border-radius: 12px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.03);
-  color: #fff;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  white-space: nowrap; /* Évite que le texte saute à la ligne */
-}
+      <div class="widget-content">
+        <div class="widget-label">
+          ${next.adresse === todayStr ? '🚀 En cours' : '📅 Étape suivante'}
+        </div>
+        <div class="widget-title">${esc(next.nom)}</div>
+        <div class="widget-info-row">
+          <span>📍 ${esc(next.quartier || 'Heure à préciser')}</span>
+          ${next.adresse !== todayStr ? `<span class="widget-date-badge">${next.adresse.split('-').reverse().slice(0,2).join('/')}</span>` : ''}
+        </div>
+      </div>
+
+      <div class="widget-actions">
+        <button class="widget-btn widget-btn-primary" onclick="window.open('https://www.amap.com/search?query=${encodeURIComponent(next.nom)}', '_blank')">🗺️ Carte Amap</button>
+        <button class="widget-btn" onclick="goTabByName('${next.type === 'transport' ? 'transport' : 'activites'}')">Voir détails</button>
+      </div>
+    </div>
+  `;
 @media print{
   .hdr,.nav,.qa-bar,.search-bar,.search-results,.loader,.offline-banner,.st-btn,.gcal-btn,.add-btn,.hdr-ico,.tl-dh,.slot-add,.slot-del,.tl-toggle,.tl-edit,.hotel-sel,.day-note,.prow-edit,.note-del-btn,.cl-del,.btn-d,.btn-c,.btn-s,.conv-card{display:none!important;}
   body{background:#fff!important;color:#000!important;}
