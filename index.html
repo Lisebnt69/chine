@@ -1707,10 +1707,14 @@ function renderPhrases(){
     const card=document.createElement('div');card.className='phrase-card';
     card.innerHTML=`<div class="phrase-cat-h" onclick="togglePhraseCat(${si})"><span>${section.cat}</span><span id="pa-${si}">▼</span></div>
       <div class="phrase-list" id="pl-${si}">
-        ${section.phrases.map(p=>`<div class="phrase-row" onclick="copyPhrase('${esc(p.zh)}')">
-          <div class="phrase-fr">${esc(p.fr)}</div>
-          <div class="phrase-zh"><div class="phrase-zh-char">${p.zh}</div><div class="phrase-zh-pin">${esc(p.pin)}</div></div>
-        </div>`).join('')}
+        ${section.phrases.map(p => `
+          <div class="phrase-row">
+            <div class="phrase-fr" onclick="copyPhrase('${esc(p.zh)}')">${esc(p.fr)}</div>
+            <div class="phrase-zh" onclick="speakChinese('${esc(p.zh)}')">
+              <div class="phrase-zh-char">${p.zh} 🔊</div>
+              <div class="phrase-zh-pin">${esc(p.pin)}</div>
+            </div>
+          </div>`).join('')}
         <div class="phrase-copy-hint">Appuyer sur une ligne pour copier le caractère chinois</div>
       </div>`;
     cont.appendChild(card);
