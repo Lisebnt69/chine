@@ -361,29 +361,78 @@ select.fi{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.o
 .stat-kpi-v{font-family:var(--ft);font-size:1.3rem;font-weight:600;}
 .stat-kpi-l{font-size:.54rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:2px;}
 /* Style Premium pour le Widget Prochaine Étape */
-container.innerHTML = `
-    <div class="widget-card">
-      <div class="widget-icon-bg">
-        ${next.type === 'transport' ? '✈️' : '🏮'}
-      </div>
+.widget-mini {
+  max-width: 450px;
+  margin: 15px auto;
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 16px;
+  border: 1px solid rgba(201, 168, 76, 0.2); /* Liseré doré discret */
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+}
 
-      <div class="widget-content">
-        <div class="widget-label">
-          ${next.adresse === todayStr ? '🚀 En cours' : '📅 Étape suivante'}
-        </div>
-        <div class="widget-title">${esc(next.nom)}</div>
-        <div class="widget-info-row">
-          <span>📍 ${esc(next.quartier || 'Heure à préciser')}</span>
-          ${next.adresse !== todayStr ? `<span class="widget-date-badge">${next.adresse.split('-').reverse().slice(0,2).join('/')}</span>` : ''}
-        </div>
-      </div>
+.widget-icon {
+  font-size: 1.8rem;
+  background: rgba(201, 168, 76, 0.1);
+  width: 45px;
+  height: 45px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  flex-shrink: 0;
+}
 
-      <div class="widget-actions">
-        <button class="widget-btn widget-btn-primary" onclick="window.open('https://www.amap.com/search?query=${encodeURIComponent(next.nom)}', '_blank')">🗺️ Carte Amap</button>
-        <button class="widget-btn" onclick="goTabByName('${next.type === 'transport' ? 'transport' : 'activites'}')">Voir détails</button>
-      </div>
-    </div>
-  `;
+.widget-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.widget-tag {
+  font-size: 0.55rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--or);
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.widget-title {
+  font-family: var(--ft);
+  font-size: 1rem;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.widget-sub {
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+.widget-go {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--or-dim);
+  border: 1px solid var(--or);
+  color: var(--or);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+.widget-go:active { transform: scale(0.9); }
 @media print{
   .hdr,.nav,.qa-bar,.search-bar,.search-results,.loader,.offline-banner,.st-btn,.gcal-btn,.add-btn,.hdr-ico,.tl-dh,.slot-add,.slot-del,.tl-toggle,.tl-edit,.hotel-sel,.day-note,.prow-edit,.note-del-btn,.cl-del,.btn-d,.btn-c,.btn-s,.conv-card{display:none!important;}
   body{background:#fff!important;color:#000!important;}
