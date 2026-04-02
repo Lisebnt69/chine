@@ -430,7 +430,7 @@ select.fi{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.o
 
 <!-- BUDGET -->
 <div class="tab on" id="tab-budget">
-  <div class="ph"><h1>Budget</h1><p>09 → 22 novembre 2026 · 2 personnes</p></div>
+  <div class="ph"><h1>Budget</h1><p>08 → 22 novembre 2026 · 2 personnes</p></div>
 
   <div class="budget-alert" id="budgetAlert">
     <div class="budget-alert-icon">⚠️</div>
@@ -655,7 +655,7 @@ select.fi{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.o
 const SB_URL='https://nwskpowizbggdqghnhcw.supabase.co';
 const SB_KEY='sb_publishable_571IoCHNSZxkvF7MW77Fxg_CfWgvcT4';
 const sb=supabase.createClient(SB_URL,SB_KEY);
-const heureFR = formatHeureDecalage(t.quartier);
+
 
 const D={budget:[],planning:[],items:[],slots:[],checklist:[],notes:[]};
 let budgetPP=parseFloat(localStorage.getItem('bpp')||'2500');
@@ -1486,6 +1486,7 @@ function renderTransports(){
     const bgMap={Vol:'rgba(41,128,185,.22)',Train:'rgba(39,174,96,.22)',Bus:'rgba(243,156,18,.22)'};
     const bgKey=Object.keys(bgMap).find(k=>(t.prix_type||'').includes(k))||'Vol';
     const d=document.createElement('div');d.className='tr-item';
+    const heureFR = formatHeureDecalage(t.quartier);
     d.innerHTML = `
   <div class="tr-left">
     <div class="tr-ic-wrap" style="background:${bgMap[bgKey]};">${ico}</div>
@@ -1677,9 +1678,9 @@ function renderStats(){
   cont.innerHTML='';
 
   const today=new Date();
-  const depart=new Date('2026-11-09');
+  const depart=new Date('2026-11-08');
   const retour=new Date('2026-11-22');
-  const daysTotal=14;
+  const daysTotal=15;
   const daysLeft=Math.max(0,Math.round((depart-today)/(1000*60*60*24)));
   const daysTrip=today>=depart&&today<=retour?Math.round((today-depart)/(1000*60*60*24))+1:0;
 
