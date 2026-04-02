@@ -656,7 +656,30 @@ const SB_URL='https://nwskpowizbggdqghnhcw.supabase.co';
 const SB_KEY='sb_publishable_571IoCHNSZxkvF7MW77Fxg_CfWgvcT4';
 const sb=supabase.createClient(SB_URL,SB_KEY);
 
+// À mettre n'importe où dans ton <script> (en dehors des fonctions)
+document.addEventListener('change', function(e) {
+  if (e.target && e.target.id === 'if-file') {
+    const file = e.target.files[0];
+    if (!file) return;
 
+    // Optionnel : Alerte si le fichier est trop lourd (> 1.5 Mo) pour éviter de bloquer Supabase
+    if (file.size > 1500000) {
+      alert("Fichier trop lourd. Privilégiez une capture d'écran compressée.");
+      e.target.value = "";
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = function() {
+      const hiddenInput = document.getElementById('if-file-data');
+      if (hiddenInput) {
+        hiddenInput.value = reader.result;
+        document.getElementById('file-preview').innerHTML = `<b style="color:var(--vert2); font-size:0.6rem;">✅ Fichier prêt !</b>`;
+      }
+    }
+    reader.readAsDataURL(file);
+  }
+});
 const D={budget:[],planning:[],items:[],slots:[],checklist:[],notes:[]};
 let budgetPP=parseFloat(localStorage.getItem('bpp')||'2500');
 let convRate=parseFloat(localStorage.getItem('convRate')||'7.78');
@@ -1081,35 +1104,39 @@ function openItemSheet(type,item=null){
   document.getElementById('item-sheet-inner').innerHTML=buildItemForm(type,item);
   openOverlay('item-overlay');
 }
-function buildItemForm(type,item){
-  const isNew=!item;
-  const v=k=>item?esc(item[k]||''):'';
-  const n=k=>item?(item[k]||0):0;
-  const id=item?item.id:'';
-  const title=isNew?`Nouveau ${TYPE_LABEL[type]||''}`:TYPE_LABEL[type]||'Modifier';
-  const commonTop=`<div class="sh"></div><div class="st">${title}</div>
+function buildItemForm(type, item) {
+  const isNew = !item;
+  const v = k => item ? esc(item[k] || '') : '';
+  const n = k => item ? (item[k] || 0) : 0;
+  const id = item ? item.id : '';
+  const title = isNew ? `Nouveau ${TYPE_LABEL[type] || ''}` : TYPE_LABEL[type] || 'Modifier';
+
+  const commonTop = `<div class="sh"></div><div class="st">${title}</div>
     <input type="hidden" id="if-id" value="${id}"><input type="hidden" id="if-type" value="${type}">
     <div class="fg"><div class="fl">Nom</div><input class="fi" id="if-nom" value="${v('nom')}" placeholder="Nom…"></div>
     <div class="fg"><div class="fl">Ville</div>
-      <select class="fi" id="if-ville"><option value="">Ville…</option>${VILLES.map(vi=>`<option ${item&&item.ville===vi?'selected':''}>${vi}</option>`).join('')}</select>
+      <select class="fi" id="if-ville"><option value="">Ville…</option>${VILLES.map(vi => `<option ${item && item.ville === vi ? 'selected' : ''}>${vi}</option>`).join('')}</select>
     </div>
     <div class="fg"><div class="fl">Quartier</div><input class="fi" id="if-quartier" value="${v('quartier')}" placeholder="ex: Pudong…"></div>
     <div class="fg"><div class="fl">Description</div><input class="fi" id="if-desc" value="${v('description')}" placeholder="Description…"></div>`;
-  const starsF=who=>`<div><div class="fl">${who==='matis'?'Matis':'Lise'} ⭐</div>
-    <div class="stars" id="sf-${who}">${[1,2,3,4,5].map(s=>`<span class="star-edit${s<=n(who)?' on':''}" onclick="setStar('${who}',${s})">★</span>`).join('')}</div>
+
+  const starsF = who => `<div><div class="fl">${who === 'matis' ? 'Matis' : 'Lise'} ⭐</div>
+    <div class="stars" id="sf-${who}">${[1, 2, 3, 4, 5].map(s => `<span class="star-edit${s <= n(who) ? ' on' : ''}" onclick="setStar('${who}',${s})">★</span>`).join('')}</div>
     <input type="hidden" id="if-${who}" value="${n(who)}"></div>`;
-  const bottom=`<div class="row2">${starsF('matis')}${starsF('lise')}</div>
+
+  const bottom = `<div class="row2">${starsF('matis')}${starsF('lise')}</div>
     <div class="fg"><div class="fl">Notes perso</div><input class="fi" id="if-notes" value="${v('notes')}" placeholder="Notes…"></div>
     <div class="fg" style="display:flex;align-items:center;gap:7px;">
       <label style="font-size:.74rem;display:flex;align-items:center;gap:6px;cursor:pointer;">
-        <input type="checkbox" id="if-fait" ${item&&item.fait?'checked':''} style="width:14px;height:14px;"> Déjà fait / réservé
+        <input type="checkbox" id="if-fait" ${item && item.fait ? 'checked' : ''} style="width:14px;height:14px;"> Déjà fait / réservé
       </label>
     </div>
     <button class="btn-s" onclick="saveItem()">Enregistrer</button>
-    ${!isNew?`<button class="btn-d" onclick="deleteItem()">Supprimer</button>`:''}
+    ${!isNew ? `<button class="btn-d" onclick="deleteItem()">Supprimer</button>` : ''}
     <button class="btn-c" onclick="closeOverlay('item-overlay')">Annuler</button>
     <div style="height:4px;"></div>`;
- if(type==='transport'){
+
+  if (type === 'transport') {
     const nts = v('notes');
     return `<div class="sh"></div><div class="st">${title}</div>
       <input type="hidden" id="if-id" value="${id}"><input type="hidden" id="if-type" value="transport">
@@ -1121,8 +1148,8 @@ function buildItemForm(type,item){
           <div style="display:flex;gap:4px;">
             <input class="fi" id="if-dep" value="${v('quartier')}" placeholder="20h20" style="flex:2;">
             <select class="fi" id="if-tz-dep" style="flex:1.5;padding:5px;font-size:0.7rem;">
-              <option value="🇫🇷 FR" ${nts.includes('D:🇫🇷 FR')?'selected':''}>🇫🇷 FR</option>
-              <option value="🇨🇳 CN" ${nts.includes('D:🇨🇳 CN')?'selected':''}>🇨🇳 CN</option>
+              <option value="🇫🇷 FR" ${nts.includes('D:🇫🇷 FR') ? 'selected' : ''}>🇫🇷 FR</option>
+              <option value="🇨🇳 CN" ${nts.includes('D:🇨🇳 CN') ? 'selected' : ''}>🇨🇳 CN</option>
             </select>
           </div>
         </div>
@@ -1131,46 +1158,56 @@ function buildItemForm(type,item){
           <div style="display:flex;gap:4px;">
             <input class="fi" id="if-arr" value="${v('description')}" placeholder="15h10" style="flex:2;">
             <select class="fi" id="if-tz-arr" style="flex:1.5;padding:5px;font-size:0.7rem;">
-              <option value="🇨🇳 CN" ${nts.includes('A:🇨🇳 CN')?'selected':''}>🇨🇳 CN</option>
-              <option value="🇫🇷 FR" ${nts.includes('A:🇫🇷 FR')?'selected':''}>🇫🇷 FR</option>
+              <option value="🇨🇳 CN" ${nts.includes('A:🇨🇳 CN') ? 'selected' : ''}>🇨🇳 CN</option>
+              <option value="🇫🇷 FR" ${nts.includes('A:🇫🇷 FR') ? 'selected' : ''}>🇫🇷 FR</option>
             </select>
           </div>
           <select class="fi" id="if-day-rel" style="margin-top:5px; font-size:0.7rem;">
-            <option value="" ${!nts.includes('J+') ? 'selected':''}>Même jour</option>
-            <option value=" (J+1)" ${nts.includes('J+1') ? 'selected':''}>Arrivée Lendemain (J+1)</option>
-            <option value=" (J-1)" ${nts.includes('J-1') ? 'selected':''}>Arrivée Veille (J-1)</option>
+            <option value="" ${!nts.includes('J+') ? 'selected' : ''}>Même jour</option>
+            <option value=" (J+1)" ${nts.includes('J+1') ? 'selected' : ''}>Arrivée Lendemain (J+1)</option>
+            <option value=" (J-1)" ${nts.includes('J-1') ? 'selected' : ''}>Arrivée Veille (J-1)</option>
           </select>
         </div>
       </div>
       
       <div class="fg"><div class="fl">Durée du vol</div><input class="fi" id="if-duree" value="${nts.split('Durée: ')[1] || ''}" placeholder="11h50"></div>
       <div class="fg"><div class="fl">Date de départ</div><input class="fi" id="if-date" type="date" value="${v('adresse')}"></div>
-      <div class="fg"><div class="fl">Prix total (€)</div><input class="fi" id="if-prix" type="number" value="${n('prix')||''}"></div>
-      // À ajouter dans la section transport et hôtel de buildItemForm
+      <div class="fg"><div class="fl">Prix total (€)</div><input class="fi" id="if-prix" type="number" value="${n('prix') || ''}"></div>
+      
       <div class="fg">
-        <div class="fl">📸 Capture d'écran (Lien URL)</div>
-        <input class="fi" id="if-img" value="${v('notes').split('IMG:')[1]?.split('|')[0] || ''}" placeholder="Lien vers l'image...">
+        <div class="fl">📸 Attacher une preuve (Billet/Capture)</div>
+        <input type="file" id="if-file" accept="image/*" style="font-size:0.7rem; color:var(--muted);">
+        <div id="file-preview" style="margin-top:5px;">
+          ${nts.includes('DATA_IMG:') ? `<b style="color:var(--vert2); font-size:0.6rem;">✅ Fichier attaché</b>` : ''}
+        </div>
+        <input type="hidden" id="if-file-data" value="">
       </div>
             
       <button class="btn-s" onclick="saveItem()">Enregistrer</button>
-      ${!isNew?`<button class="btn-d" onclick="deleteItem()">Supprimer</button>`:''}
+      ${!isNew ? `<button class="btn-d" onclick="deleteItem()">Supprimer</button>` : ''}
       <button class="btn-c" onclick="closeOverlay('item-overlay')">Annuler</button>`;
-}
-  if(type==='hotel'){
-    return commonTop+`
+  }
+
+  if (type === 'hotel') {
+    return commonTop + `
       <div class="row2">
-        <div class="fg"><div class="fl">Prix / nuit (€)</div><input class="fi" id="if-prix" type="number" value="${n('prix')||''}" placeholder="0.00"></div>
-        <div class="fg"><div class="fl">Nb de nuits</div><input class="fi" id="if-nuits" type="number" value="${item&&item.prix_type?parseInt(item.prix_type)||1:1}" placeholder="1"></div>
+        <div class="fg"><div class="fl">Prix / nuit (€)</div><input class="fi" id="if-prix" type="number" value="${n('prix') || ''}" placeholder="0.00"></div>
+        <div class="fg"><div class="fl">Nb de nuits</div><input class="fi" id="if-nuits" type="number" value="${item && item.prix_type ? parseInt(item.prix_type) || 1 : 1}" placeholder="1"></div>
       </div>
       <div class="fg"><div class="fl">Check-in</div><input class="fi" id="if-checkin" type="date" value="${v('adresse')}"></div>
-         // À ajouter dans la section transport et hôtel de buildItemForm
       <div class="fg">
-        <div class="fl">📸 Capture d'écran (Lien URL)</div>
-        <input class="fi" id="if-img" value="${v('notes').split('IMG:')[1]?.split('|')[0] || ''}" placeholder="Lien vers l'image...">
+        <div class="fl">📸 Attacher une preuve (Réservation)</div>
+        <input type="file" id="if-file" accept="image/*" style="font-size:0.7rem; color:var(--muted);">
+        <div id="file-preview" style="margin-top:5px;">
+          ${v('notes').includes('DATA_IMG:') ? `<b style="color:var(--vert2); font-size:0.6rem;">✅ Fichier attaché</b>` : ''}
+        </div>
+        <input type="hidden" id="if-file-data" value="">
       </div>
-            
       ${bottom}`;
   }
+
+  // ... (Reste de la fonction pour restaurant/café identique)
+}
   const prixLabel=type==='restaurant'?'Prix moyen / pers. (€)':type==='cafe'?'Prix moyen (€)':'Prix estimé (€)';
   // Type de repas pour restaurant / type de lieu pour café
   const typeSel=type==='restaurant'
@@ -1200,6 +1237,7 @@ function buildItemForm(type,item){
       <div class="fg"><div class="fl">Adresse</div><input class="fi" id="if-adresse" value="${v('adresse')}" placeholder="Adresse…"></div>
     </div>
     ${typeSel}${bottom}`;
+  
 }
 function setStar(who,val){
   document.getElementById('if-'+who).value=val;
