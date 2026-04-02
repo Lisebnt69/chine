@@ -1146,7 +1146,12 @@ function buildItemForm(type,item){
       <div class="fg"><div class="fl">Durée du vol</div><input class="fi" id="if-duree" value="${nts.split('Durée: ')[1] || ''}" placeholder="11h50"></div>
       <div class="fg"><div class="fl">Date de départ</div><input class="fi" id="if-date" type="date" value="${v('adresse')}"></div>
       <div class="fg"><div class="fl">Prix total (€)</div><input class="fi" id="if-prix" type="number" value="${n('prix')||''}"></div>
-      
+      // À ajouter dans la section transport et hôtel de buildItemForm
+      <div class="fg">
+        <div class="fl">📸 Capture d'écran (Lien URL)</div>
+        <input class="fi" id="if-img" value="${v('notes').split('IMG:')[1]?.split('|')[0] || ''}" placeholder="Lien vers l'image...">
+      </div>
+            
       <button class="btn-s" onclick="saveItem()">Enregistrer</button>
       ${!isNew?`<button class="btn-d" onclick="deleteItem()">Supprimer</button>`:''}
       <button class="btn-c" onclick="closeOverlay('item-overlay')">Annuler</button>`;
@@ -1158,7 +1163,12 @@ function buildItemForm(type,item){
         <div class="fg"><div class="fl">Nb de nuits</div><input class="fi" id="if-nuits" type="number" value="${item&&item.prix_type?parseInt(item.prix_type)||1:1}" placeholder="1"></div>
       </div>
       <div class="fg"><div class="fl">Check-in</div><input class="fi" id="if-checkin" type="date" value="${v('adresse')}"></div>
-      <div class="fg"><div class="fl">Lien / N° confirmation</div><input class="fi" id="if-lien" value="${v('notes')}" placeholder="https:// ou référence…"></div>
+         // À ajouter dans la section transport et hôtel de buildItemForm
+      <div class="fg">
+        <div class="fl">📸 Capture d'écran (Lien URL)</div>
+        <input class="fi" id="if-img" value="${v('notes').split('IMG:')[1]?.split('|')[0] || ''}" placeholder="Lien vers l'image...">
+      </div>
+            
       ${bottom}`;
   }
   const prixLabel=type==='restaurant'?'Prix moyen / pers. (€)':type==='cafe'?'Prix moyen (€)':'Prix estimé (€)';
