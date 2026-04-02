@@ -360,7 +360,119 @@ select.fi{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.o
 .stat-kpi{background:var(--card);border:1px solid var(--border);border-radius:11px;padding:11px 8px;text-align:center;}
 .stat-kpi-v{font-family:var(--ft);font-size:1.3rem;font-weight:600;}
 .stat-kpi-l{font-size:.54rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:2px;}
+/* Style Premium pour le Widget Prochaine Étape */
+#nextStepWidget {
+  perspective: 1000px; /* Pour un léger effet de profondeur */
+}
 
+.widget-card {
+  background: linear-gradient(135deg, rgba(28, 28, 46, 0.8), rgba(20, 20, 32, 0.9));
+  border: 1px solid var(--or-dim);
+  border-radius: 20px;
+  padding: 18px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+  margin: 0 16px 20px;
+  animation: slideInWidget 0.5s ease-out;
+}
+
+.widget-card::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--or), transparent);
+  opacity: 0.3;
+}
+
+.widget-icon-bg {
+  position: absolute;
+  right: -10px;
+  top: -10px;
+  font-size: 5rem;
+  opacity: 0.1;
+  transform: rotate(15deg);
+  pointer-events: none;
+}
+
+.widget-label {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--or);
+  font-weight: 800;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.widget-title {
+  font-family: var(--ft);
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.2;
+  margin-bottom: 8px;
+}
+
+.widget-info-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.widget-date-badge {
+  background: var(--or-dim);
+  color: var(--or2);
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  border: 1px solid rgba(201, 168, 76, 0.2);
+}
+
+.widget-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.widget-btn {
+  flex: 1;
+  padding: 10px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.03);
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.widget-btn-primary {
+  border-color: var(--or);
+  color: var(--or);
+}
+
+.widget-btn:active {
+  transform: scale(0.96);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+@keyframes slideInWidget {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 
 @media print{
   .hdr,.nav,.qa-bar,.search-bar,.search-results,.loader,.offline-banner,.st-btn,.gcal-btn,.add-btn,.hdr-ico,.tl-dh,.slot-add,.slot-del,.tl-toggle,.tl-edit,.hotel-sel,.day-note,.prow-edit,.note-del-btn,.cl-del,.btn-d,.btn-c,.btn-s,.conv-card{display:none!important;}
@@ -1057,7 +1169,6 @@ function renderItems(type){
     grp.forEach(item=>blk.appendChild(makeCard(item)));cont.appendChild(blk);
   });
 }
-
 function makeCard(item){
   const d=document.createElement('div');d.className='ic-card';
   const prix=parseFloat(item.prix||0);
@@ -1099,6 +1210,7 @@ function buildItemForm(type, item) {
   const id = item ? item.id : '';
   const title = isNew ? `Nouveau ${TYPE_LABEL[type] || ''}` : TYPE_LABEL[type] || 'Modifier';
 
+  // Préparation des variables communes
   const commonTop = `<div class="sh"></div><div class="st">${title}</div>
     <input type="hidden" id="if-id" value="${id}"><input type="hidden" id="if-type" value="${type}">
     <div class="fg"><div class="fl">Nom</div><input class="fi" id="if-nom" value="${v('nom')}" placeholder="Nom…"></div>
@@ -1124,9 +1236,11 @@ function buildItemForm(type, item) {
     <button class="btn-c" onclick="closeOverlay('item-overlay')">Annuler</button>
     <div style="height:4px;"></div>`;
 
+  // --- SECTION TRANSPORT ---
   if (type === 'transport') {
-    
     const nts = v('notes');
+    const tType = item ? item.prix_type : '✈️ Vol'; // Correction : définition de tType
+
     return `<div class="sh"></div><div class="st">${title}</div>
       <input type="hidden" id="if-id" value="${id}"><input type="hidden" id="if-type" value="transport">
       <div class="fg"><div class="fl">Trajet</div><input class="fi" id="if-nom" value="${v('nom')}" placeholder="Paris → Shanghai…"></div>
@@ -1167,9 +1281,7 @@ function buildItemForm(type, item) {
           <option value="🚗 Taxi" ${tType === '🚗 Taxi' ? 'selected' : ''}>🚗 Taxi / DiDi</option>
         </select>
       </div>
-      `;
-}
-      <div class="fg" style="background: rgba(39, 174, 96, 0.1); padding: 10px; border-radius: 10px; border: 1px solid rgba(39, 174, 96, 0.3); margin-bottom: 15px;">
+      <div class="fg" style="background: rgba(39, 174, 96, 0.1); padding: 10px; border-radius: 10px; border: 1px solid rgba(39, 174, 96, 0.3); margin-top: 15px; margin-bottom: 15px;">
         <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 600; font-size: 0.85rem; color: #2ecc71;">
           <input type="checkbox" id="if-fait" ${item && item.fait ? 'checked' : ''} style="width: 18px; height: 18px;"> ✅ Billet réservé / payé ?
         </label>
@@ -1180,6 +1292,7 @@ function buildItemForm(type, item) {
       <button class="btn-c" onclick="closeOverlay('item-overlay')">Annuler</button>`;
   }
 
+  // --- SECTION HOTEL ---
   if (type === 'hotel') {
     return commonTop + `
       <div class="row2">
@@ -1189,14 +1302,14 @@ function buildItemForm(type, item) {
       <div class="fg"><div class="fl">Check-in</div><input class="fi" id="if-checkin" type="date" value="${v('adresse')}"></div>
       <div class="fg" style="background: rgba(39, 174, 96, 0.1); padding: 10px; border-radius: 10px; border: 1px solid rgba(39, 174, 96, 0.3); margin-bottom: 15px;">
         <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 600; font-size: 0.85rem; color: #2ecc71;">
-          <input type="checkbox" id="if-fait" ${item && item.fait ? 'checked' : ''} style="width: 18px; height: 18px;"> ✅ Billet réservé / payé ?
+          <input type="checkbox" id="if-fait" ${item && item.fait ? 'checked' : ''} style="width: 18px; height: 18px;"> ✅ Chambre réservée ?
         </label>
       </div>
       <input type="hidden" id="if-file-data" value="">
       ${bottom}`;
   }
 
-  // LOGIQUE POUR RESTO ET ACTIVITÉ (EN DEHORS DU BLOC HOTEL)
+  // --- LOGIQUE RESTO / ACTIVITÉ ---
   const prixLabel = type === 'restaurant' ? 'Prix moyen / pers. (€)' : type === 'cafe' ? 'Prix moyen (€)' : 'Prix estimé (€)';
   const typeSel = type === 'restaurant'
     ? `<div class="fg"><div class="fl">Type de repas</div><select class="fi" id="if-moment"><option value="">Indifférent</option><option value="Déjeuner" ${item && item.prix_type === 'Déjeuner' ? 'selected' : ''}>🌞 Déjeuner</option><option value="Dîner" ${item && item.prix_type === 'Dîner' ? 'selected' : ''}>🌙 Dîner</option></select></div>`
