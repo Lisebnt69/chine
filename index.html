@@ -1972,6 +1972,16 @@ function updateNextStep() {
     </div>
   `;
 }
+  function speakChinese(text) {
+  if (!('speechSynthesis' in window)) {
+    alert("Désolé, votre téléphone ne supporte pas la synthèse vocale.");
+    return;
+  }
+  const msg = new SpeechSynthesisUtterance(text);
+  msg.lang = 'zh-CN'; // Force la langue en Chinois Mandarin
+  msg.rate = 0.8;    // Un peu plus lent pour bien comprendre
+  window.speechSynthesis.speak(msg);
+}
 </script>
 </body>
 </html>
