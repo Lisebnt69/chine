@@ -1,0 +1,1221 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Chine 2026 · Matis & Lise</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --bg:#09090f;--bg2:#10101a;--bg3:#17172a;--card:#1a1a2e;--card2:#20203a;
+  --border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.12);
+  --rouge:#c0392b;--rouge2:#e74c3c;--or:#d4a843;--or2:#f0c060;
+  --muted:rgba(255,255,255,0.38);--muted2:rgba(255,255,255,0.55);
+  --blanc:#f5f0e8;--vert:#27ae60;--vert2:#2ecc71;
+  --nav:68px;--safe:env(safe-area-inset-bottom,0px);--hdr:58px;
+  --font-title:'Cormorant Garamond',serif;--font:'DM Sans',sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{font-family:var(--font);background:var(--bg);color:var(--blanc);min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased;}
+
+/* ── HEADER ── */
+.hdr{position:fixed;top:0;left:0;right:0;height:var(--hdr);background:rgba(9,9,15,0.95);border-bottom:1px solid rgba(212,168,67,0.2);display:flex;align-items:center;justify-content:space-between;padding:0 18px;z-index:1000;backdrop-filter:blur(20px);}
+.hdr-logo{font-family:var(--font-title);font-size:1.25rem;color:var(--or);letter-spacing:.5px;display:flex;align-items:center;gap:8px;}
+.hdr-logo small{font-family:var(--font);font-size:.65rem;color:var(--muted);letter-spacing:.5px;font-weight:400;}
+.hdr-right{display:flex;align-items:center;gap:10px;}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:var(--vert);opacity:0;transition:opacity .4s;box-shadow:0 0 6px var(--vert2);}
+.sync-dot.on{opacity:1;animation:puls 1.2s ease infinite;}
+@keyframes puls{0%,100%{transform:scale(1)}50%{transform:scale(1.6)}}
+.hdr-btn{width:34px;height:34px;border-radius:9px;background:rgba(255,255,255,0.05);border:1px solid var(--border);color:var(--muted);display:flex;align-items:center;justify-content:center;font-size:.9rem;cursor:pointer;transition:all .2s;}
+.hdr-btn:active{background:rgba(212,168,67,0.12);color:var(--or);}
+.collab-badge{font-size:.58rem;background:rgba(212,168,67,0.12);border:1px solid rgba(212,168,67,0.25);color:var(--or);padding:3px 8px;border-radius:20px;font-weight:500;letter-spacing:.3px;}
+
+/* ── NAV ── */
+.nav{position:fixed;bottom:0;left:0;right:0;height:calc(var(--nav) + var(--safe));padding-bottom:var(--safe);background:rgba(9,9,15,0.97);border-top:1px solid rgba(212,168,67,0.15);display:grid;grid-template-columns:repeat(9,1fr);z-index:1000;backdrop-filter:blur(20px);}
+.ni{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:6px 1px;cursor:pointer;border:none;background:transparent;color:var(--muted);transition:all .2s;position:relative;}
+.ni .ic{font-size:1.2rem;transition:transform .2s;}
+.ni .lb{font-size:.5rem;font-weight:600;letter-spacing:.3px;white-space:nowrap;}
+.ni.on{color:var(--or);}
+.ni.on .ic{transform:translateY(-2px);}
+.ni.on::before{content:'';position:absolute;top:0;left:25%;right:25%;height:2px;border-radius:0 0 3px 3px;background:var(--or);}
+
+/* ── MAIN ── */
+main{padding-top:var(--hdr);padding-bottom:calc(var(--nav) + var(--safe) + 8px);min-height:100vh;}
+.tab{display:none;}
+.tab.on{display:block;animation:fadeUp .22s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── PAGE HEADER ── */
+.ph{padding:22px 18px 14px;}
+.ph-title{font-family:var(--font-title);font-size:1.6rem;font-weight:600;color:var(--blanc);}
+.ph-sub{font-size:.7rem;color:var(--muted);margin-top:4px;letter-spacing:.3px;}
+
+/* ── SECTION LABEL ── */
+.slbl{font-size:.6rem;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);padding:6px 18px 8px;font-weight:600;}
+
+/* ── ADD BTN ── */
+.add-row{margin:8px 18px 20px;border:1px dashed rgba(212,168,67,0.2);border-radius:12px;padding:11px 14px;display:flex;align-items:center;gap:8px;cursor:pointer;color:var(--muted);font-size:.8rem;background:transparent;width:calc(100% - 36px);font-family:var(--font);transition:all .2s;}
+.add-row:active{border-color:var(--or);color:var(--or);background:rgba(212,168,67,0.04);}
+.add-row .plus{width:22px;height:22px;border-radius:50%;border:1px solid;display:flex;align-items:center;justify-content:center;font-size:.85rem;flex-shrink:0;}
+
+/* ── BUDGET HERO ── */
+.b-hero{margin:0 18px 16px;background:linear-gradient(135deg,rgba(192,57,43,.18) 0%,rgba(212,168,67,.1) 100%);border:1px solid rgba(212,168,67,.18);border-radius:20px;padding:22px 20px;}
+.b-hero-lbl{font-size:.62rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;}
+.b-hero-amt{font-family:var(--font-title);font-size:3rem;font-weight:600;color:var(--blanc);line-height:1;}
+.b-hero-sub{font-size:.75rem;color:rgba(255,255,255,.4);margin-top:5px;}
+.prog{height:4px;background:rgba(255,255,255,.08);border-radius:2px;margin-top:16px;overflow:hidden;}
+.prog-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--vert),var(--or));transition:width .6s cubic-bezier(.23,1,.32,1);}
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0 18px 18px;}
+.stat{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 10px;text-align:center;}
+.stat-v{font-family:var(--font-title);font-size:1.3rem;font-weight:600;}
+.stat-v.g{color:var(--vert2)}.stat-v.r{color:var(--rouge2)}.stat-v.b{color:#74b9ff}
+.stat-l{font-size:.58rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:3px;}
+.b-list{margin:0 18px 8px;display:flex;flex-direction:column;gap:3px;}
+.b-row{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;cursor:pointer;transition:background .15s;}
+.b-row:active{background:var(--card2);}
+.b-emoji{font-size:1.1rem;flex-shrink:0;}
+.b-info{flex:1;min-width:0;}
+.b-name{font-size:.85rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.b-cat{font-size:.62rem;color:var(--muted);}
+.b-price{font-family:var(--font-title);font-size:1.05rem;color:var(--or);flex-shrink:0;}
+
+/* ── MODAL SHEET ── */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:2000;display:none;align-items:flex-end;backdrop-filter:blur(8px);}
+.overlay.on{display:flex;}
+.sheet{width:100%;background:var(--card2);border-radius:24px 24px 0 0;padding:0 20px calc(24px + var(--safe));max-height:92vh;overflow-y:auto;animation:sheetUp .28s cubic-bezier(.23,1,.32,1);}
+@keyframes sheetUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.sheet-handle{width:36px;height:3px;background:rgba(255,255,255,.15);border-radius:2px;margin:14px auto 22px;}
+.sheet-title{font-family:var(--font-title);font-size:1.4rem;font-weight:600;margin-bottom:20px;}
+.fgrp{margin-bottom:16px;}
+.flbl{font-size:.62rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:7px;}
+.finp{width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:13px 15px;color:var(--blanc);font-family:var(--font);font-size:.92rem;-webkit-appearance:none;transition:border-color .2s;}
+.finp:focus{outline:none;border-color:var(--or);background:rgba(212,168,67,.05);}
+.finp::placeholder{color:rgba(255,255,255,.18);}
+select.finp{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='rgba(255,255,255,0.3)'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;background-color:rgba(255,255,255,.05);padding-right:32px;cursor:pointer;}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.btn-save{width:100%;background:var(--rouge);color:#fff;border:none;border-radius:14px;padding:15px;font-size:.92rem;font-weight:600;font-family:var(--font);cursor:pointer;margin-top:10px;letter-spacing:.3px;transition:background .2s;}
+.btn-save:active{background:var(--rouge2);}
+.btn-del{width:100%;background:transparent;color:var(--rouge2);border:1px solid rgba(192,57,43,.3);border-radius:14px;padding:12px;font-size:.85rem;font-family:var(--font);cursor:pointer;margin-top:8px;}
+.btn-cancel{width:100%;background:transparent;color:var(--muted);border:1px solid var(--border);border-radius:14px;padding:12px;font-size:.85rem;font-family:var(--font);cursor:pointer;margin-top:8px;}
+
+/* ── STARS ── */
+.stars{display:flex;gap:2px;}
+.star{font-size:.9rem;color:rgba(255,255,255,.12);cursor:pointer;line-height:1;transition:color .1s;}
+.star.on{color:var(--or2);}
+
+/* ── SORT BAR ── */
+.sort-bar{display:flex;gap:6px;padding:0 18px 12px;overflow-x:auto;scrollbar-width:none;}
+.sort-bar::-webkit-scrollbar{display:none;}
+.sort-chip{flex-shrink:0;padding:5px 12px;border-radius:20px;font-size:.68rem;font-weight:600;border:1px solid var(--border);background:var(--card);color:var(--muted);cursor:pointer;transition:all .2s;white-space:nowrap;}
+.sort-chip.on{background:rgba(212,168,67,.12);border-color:rgba(212,168,67,.35);color:var(--or);}
+
+/* ── ITEM CARDS (activités/restos/cafés/hôtels) ── */
+.city-block{margin:0 18px 20px;}
+.city-head{display:flex;align-items:center;gap:8px;padding:10px 0 10px;border-bottom:1px solid var(--border);margin-bottom:10px;}
+.city-head h3{font-family:var(--font-title);font-size:1.1rem;color:var(--or);}
+.city-head .city-count{font-size:.62rem;color:var(--muted);margin-left:auto;}
+.item-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:6px;cursor:pointer;transition:all .18s;position:relative;overflow:hidden;}
+.item-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--rouge);border-radius:3px 0 0 3px;opacity:0;transition:opacity .2s;}
+.item-card:active::before,.item-card:active{background:var(--card2);}
+.item-top{display:flex;align-items:flex-start;gap:10px;margin-bottom:8px;}
+.item-name{font-size:.9rem;font-weight:600;flex:1;min-width:0;line-height:1.3;}
+.item-sub{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:4px;}
+.pill{font-size:.58rem;padding:2px 8px;border-radius:10px;font-weight:600;flex-shrink:0;}
+.pill-ville{background:rgba(41,128,185,.15);color:#74b9ff;}
+.pill-quartier{background:rgba(212,168,67,.12);color:var(--or);}
+.pill-moment{background:rgba(108,92,231,.15);color:#a29bfe;}
+.pill-type{background:rgba(39,174,96,.12);color:#55efc4;}
+.item-desc{font-size:.72rem;color:var(--muted);line-height:1.4;margin-top:4px;}
+.item-footer{display:flex;align-items:center;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);}
+.item-prix{font-family:var(--font-title);font-size:1rem;color:var(--or);}
+.ml-auto{margin-left:auto;}
+.stars-row{display:flex;gap:12px;align-items:center;}
+.stars-lbl{font-size:.58rem;color:var(--muted);}
+
+/* ── PLANNING ── */
+.day-list{padding:0 18px;display:flex;flex-direction:column;gap:10px;}
+.day-card{background:var(--card);border:1px solid var(--border);border-radius:18px;overflow:hidden;transition:all .15s;}
+.day-card.drag-over{border-color:var(--or);box-shadow:0 0 0 2px rgba(212,168,67,.2);}
+.day-card.dragging{opacity:.35;transform:scale(.97);}
+.day-top{display:flex;align-items:stretch;}
+.day-badge{background:linear-gradient(160deg,var(--rouge) 0%,rgba(192,57,43,.7) 100%);padding:14px 10px;display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:54px;flex-shrink:0;}
+.day-badge .dn{font-family:var(--font-title);font-size:1.8rem;font-weight:700;line-height:1;}
+.day-badge .dm{font-size:.58rem;opacity:.85;text-transform:uppercase;}
+.day-badge .dj{font-size:.54rem;opacity:.6;margin-top:1px;}
+.day-periods{flex:1;padding:10px 12px;display:flex;flex-direction:column;gap:5px;min-width:0;}
+.prow{display:flex;align-items:center;gap:5px;}
+.pem{font-size:.78rem;flex-shrink:0;opacity:.8;}
+.ptxt{font-size:.78rem;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:rgba(255,255,255,.82);}
+.ptime{font-size:.6rem;color:var(--muted);flex-shrink:0;}
+.day-handle{display:flex;align-items:center;justify-content:center;padding:0 10px;color:rgba(255,255,255,.12);font-size:1.1rem;cursor:grab;touch-action:none;flex-shrink:0;}
+.day-exp{width:100%;background:transparent;border:none;border-top:1px solid var(--border);color:var(--muted);font-size:.68rem;font-family:var(--font);padding:9px 14px;display:flex;align-items:center;gap:6px;cursor:pointer;text-align:left;}
+.day-exp:active{color:var(--or);}
+.day-exp .arr{margin-left:auto;font-size:.58rem;transition:transform .22s;}
+.day-exp.open .arr{transform:rotate(180deg);}
+.day-panel{display:none;flex-direction:column;border-top:1px solid var(--border);background:rgba(0,0,0,.2);}
+.day-panel.open{display:flex;}
+.dg{border-bottom:1px solid var(--border);padding:13px 15px;}
+.dg:last-child{border-bottom:none;}
+.dg-title{font-size:.58rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:9px;}
+.hotel-sel-row{display:flex;align-items:center;gap:8px;background:rgba(41,128,185,.08);border:1px solid rgba(41,128,185,.18);border-radius:10px;padding:9px 12px;}
+.h-badge{font-size:.72rem;flex:1;color:rgba(255,255,255,.8);}
+
+/* Planning items in day */
+.pi-list{display:flex;flex-direction:column;gap:4px;margin-bottom:6px;}
+.pi-chip{display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:9px;padding:7px 10px;}
+.pi-name{flex:1;font-size:.8rem;}
+.pi-badge{font-size:.58rem;padding:2px 7px;border-radius:8px;font-weight:600;flex-shrink:0;}
+.pb-m{background:rgba(52,152,219,.15);color:#74b9ff;}
+.pb-a{background:rgba(212,168,67,.15);color:var(--or);}
+.pb-s{background:rgba(108,92,231,.15);color:#a29bfe;}
+.pb-j{background:rgba(39,174,96,.15);color:#55efc4;}
+.pi-del{background:transparent;border:none;color:rgba(255,255,255,.14);font-size:.78rem;cursor:pointer;padding:2px 4px;border-radius:4px;}
+.pi-del:active{color:var(--rouge2);}
+.pi-add{background:transparent;border:1px dashed rgba(255,255,255,.1);border-radius:9px;color:var(--muted);font-size:.72rem;font-family:var(--font);padding:7px 10px;cursor:pointer;width:100%;text-align:left;transition:all .2s;}
+.pi-add:active{border-color:var(--or);color:var(--or);}
+
+/* Notes inline */
+.ii{background:transparent;border:none;color:var(--blanc);font-family:var(--font);font-size:.85rem;flex:1;min-width:0;}
+.ii:focus{outline:none;}
+.ii::placeholder{color:rgba(255,255,255,.18);}
+.ii-box{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:9px;padding:7px 10px;}
+.ii-sm{width:68px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:8px;padding:6px 8px;color:var(--muted);font-size:.68rem;font-family:var(--font);}
+.ii-sm:focus{outline:none;}
+.pi-row{display:flex;align-items:center;gap:7px;}
+.pi-lbl{font-size:.62rem;color:var(--muted);width:28px;flex-shrink:0;}
+.note-ta{width:100%;background:rgba(255,255,255,.03);border:1px dashed rgba(255,255,255,.09);border-radius:9px;color:rgba(255,255,255,.65);font-size:.78rem;font-family:var(--font);padding:8px 10px;resize:none;min-height:48px;line-height:1.5;}
+.note-ta:focus{outline:none;border-color:rgba(212,168,67,.3);}
+
+/* ── HÔTEL CARDS ── */
+.hotel-card{background:var(--card);border:1px solid var(--border);border-radius:16px;overflow:hidden;margin-bottom:8px;}
+.hotel-card-top{padding:16px 16px 12px;display:flex;align-items:flex-start;gap:12px;}
+.hotel-icon{width:44px;height:44px;border-radius:12px;background:rgba(41,128,185,.12);display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;}
+.hotel-info{flex:1;min-width:0;}
+.hotel-name{font-weight:600;font-size:.9rem;margin-bottom:4px;}
+.hotel-meta{display:flex;flex-wrap:wrap;gap:5px;}
+.hotel-footer{padding:10px 16px 14px;border-top:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.hotel-prix{font-family:var(--font-title);font-size:1.1rem;color:var(--or);}
+.hotel-nuits{font-size:.68rem;color:var(--muted);}
+
+/* ── TRANSPORT ── */
+.t-card{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin:0 18px 8px;}
+.t-top{display:flex;align-items:center;gap:10px;padding:14px;border-bottom:1px solid var(--border);}
+.t-route{flex:1;font-size:.9rem;font-weight:600;}
+.t-fields{display:grid;grid-template-columns:1fr 1fr 1fr;}
+.tf{padding:9px 13px;border-right:1px solid var(--border);}
+.tf:nth-child(3n){border-right:none;}
+.tf:nth-child(4),.tf:nth-child(5),.tf:nth-child(6){border-top:1px solid var(--border);}
+.tf-lbl{font-size:.55rem;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:4px;}
+.tf-val{font-size:.8rem;color:var(--blanc);}
+.tf-val.prix{color:var(--or);font-family:var(--font-title);font-size:.95rem;}
+
+/* ── CHECKLIST ── */
+.cl-list{padding:0 18px 8px;display:flex;flex-direction:column;gap:5px;}
+.cl-item{display:flex;align-items:center;gap:10px;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px 14px;transition:opacity .2s;}
+.cl-item.done{opacity:.38;}
+.cl-item.done .cl-lbl{text-decoration:line-through;color:var(--muted);}
+.cl-cb{width:22px;height:22px;border-radius:7px;border:1.5px solid rgba(255,255,255,.2);background:transparent;cursor:pointer;appearance:none;flex-shrink:0;position:relative;transition:all .2s;}
+.cl-cb:checked{background:var(--vert);border-color:var(--vert);}
+.cl-cb:checked::after{content:'✓';position:absolute;color:#fff;font-size:.72rem;font-weight:700;top:50%;left:50%;transform:translate(-50%,-50%);}
+.cl-lbl{flex:1;font-size:.84rem;}
+
+/* ── NOTES ── */
+.note-card{background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin:0 18px 10px;}
+.note-title-row{display:flex;align-items:center;border-bottom:1px solid var(--border);}
+.note-title-inp{flex:1;background:transparent;border:none;color:var(--or);font-family:var(--font-title);font-size:1rem;font-weight:600;padding:14px;}
+.note-title-inp:focus{outline:none;}
+.note-body-ta{width:100%;background:transparent;border:none;color:rgba(255,255,255,.7);font-size:.82rem;font-family:var(--font);padding:12px 14px;line-height:1.65;resize:none;min-height:80px;}
+.note-body-ta:focus{outline:none;}
+.note-del{background:transparent;border:none;color:rgba(255,255,255,.14);cursor:pointer;padding:14px 14px;font-size:.85rem;}
+.note-del:active{color:var(--rouge2);}
+
+/* ── PICKER SHEET (pour sélectionner activités dans planning) ── */
+.picker-item{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--border);cursor:pointer;}
+.picker-item:last-child{border-bottom:none;}
+.picker-check{width:20px;height:20px;border-radius:6px;border:1.5px solid rgba(255,255,255,.2);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.7rem;transition:all .2s;}
+.picker-check.on{background:var(--or);border-color:var(--or);color:#000;}
+.picker-name{flex:1;font-size:.85rem;}
+.picker-meta{font-size:.62rem;color:var(--muted);}
+
+/* ── LOADING ── */
+.loader{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;gap:16px;}
+.loader-logo{font-family:var(--font-title);font-size:2rem;color:var(--or);}
+.loader-sub{font-size:.75rem;color:var(--muted);letter-spacing:1px;}
+.loader-ring{width:36px;height:36px;border:2px solid rgba(212,168,67,.2);border-top-color:var(--or);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── SCROLL TOP ── */
+.stbtn{position:fixed;bottom:calc(var(--nav) + var(--safe) + 16px);right:16px;width:40px;height:40px;border-radius:50%;background:rgba(212,168,67,.12);border:1px solid rgba(212,168,67,.25);color:var(--or);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:800;opacity:0;pointer-events:none;transition:opacity .3s;backdrop-filter:blur(10px);}
+.stbtn.vis{opacity:1;pointer-events:all;}
+
+/* ── EMPTY ── */
+.empty{text-align:center;padding:40px 20px;color:var(--muted);font-size:.82rem;}
+.empty-ico{font-size:2.5rem;opacity:.35;margin-bottom:10px;}
+</style>
+</head>
+<body>
+
+<div class="loader" id="loader">
+  <div class="loader-logo">🏮 Chine 2026</div>
+  <div class="loader-ring"></div>
+  <div class="loader-sub">Connexion en cours…</div>
+</div>
+
+<header class="hdr">
+  <div class="hdr-logo">🏮 Chine 2026 <small>Matis &amp; Lise</small></div>
+  <div class="hdr-right">
+    <div class="sync-dot" id="syncDot"></div>
+    <span class="collab-badge">● Live</span>
+    <div class="hdr-btn" title="Budget/personne" onclick="openBudgetSettings()">⚙</div>
+  </div>
+</header>
+
+<main>
+<!-- BUDGET -->
+<div class="tab on" id="tab-budget">
+  <div class="ph"><div class="ph-title">Budget</div><div class="ph-sub">09 → 22 novembre 2026 · 2 personnes</div></div>
+  <div class="b-hero"><div class="b-hero-lbl">Budget total (2 pers.)</div><div class="b-hero-amt" id="bTotal">—</div><div class="b-hero-sub" id="bSub">—</div><div class="prog"><div class="prog-fill" id="bProg" style="width:0%"></div></div></div>
+  <div class="stats-row">
+    <div class="stat"><div class="stat-v r" id="bDep">—</div><div class="stat-l">Dépensé</div></div>
+    <div class="stat"><div class="stat-v g" id="bRest">—</div><div class="stat-l">Restant</div></div>
+    <div class="stat"><div class="stat-v b" id="bPP">—</div><div class="stat-l">/ pers.</div></div>
+  </div>
+  <div class="slbl">Toutes les dépenses</div>
+  <div class="b-list" id="bList"></div>
+  <button class="add-row" onclick="openSheet('budget-sheet')"><span class="plus">＋</span>Ajouter une dépense manuelle</button>
+</div>
+
+<!-- PLANNING -->
+<div class="tab" id="tab-planning">
+  <div class="ph"><div class="ph-title">Planning</div><div class="ph-sub">14 jours · ⠿ pour réordonner</div></div>
+  <div class="day-list" id="dayList"></div>
+  <div style="height:16px;"></div>
+</div>
+
+<!-- ACTIVITES -->
+<div class="tab" id="tab-activites">
+  <div class="ph"><div class="ph-title">Activités</div></div>
+  <div class="sort-bar" id="act-sort"></div>
+  <div id="actCont"></div>
+  <button class="add-row" onclick="openItemSheet('activites')"><span class="plus">＋</span>Nouvelle activité</button>
+</div>
+
+<!-- RESTAURANTS -->
+<div class="tab" id="tab-restaurants">
+  <div class="ph"><div class="ph-title">Restaurants</div></div>
+  <div class="sort-bar" id="resto-sort"></div>
+  <div id="restoCont"></div>
+  <button class="add-row" onclick="openItemSheet('restaurants')"><span class="plus">＋</span>Nouveau restaurant</button>
+</div>
+
+<!-- CAFES -->
+<div class="tab" id="tab-cafes">
+  <div class="ph"><div class="ph-title">Cafés &amp; Bars</div></div>
+  <div class="sort-bar" id="cafe-sort"></div>
+  <div id="cafeCont"></div>
+  <button class="add-row" onclick="openItemSheet('cafes')"><span class="plus">＋</span>Nouveau café / bar</button>
+</div>
+
+<!-- HOTELS -->
+<div class="tab" id="tab-hotels">
+  <div class="ph"><div class="ph-title">Hôtels</div></div>
+  <div class="sort-bar" id="hotel-sort"></div>
+  <div id="hotelCont"></div>
+  <button class="add-row" onclick="openItemSheet('hotels')"><span class="plus">＋</span>Nouvel hôtel</button>
+</div>
+
+<!-- TRANSPORT -->
+<div class="tab" id="tab-transport">
+  <div class="ph"><div class="ph-title">Transports</div></div>
+  <div id="tCont"></div>
+  <button class="add-row" onclick="openItemSheet('transports')"><span class="plus">＋</span>Nouveau trajet</button>
+</div>
+
+<!-- CHECKLIST -->
+<div class="tab" id="tab-checklist">
+  <div class="ph"><div class="ph-title">Checklist</div></div>
+  <div class="slbl">🧳 Avant le départ</div>
+  <div class="cl-list" id="clDep"></div>
+  <button class="add-row" onclick="addCL('depart')"><span class="plus">＋</span>Ajouter</button>
+  <div class="slbl" style="margin-top:8px;">📱 Sur place</div>
+  <div class="cl-list" id="clSur"></div>
+  <button class="add-row" onclick="addCL('surplace')"><span class="plus">＋</span>Ajouter</button>
+</div>
+
+<!-- NOTES -->
+<div class="tab" id="tab-notes">
+  <div class="ph"><div class="ph-title">Notes</div></div>
+  <div id="notesCont"></div>
+  <button class="add-row" onclick="addNote()"><span class="plus">＋</span>Nouvelle note</button>
+</div>
+</main>
+
+<!-- BOTTOM NAV -->
+<nav class="nav">
+  <button class="ni on" onclick="goTab('budget',this)"><span class="ic">💰</span><span class="lb">Budget</span></button>
+  <button class="ni" onclick="goTab('planning',this)"><span class="ic">📅</span><span class="lb">Planning</span></button>
+  <button class="ni" onclick="goTab('activites',this)"><span class="ic">🎯</span><span class="lb">Activ.</span></button>
+  <button class="ni" onclick="goTab('restaurants',this)"><span class="ic">🍜</span><span class="lb">Restos</span></button>
+  <button class="ni" onclick="goTab('cafes',this)"><span class="ic">☕</span><span class="lb">Cafés</span></button>
+  <button class="ni" onclick="goTab('hotels',this)"><span class="ic">🏨</span><span class="lb">Hôtels</span></button>
+  <button class="ni" onclick="goTab('transport',this)"><span class="ic">🚄</span><span class="lb">Train</span></button>
+  <button class="ni" onclick="goTab('checklist',this)"><span class="ic">✅</span><span class="lb">Check</span></button>
+  <button class="ni" onclick="goTab('notes',this)"><span class="ic">📝</span><span class="lb">Notes</span></button>
+</nav>
+
+<!-- MODALS -->
+<!-- Budget sheet -->
+<div class="overlay" id="budget-sheet" onclick="if(event.target===this)closeSheet('budget-sheet')">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="bsTitle">Dépense</div>
+    <input type="hidden" id="bsId">
+    <div class="fgrp"><div class="flbl">Catégorie</div><input class="finp" id="bsCat" placeholder="ex: 🍽️ Repas"></div>
+    <div class="fgrp"><div class="flbl">Description</div><input class="finp" id="bsDesc" placeholder="Description..."></div>
+    <div class="fgrp"><div class="flbl">Prix total (€)</div><input class="finp" id="bsPrix" type="number" step="0.01" placeholder="0.00"></div>
+    <button class="btn-save" onclick="saveBudget()">Enregistrer</button>
+    <button class="btn-del" id="bsDel" onclick="deleteBudget()" style="display:none;">Supprimer</button>
+    <button class="btn-cancel" onclick="closeSheet('budget-sheet')">Annuler</button>
+    <div style="height:4px;"></div>
+  </div>
+</div>
+
+<!-- Item sheet (activités / restos / cafés / hôtels / transports) -->
+<div class="overlay" id="item-sheet" onclick="if(event.target===this)closeSheet('item-sheet')">
+  <div class="sheet" id="itemSheetInner"></div>
+</div>
+
+<!-- Picker sheet (sélectionner item dans planning) -->
+<div class="overlay" id="picker-sheet" onclick="if(event.target===this)closeSheet('picker-sheet')">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title" id="pickerTitle">Sélectionner</div>
+    <div class="fgrp"><div class="flbl">Période</div>
+      <select class="finp" id="pickerPeriode">
+        <option value="">Sans période</option>
+        <option value="Matin">🌅 Matin</option>
+        <option value="Après-midi">☀️ Après-midi</option>
+        <option value="Soir">🌙 Soir</option>
+        <option value="Journée">🌟 Journée entière</option>
+      </select>
+    </div>
+    <div id="pickerList" style="max-height:55vh;overflow-y:auto;"></div>
+    <button class="btn-save" onclick="confirmPicker()">Confirmer</button>
+    <button class="btn-cancel" onclick="closeSheet('picker-sheet')">Annuler</button>
+  </div>
+</div>
+
+<!-- Budget settings -->
+<div class="overlay" id="budget-settings" onclick="if(event.target===this)closeSheet('budget-settings')">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Paramètres budget</div>
+    <div class="fgrp"><div class="flbl">Budget par personne (€)</div><input class="finp" id="bsPP" type="number" placeholder="2500"></div>
+    <button class="btn-save" onclick="saveBudgetPP()">Enregistrer</button>
+    <button class="btn-cancel" onclick="closeSheet('budget-settings')">Annuler</button>
+  </div>
+</div>
+
+<button class="stbtn" id="stBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+
+<script>
+const SB_URL = 'https://nwskpowizbggdqghnhcw.supabase.co';
+const SB_KEY = 'sb_publishable_571IoCHNSZxkvF7MW77Fxg_CfWgvcT4';
+const { createClient } = supabase;
+const db = createClient(SB_URL, SB_KEY);
+
+// ── STATE ──
+let D = { budget:[], planning:[], hotels:[], activites:[], restaurants:[], cafes:[], transports:[], planning_items:[], checklist:[], notes:[], budgetPP: 2500 };
+let sortState = { activites:'ville', restaurants:'ville', cafes:'ville', hotels:'ville' };
+let currentPickerState = null;
+let dayDragSrc = null;
+
+// ── INIT ──
+async function init() {
+  try {
+    await loadAll();
+    subscribeAll();
+    document.getElementById('loader').style.display = 'none';
+    render();
+  } catch(e) {
+    document.querySelector('.loader-sub').textContent = 'Erreur de connexion — vérifie ta clé Supabase';
+    console.error(e);
+  }
+}
+
+async function loadAll() {
+  const tables = ['budget','planning','hotels','activites','restaurants','cafes','transports','planning_items','checklist','notes'];
+  await Promise.all(tables.map(async t => {
+    const { data, error } = await db.from(t).select('*').order('sort_order', { ascending: true, nullsFirst: false });
+    if (!error) D[t] = data || [];
+  }));
+  const pp = localStorage.getItem('budgetPP');
+  if (pp) D.budgetPP = parseFloat(pp);
+}
+
+function subscribeAll() {
+  ['budget','planning','hotels','activites','restaurants','cafes','transports','planning_items','checklist','notes'].forEach(t => {
+    db.channel(`ch-${t}`).on('postgres_changes', { event: '*', schema: 'public', table: t }, async () => {
+      const { data } = await db.from(t).select('*').order('sort_order', { ascending: true, nullsFirst: false });
+      D[t] = data || [];
+      flashSync();
+      render();
+    }).subscribe();
+  });
+}
+
+function flashSync() {
+  const d = document.getElementById('syncDot');
+  d.classList.add('on');
+  setTimeout(() => d.classList.remove('on'), 1500);
+}
+
+// ── TABS ──
+function goTab(n, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
+  document.querySelectorAll('.ni').forEach(t => t.classList.remove('on'));
+  document.getElementById('tab-' + n).classList.add('on');
+  el.classList.add('on');
+  window.scrollTo({ top: 0, behavior: 'instant' });
+}
+
+// ── RENDER ALL ──
+function render() {
+  renderBudget();
+  renderPlanning();
+  renderItems('activites', 'actCont', 'act-sort');
+  renderItems('restaurants', 'restoCont', 'resto-sort');
+  renderItems('cafes', 'cafeCont', 'cafe-sort');
+  renderHotels();
+  renderTransports();
+  renderChecklist();
+  renderNotes();
+}
+
+// ── BUDGET ──
+function renderBudget() {
+  const list = document.getElementById('bList');
+  list.innerHTML = '';
+  const tot2 = D.budgetPP * 2;
+  const dep = D.budget.reduce((s, r) => s + (parseFloat(r.prix_total) || 0), 0);
+  const rest = tot2 - dep;
+  const pct = Math.min(100, tot2 > 0 ? dep / tot2 * 100 : 0);
+  document.getElementById('bTotal').textContent = fmt(tot2);
+  document.getElementById('bSub').textContent = `${fmt(dep)} dépensés · ${pct.toFixed(0)}% utilisés`;
+  document.getElementById('bDep').textContent = fmt(dep);
+  document.getElementById('bRest').textContent = fmt(rest);
+  document.getElementById('bPP').textContent = fmt(dep / 2);
+  const pf = document.getElementById('bProg');
+  pf.style.width = pct + '%';
+  pf.style.background = pct > 85 ? 'linear-gradient(90deg,#c0392b,#e74c3c)' : 'linear-gradient(90deg,#27ae60,#d4a843)';
+  D.budget.forEach(r => {
+    const d = document.createElement('div');
+    d.className = 'b-row';
+    d.innerHTML = `<div class="b-emoji">${(r.categorie || '💸').split(' ')[0]}</div>
+      <div class="b-info"><div class="b-name">${esc(r.description)}</div><div class="b-cat">${esc(r.categorie)} · ${fmt(parseFloat(r.prix_total) / 2)}/pers.</div></div>
+      <div class="b-price">${fmt(parseFloat(r.prix_total))}</div>`;
+    d.onclick = () => openBudgetEdit(r);
+    list.appendChild(d);
+  });
+}
+
+function openSheet(id) { document.getElementById(id).classList.add('on'); }
+function closeSheet(id) { document.getElementById(id).classList.remove('on'); }
+
+function openBudgetSettings() {
+  document.getElementById('bsPP').value = D.budgetPP;
+  openSheet('budget-settings');
+}
+function saveBudgetPP() {
+  D.budgetPP = parseFloat(document.getElementById('bsPP').value) || 2500;
+  localStorage.setItem('budgetPP', D.budgetPP);
+  renderBudget();
+  closeSheet('budget-settings');
+}
+
+function openBudgetEdit(r) {
+  document.getElementById('bsTitle').textContent = 'Modifier la dépense';
+  document.getElementById('bsId').value = r.id;
+  document.getElementById('bsCat').value = r.categorie || '';
+  document.getElementById('bsDesc').value = r.description || '';
+  document.getElementById('bsPrix').value = r.prix_total || '';
+  document.getElementById('bsDel').style.display = 'block';
+  openSheet('budget-sheet');
+}
+
+function openSheet(id) {
+  if (id === 'budget-sheet') {
+    document.getElementById('bsTitle').textContent = 'Nouvelle dépense';
+    document.getElementById('bsId').value = '';
+    document.getElementById('bsCat').value = '';
+    document.getElementById('bsDesc').value = '';
+    document.getElementById('bsPrix').value = '';
+    document.getElementById('bsDel').style.display = 'none';
+  }
+  document.getElementById(id).classList.add('on');
+}
+
+async function saveBudget() {
+  const id = document.getElementById('bsId').value;
+  const payload = { categorie: document.getElementById('bsCat').value, description: document.getElementById('bsDesc').value, prix_total: parseFloat(document.getElementById('bsPrix').value) || 0, source: 'manuel' };
+  if (id) await db.from('budget').update(payload).eq('id', id);
+  else await db.from('budget').insert(payload);
+  closeSheet('budget-sheet');
+}
+
+async function deleteBudget() {
+  const id = document.getElementById('bsId').value;
+  if (id) await db.from('budget').delete().eq('id', id);
+  closeSheet('budget-sheet');
+}
+
+// ── ITEMS (activités / restos / cafés) ──
+const VILLES = ['Shanghai', 'Chongqing', 'Chengdu', 'Karst de Wulong', 'Furong', 'Zhangjiajie'];
+const VILLE_ICONS = { Shanghai:'🏙️', Chongqing:'🌆', Chengdu:'🐼', 'Karst de Wulong':'🏔️', Furong:'🌸', Zhangjiajie:'🏞️' };
+const MOMENTS = ['', 'Matin', 'Après-midi', 'Soir', 'Journée'];
+const TABLE_LABEL = { activites: 'Activité', restaurants: 'Restaurant', cafes: 'Café / Bar', hotels: 'Hôtel' };
+
+function renderItems(table, contId, sortId) {
+  const cont = document.getElementById(contId);
+  cont.innerHTML = '';
+  const sortBar = document.getElementById(sortId);
+  const sort = sortState[table] || 'ville';
+
+  // Sort bar
+  const sortOpts = [['ville', 'Par ville'], ['quartier', 'Par quartier'], ['envie', 'Par envie ⭐']];
+  sortBar.innerHTML = '';
+  sortOpts.forEach(([k, lbl]) => {
+    const btn = document.createElement('button');
+    btn.className = 'sort-chip' + (sort === k ? ' on' : '');
+    btn.textContent = lbl;
+    btn.onclick = () => { sortState[table] = k; renderItems(table, contId, sortId); };
+    sortBar.appendChild(btn);
+  });
+
+  let items = [...D[table]];
+
+  if (sort === 'envie') {
+    items.sort((a, b) => ((b.note_matis || 0) + (b.note_lise || 0)) - ((a.note_matis || 0) + (a.note_lise || 0)));
+    // single group
+    const block = document.createElement('div');
+    block.className = 'city-block';
+    block.innerHTML = `<div class="city-head"><h3>Classement par envie</h3><span class="city-count">${items.length}</span></div>`;
+    items.forEach(item => block.appendChild(makeItemCard(item, table)));
+    cont.appendChild(block);
+    return;
+  }
+
+  const groupKey = sort === 'quartier' ? 'quartier' : 'ville';
+  const groups = {};
+  items.forEach(item => {
+    const k = item[groupKey] || 'Autre';
+    if (!groups[k]) groups[k] = [];
+    groups[k].push(item);
+  });
+
+  Object.entries(groups).sort(([a], [b]) => a.localeCompare(b)).forEach(([key, grpItems]) => {
+    const block = document.createElement('div');
+    block.className = 'city-block';
+    const ico = sort === 'ville' ? (VILLE_ICONS[key] || '📍') : '📌';
+    block.innerHTML = `<div class="city-head"><span style="font-size:1.1rem;">${ico}</span><h3>${esc(key)}</h3><span class="city-count">${grpItems.length} lieu(x)</span></div>`;
+    grpItems.forEach(item => block.appendChild(makeItemCard(item, table)));
+    cont.appendChild(block);
+  });
+}
+
+function makeItemCard(item, table) {
+  const d = document.createElement('div');
+  d.className = 'item-card';
+  const envie = (item.note_matis || 0) + (item.note_lise || 0);
+  const prix = item.prix || item.prix_nuit || item.prix_moyen || 0;
+  d.innerHTML = `
+    <div class="item-top">
+      <div style="flex:1;min-width:0;">
+        <div class="item-name">${esc(item.nom)}</div>
+        <div class="item-sub">
+          ${item.ville ? `<span class="pill pill-ville">${esc(item.ville)}</span>` : ''}
+          ${item.quartier && item.quartier !== 'À définir' ? `<span class="pill pill-quartier">${esc(item.quartier)}</span>` : ''}
+          ${item.moment ? `<span class="pill pill-moment">${esc(item.moment)}</span>` : ''}
+          ${item.type_lieu ? `<span class="pill pill-type">${esc(item.type_lieu)}</span>` : ''}
+          ${item.nb_nuits ? `<span class="pill pill-type">${item.nb_nuits} nuit(s)</span>` : ''}
+        </div>
+        ${item.description ? `<div class="item-desc">${esc(item.description)}</div>` : ''}
+      </div>
+    </div>
+    <div class="item-footer">
+      ${prix > 0 ? `<span class="item-prix">${fmt(parseFloat(prix))} €</span>` : ''}
+      <div class="ml-auto stars-row">
+        <span class="stars-lbl">M</span><div class="stars">${starsRO(item.note_matis)}</div>
+        <span class="stars-lbl">L</span><div class="stars">${starsRO(item.note_lise)}</div>
+      </div>
+    </div>`;
+  d.onclick = () => openItemSheet(table, item);
+  return d;
+}
+
+function starsRO(val) {
+  let h = '';
+  for (let i = 1; i <= 5; i++) h += `<span class="star${i <= val ? ' on' : ''}">★</span>`;
+  return h;
+}
+
+// ── HOTELS ──
+function renderHotels() {
+  const cont = document.getElementById('hotelCont');
+  const sortId = 'hotel-sort';
+  cont.innerHTML = '';
+  const sortBar = document.getElementById(sortId);
+  const sort = sortState.hotels || 'ville';
+  const sortOpts = [['ville', 'Par ville'], ['quartier', 'Par quartier'], ['envie', 'Par envie ⭐']];
+  sortBar.innerHTML = '';
+  sortOpts.forEach(([k, lbl]) => {
+    const btn = document.createElement('button');
+    btn.className = 'sort-chip' + (sort === k ? ' on' : '');
+    btn.textContent = lbl;
+    btn.onclick = () => { sortState.hotels = k; renderHotels(); };
+    sortBar.appendChild(btn);
+  });
+
+  D.hotels.forEach(h => {
+    const nuitTotal = (h.prix_nuit || 0) * (h.nb_nuits || 1);
+    const d = document.createElement('div');
+    d.className = 'hotel-card';
+    d.innerHTML = `
+      <div class="hotel-card-top">
+        <div class="hotel-icon">🏨</div>
+        <div class="hotel-info">
+          <div class="hotel-name">${esc(h.nom)}</div>
+          <div class="hotel-meta">
+            ${h.ville ? `<span class="pill pill-ville">${esc(h.ville)}</span>` : ''}
+            ${h.quartier && h.quartier !== 'À définir' ? `<span class="pill pill-quartier">${esc(h.quartier)}</span>` : ''}
+            ${h.date_checkin ? `<span class="pill pill-type">${h.date_checkin} → ${h.date_checkout || '?'}</span>` : ''}
+          </div>
+          ${h.adresse ? `<div class="item-desc" style="margin-top:6px;">${esc(h.adresse)}</div>` : ''}
+        </div>
+      </div>
+      <div class="hotel-footer">
+        <span class="hotel-prix">${fmt(parseFloat(h.prix_nuit || 0))} €/nuit</span>
+        <span class="hotel-nuits">${h.nb_nuits || 1} nuit(s) = ${fmt(nuitTotal)} €</span>
+        <div class="ml-auto stars-row">
+          <span class="stars-lbl">M</span><div class="stars">${starsRO(h.note_matis)}</div>
+          <span class="stars-lbl">L</span><div class="stars">${starsRO(h.note_lise)}</div>
+        </div>
+      </div>`;
+    d.onclick = () => openItemSheet('hotels', h);
+    cont.appendChild(d);
+  });
+  if (!D.hotels.length) cont.innerHTML = '<div class="empty"><div class="empty-ico">🏨</div>Aucun hôtel ajouté</div>';
+}
+
+// ── TRANSPORTS ──
+function renderTransports() {
+  const cont = document.getElementById('tCont');
+  cont.innerHTML = '';
+  D.transports.forEach(t => {
+    const d = document.createElement('div');
+    d.className = 't-card';
+    d.innerHTML = `
+      <div class="t-top">
+        <span style="font-size:1.2rem;">${t.type_transport || '🚄'}</span>
+        <div class="t-route">${esc(t.trajet)}</div>
+        <div class="t-route" style="font-family:var(--font-title);color:var(--or);font-size:1rem;">${fmt(parseFloat(t.prix || 0))} €</div>
+      </div>
+      <div class="t-fields">
+        <div class="tf"><div class="tf-lbl">Départ</div><div class="tf-val">${esc(t.depart) || '—'}</div></div>
+        <div class="tf"><div class="tf-lbl">Arrivée</div><div class="tf-val">${esc(t.arrivee) || '—'}</div></div>
+        <div class="tf"><div class="tf-lbl">Durée</div><div class="tf-val">${esc(t.duree) || '—'}</div></div>
+        <div class="tf"><div class="tf-lbl">Type</div><div class="tf-val">${esc(t.type_transport) || '—'}</div></div>
+        <div class="tf"><div class="tf-lbl">Référence</div><div class="tf-val">${esc(t.reference) || '—'}</div></div>
+        <div class="tf"><div class="tf-lbl">Notes</div><div class="tf-val" style="color:var(--muted);font-size:.72rem;">${esc(t.notes) || '—'}</div></div>
+      </div>`;
+    d.onclick = () => openItemSheet('transports', t);
+    cont.appendChild(d);
+  });
+  if (!D.transports.length) cont.innerHTML = '<div class="empty"><div class="empty-ico">🚄</div>Aucun transport ajouté</div>';
+}
+
+// ── ITEM SHEET ──
+function openItemSheet(table, item = null) {
+  const isNew = !item;
+  const inner = document.getElementById('itemSheetInner');
+  inner.innerHTML = buildItemForm(table, item, isNew);
+  openSheet('item-sheet');
+}
+
+function buildItemForm(table, item, isNew) {
+  const v = (k) => item ? esc(item[k] || '') : '';
+  const n = (k) => item ? (item[k] || 0) : 0;
+  const id = item ? item.id : '';
+  const title = isNew ? `Nouveau ${TABLE_LABEL[table] || 'élément'}` : `Modifier`;
+
+  const commonFields = `
+    <div class="fgrp"><div class="flbl">Nom</div><input class="finp" id="if-nom" value="${v('nom')}" placeholder="Nom..."></div>
+    <div class="fgrp"><div class="flbl">Ville</div>
+      <select class="finp" id="if-ville">
+        <option value="">Sélectionner...</option>
+        ${VILLES.map(vi => `<option value="${vi}" ${item && item.ville === vi ? 'selected' : ''}>${vi}</option>`).join('')}
+      </select>
+    </div>
+    <div class="fgrp"><div class="flbl">Quartier</div><input class="finp" id="if-quartier" value="${v('quartier')}" placeholder="ex: Huangpu, Pudong..."></div>
+    <div class="fgrp"><div class="flbl">Description</div><input class="finp" id="if-desc" value="${v('description')}" placeholder="Description..."></div>
+    <div class="fgrp"><div class="flbl">Adresse</div><input class="finp" id="if-adresse" value="${v('adresse')}" placeholder="Adresse ou lien Maps..."></div>`;
+
+  const starsField = (who, label) => {
+    const val = n(`note_${who}`);
+    return `<div style="flex:1;"><div class="flbl">${label}</div><div class="stars" id="sf-${who}">${[1,2,3,4,5].map(s => `<span class="star${s<=val?' on':''}" style="font-size:1.3rem;cursor:pointer;" onclick="setStar('${who}',${s})">${'★'}</span>`).join('')}</div></div>`;
+  };
+
+  const momentField = `<div class="fgrp"><div class="flbl">Meilleur moment</div>
+    <select class="finp" id="if-moment">
+      ${MOMENTS.map(m => `<option value="${m}" ${item && item.moment === m ? 'selected' : ''}>${m || 'Indifférent'}</option>`).join('')}
+    </select></div>`;
+
+  let specific = '';
+
+  if (table === 'activites') {
+    specific = `<div class="fgrp"><div class="flbl">Prix (€)</div><input class="finp" id="if-prix" type="number" value="${n('prix') || ''}" placeholder="0.00"></div>${momentField}`;
+  } else if (table === 'restaurants') {
+    specific = `<div class="fgrp"><div class="flbl">Prix moyen / pers. (€)</div><input class="finp" id="if-prix" type="number" value="${n('prix_moyen') || ''}" placeholder="0.00"></div>${momentField}`;
+  } else if (table === 'cafes') {
+    specific = `<div class="fgrp"><div class="flbl">Type de lieu</div>
+      <select class="finp" id="if-type"><option value="">Type...</option>${['Café','Bar','Rooftop','Salon de thé','Autre'].map(t => `<option ${item && item.type_lieu === t ? 'selected' : ''}>${t}</option>`).join('')}</select></div>
+      <div class="fgrp"><div class="flbl">Prix moyen (€)</div><input class="finp" id="if-prix" type="number" value="${n('prix_moyen') || ''}" placeholder="0.00"></div>${momentField}`;
+  } else if (table === 'hotels') {
+    specific = `<div class="row2">
+      <div class="fgrp"><div class="flbl">Prix / nuit (€)</div><input class="finp" id="if-prix" type="number" value="${n('prix_nuit') || ''}" placeholder="0.00"></div>
+      <div class="fgrp"><div class="flbl">Nb nuits</div><input class="finp" id="if-nuits" type="number" value="${n('nb_nuits') || 1}" placeholder="1"></div>
+    </div>
+    <div class="row2">
+      <div class="fgrp"><div class="flbl">Check-in</div><input class="finp" id="if-checkin" type="date" value="${v('date_checkin')}"></div>
+      <div class="fgrp"><div class="flbl">Check-out</div><input class="finp" id="if-checkout" type="date" value="${v('date_checkout')}"></div>
+    </div>
+    <div class="fgrp"><div class="flbl">Lien réservation</div><input class="finp" id="if-lien" value="${v('lien_reservation')}" placeholder="https://..."></div>
+    <div class="fgrp"><div class="flbl">N° confirmation</div><input class="finp" id="if-confirm" value="${v('confirmation')}" placeholder="Référence..."></div>`;
+  } else if (table === 'transports') {
+    return `<div class="sheet-handle"></div><div class="sheet-title">${title}</div>
+      <input type="hidden" id="if-id" value="${id}"><input type="hidden" id="if-table" value="${table}">
+      <div class="fgrp"><div class="flbl">Trajet</div><input class="finp" id="if-nom" value="${v('trajet')}" placeholder="Paris → Shanghai..."></div>
+      <div class="fgrp"><div class="flbl">Type</div>
+        <select class="finp" id="if-type"><option value="">Type...</option>${['✈️ Vol','🚂 Train','🚌 Bus','🚢 Bateau','🚗 Taxi / DiDi'].map(t => `<option ${item && item.type_transport === t ? 'selected' : ''}>${t}</option>`).join('')}</select>
+      </div>
+      <div class="row2">
+        <div class="fgrp"><div class="flbl">Départ</div><input class="finp" id="if-dep" value="${v('depart')}" placeholder="10h30"></div>
+        <div class="fgrp"><div class="flbl">Arrivée</div><input class="finp" id="if-arr" value="${v('arrivee')}" placeholder="14h45"></div>
+      </div>
+      <div class="row2">
+        <div class="fgrp"><div class="flbl">Durée</div><input class="finp" id="if-duree" value="${v('duree')}" placeholder="4h15"></div>
+        <div class="fgrp"><div class="flbl">Prix total (€)</div><input class="finp" id="if-prix" type="number" value="${n('prix') || ''}" placeholder="0.00"></div>
+      </div>
+      <div class="fgrp"><div class="flbl">Référence / N° billet</div><input class="finp" id="if-ref" value="${v('reference')}" placeholder="ABC123"></div>
+      <div class="fgrp"><div class="flbl">Notes</div><input class="finp" id="if-notes" value="${v('notes')}" placeholder="Notes..."></div>
+      <button class="btn-save" onclick="saveItem()">Enregistrer</button>
+      ${!isNew ? `<button class="btn-del" onclick="deleteItem()">Supprimer</button>` : ''}
+      <button class="btn-cancel" onclick="closeSheet('item-sheet')">Annuler</button><div style="height:4px;"></div>`;
+  }
+
+  return `<div class="sheet-handle"></div><div class="sheet-title">${title}</div>
+    <input type="hidden" id="if-id" value="${id}"><input type="hidden" id="if-table" value="${table}">
+    <input type="hidden" id="if-matis" value="${n('note_matis')}">
+    <input type="hidden" id="if-lise" value="${n('note_lise')}">
+    ${commonFields}${specific}
+    <div class="row2">${starsField('matis','Matis ⭐')}${starsField('lise','Lise ⭐')}</div>
+    <div class="fgrp"><div class="flbl">Notes</div><input class="finp" id="if-notes" value="${v('notes')}" placeholder="Notes..."></div>
+    <button class="btn-save" onclick="saveItem()">Enregistrer</button>
+    ${!isNew ? `<button class="btn-del" onclick="deleteItem()">Supprimer</button>` : ''}
+    <button class="btn-cancel" onclick="closeSheet('item-sheet')">Annuler</button>
+    <div style="height:4px;"></div>`;
+}
+
+function setStar(who, val) {
+  document.getElementById('if-' + who).value = val;
+  const stars = document.getElementById('sf-' + who).querySelectorAll('.star');
+  stars.forEach((s, i) => s.classList.toggle('on', i < val));
+}
+
+async function saveItem() {
+  const table = document.getElementById('if-table').value;
+  const id = document.getElementById('if-id').value;
+  const nom = document.getElementById('if-nom').value;
+  const ville = document.getElementById('if-ville') ? document.getElementById('if-ville').value : '';
+  const quartier = document.getElementById('if-quartier') ? document.getElementById('if-quartier').value : '';
+  const desc = document.getElementById('if-desc') ? document.getElementById('if-desc').value : '';
+  const adresse = document.getElementById('if-adresse') ? document.getElementById('if-adresse').value : '';
+  const notes = document.getElementById('if-notes') ? document.getElementById('if-notes').value : '';
+  const matis = parseInt(document.getElementById('if-matis')?.value || 0);
+  const lise = parseInt(document.getElementById('if-lise')?.value || 0);
+  const prix = parseFloat(document.getElementById('if-prix')?.value || 0);
+  const moment = document.getElementById('if-moment')?.value || '';
+  const type = document.getElementById('if-type')?.value || '';
+
+  let payload = {};
+
+  if (table === 'transports') {
+    payload = { trajet: nom, type_transport: type, depart: document.getElementById('if-dep')?.value || '', arrivee: document.getElementById('if-arr')?.value || '', duree: document.getElementById('if-duree')?.value || '', prix, reference: document.getElementById('if-ref')?.value || '', notes };
+  } else if (table === 'hotels') {
+    const nuits = parseInt(document.getElementById('if-nuits')?.value || 1);
+    payload = { nom, ville, quartier, adresse, description: desc, prix_nuit: prix, nb_nuits: nuits, date_checkin: document.getElementById('if-checkin')?.value || null, date_checkout: document.getElementById('if-checkout')?.value || null, lien_reservation: document.getElementById('if-lien')?.value || '', confirmation: document.getElementById('if-confirm')?.value || '', note_matis: matis, note_lise: lise, notes };
+  } else if (table === 'activites') {
+    payload = { nom, ville, quartier, description: desc, adresse, prix, moment, note_matis: matis, note_lise: lise, notes };
+  } else if (table === 'restaurants') {
+    payload = { nom, ville, quartier, description: desc, adresse, prix_moyen: prix, moment, note_matis: matis, note_lise: lise, notes };
+  } else if (table === 'cafes') {
+    payload = { nom, ville, quartier, description: desc, adresse, prix_moyen: prix, type_lieu: type, moment, note_matis: matis, note_lise: lise, notes };
+  }
+
+  if (id) {
+    await db.from(table).update(payload).eq('id', id);
+    // Sync budget for hotels
+    if (table === 'hotels' && prix > 0) {
+      await syncHotelBudget(id, nom, prix * (parseInt(document.getElementById('if-nuits')?.value || 1)));
+    }
+  } else {
+    const { data } = await db.from(table).insert(payload).select().single();
+    if (table === 'hotels' && data && prix > 0) {
+      await syncHotelBudget(data.id, nom, prix * (parseInt(document.getElementById('if-nuits')?.value || 1)));
+    }
+    if (table === 'transports' && data && prix > 0) {
+      await syncTransportBudget(data.id, nom, type, prix);
+    }
+  }
+  closeSheet('item-sheet');
+}
+
+async function syncHotelBudget(hotelId, nom, total) {
+  const existing = D.budget.find(b => b.source === 'hotel' && b.source_id === hotelId);
+  const payload = { categorie: '🏨 Hôtel', description: nom, prix_total: total, source: 'hotel', source_id: hotelId };
+  if (existing) await db.from('budget').update(payload).eq('id', existing.id);
+  else await db.from('budget').insert(payload);
+}
+
+async function syncTransportBudget(tId, trajet, type, prix) {
+  const existing = D.budget.find(b => b.source === 'transport' && b.source_id === tId);
+  const emoji = type.split(' ')[0] || '🚄';
+  const payload = { categorie: `${emoji} Transport`, description: trajet, prix_total: prix, source: 'transport', source_id: tId };
+  if (existing) await db.from('budget').update(payload).eq('id', existing.id);
+  else await db.from('budget').insert(payload);
+}
+
+async function deleteItem() {
+  const table = document.getElementById('if-table').value;
+  const id = document.getElementById('if-id').value;
+  if (id) {
+    await db.from(table).delete().eq('id', id);
+    // remove from budget
+    await db.from('budget').delete().eq('source_id', id);
+    // remove from planning_items
+    await db.from('planning_items').delete().eq('item_id', id);
+  }
+  closeSheet('item-sheet');
+}
+
+// ── PLANNING ──
+function renderPlanning() {
+  const list = document.getElementById('dayList');
+  list.innerHTML = '';
+  const days = [...D.planning].sort((a, b) => a.sort_order - b.sort_order);
+
+  days.forEach((day, idx) => {
+    const [, , dnum] = day.date_voyage.split('-');
+    const monthNum = parseInt(day.date_voyage.split('-')[1]);
+    const months = ['','Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+
+    const items = D.planning_items.filter(pi => pi.planning_id === day.id);
+    const hotel = D.hotels.find(h => h.id === day.hotel_id);
+    const totalItems = items.length;
+
+    const card = document.createElement('div');
+    card.className = 'day-card';
+    card.dataset.id = day.id;
+    card.dataset.idx = idx;
+
+    card.innerHTML = `
+      <div class="day-top">
+        <div class="day-badge"><div class="dn">${dnum}</div><div class="dm">${months[monthNum]}</div><div class="dj">${day.jour_semaine}</div></div>
+        <div class="day-periods">
+          <div class="prow"><span class="pem">🌅</span><span class="ptxt">${esc(day.matin)}</span>${day.heure_matin ? `<span class="ptime">${esc(day.heure_matin)}</span>` : ''}</div>
+          <div class="prow"><span class="pem">☀️</span><span class="ptxt">${esc(day.aprem)}</span>${day.heure_aprem ? `<span class="ptime">${esc(day.heure_aprem)}</span>` : ''}</div>
+          <div class="prow"><span class="pem">🌙</span><span class="ptxt">${esc(day.soir)}</span>${day.heure_soir ? `<span class="ptime">${esc(day.heure_soir)}</span>` : ''}</div>
+        </div>
+        <div class="day-handle" data-day-drag="${day.id}">⠿</div>
+      </div>
+      <button class="day-exp" id="exp-${day.id}" onclick="toggleDay('${day.id}')">
+        🏨 ${esc(hotel ? hotel.nom : (day.hotel_id ? '...' : 'Hôtel non défini'))}
+        ${totalItems > 0 ? `<span style="margin-left:6px;font-size:.58rem;opacity:.45;">${totalItems} item(s)</span>` : ''}
+        <span class="arr">▼</span>
+      </button>
+      <div class="day-panel" id="panel-${day.id}">
+        <!-- Hôtel select -->
+        <div class="dg">
+          <div class="dg-title">🏨 Hôtel de nuit</div>
+          <select class="finp" style="background:rgba(41,128,185,.07);border-color:rgba(41,128,185,.2);" onchange="setDayHotel('${day.id}',this.value)">
+            <option value="">Aucun hôtel sélectionné</option>
+            ${D.hotels.map(h => `<option value="${h.id}" ${day.hotel_id === h.id ? 'selected' : ''}>${esc(h.nom)} — ${esc(h.ville)}</option>`).join('')}
+          </select>
+        </div>
+        <!-- Périodes -->
+        <div class="dg">
+          <div class="dg-title">🗺 Lieux & Horaires</div>
+          <div style="display:flex;flex-direction:column;gap:7px;">
+            ${['matin','aprem','soir'].map((p, pi) => {
+              const emoji = ['🌅','☀️','🌙'][pi];
+              const label = ['Matin','Après-midi','Soir'][pi];
+              const hField = ['heure_matin','heure_aprem','heure_soir'][pi];
+              const lField = ['matin','aprem','soir'][pi];
+              return `<div class="pi-row"><span class="pi-lbl" style="font-size:.6rem;color:var(--muted);width:20px;">${emoji}</span>
+                <input class="ii ii-box" style="flex:1;" value="${esc(day[lField])}" placeholder="${label}..." onblur="updateDay('${day.id}','${lField}',this.value)" />
+                <input class="ii-sm" value="${esc(day[hField])}" placeholder="Heure" onblur="updateDay('${day.id}','${hField}',this.value)" /></div>`;
+            }).join('')}
+          </div>
+        </div>
+        <!-- Activités -->
+        <div class="dg">
+          <div class="dg-title">🎯 Activités planifiées</div>
+          <div class="pi-list" id="pi-activites-${day.id}"></div>
+          <button class="pi-add" onclick="openPicker('${day.id}','activites')">＋ Choisir une activité</button>
+        </div>
+        <!-- Restaurants -->
+        <div class="dg">
+          <div class="dg-title">🍜 Restaurant planifié</div>
+          <div class="pi-list" id="pi-restaurants-${day.id}"></div>
+          <button class="pi-add" onclick="openPicker('${day.id}','restaurants')">＋ Choisir un restaurant</button>
+        </div>
+        <!-- Cafés -->
+        <div class="dg">
+          <div class="dg-title">☕ Café / Bar planifié</div>
+          <div class="pi-list" id="pi-cafes-${day.id}"></div>
+          <button class="pi-add" onclick="openPicker('${day.id}','cafes')">＋ Choisir un café</button>
+        </div>
+        <!-- Notes -->
+        <div class="dg">
+          <div class="dg-title">📌 Notes du jour</div>
+          <textarea class="note-ta" rows="2" placeholder="Notes..." onblur="updateDay('${day.id}','notes',this.value)">${esc(day.notes)}</textarea>
+        </div>
+      </div>`;
+
+    // Drag to reorder
+    const handle = card.querySelector(`[data-day-drag]`);
+    setupDayDrag(handle, card, day.id);
+
+    list.appendChild(card);
+
+    // Render planning items
+    ['activites','restaurants','cafes'].forEach(type => {
+      const typeItems = items.filter(pi => pi.item_type === type);
+      renderPlanningItems(day.id, type, typeItems);
+    });
+  });
+}
+
+function renderPlanningItems(dayId, type, items) {
+  const el = document.getElementById(`pi-${type}-${dayId}`);
+  if (!el) return;
+  el.innerHTML = '';
+  items.forEach(pi => {
+    const source = D[type].find(x => x.id === pi.item_id);
+    if (!source) return;
+    const periodeClass = { Matin:'pb-m', 'Après-midi':'pb-a', Soir:'pb-s', Journée:'pb-j' }[pi.periode] || '';
+    const chip = document.createElement('div');
+    chip.className = 'pi-chip';
+    chip.innerHTML = `<span class="pi-name">${esc(source.nom)}</span>
+      ${pi.periode ? `<span class="pi-badge ${periodeClass}">${esc(pi.periode)}</span>` : ''}
+      <button class="pi-del" onclick="removePlanningItem('${pi.id}')">✕</button>`;
+    el.appendChild(chip);
+  });
+}
+
+function toggleDay(id) {
+  document.getElementById('panel-' + id).classList.toggle('open');
+  document.getElementById('exp-' + id).classList.toggle('open');
+}
+
+async function updateDay(id, field, value) {
+  await db.from('planning').update({ [field]: value }).eq('id', id);
+}
+
+async function setDayHotel(dayId, hotelId) {
+  await db.from('planning').update({ hotel_id: hotelId || null }).eq('id', dayId);
+}
+
+// Drag planning days
+function setupDayDrag(handle, card, dayId) {
+  handle.draggable = true;
+  handle.addEventListener('dragstart', e => { dayDragSrc = dayId; card.classList.add('dragging'); e.dataTransfer.effectAllowed = 'move'; });
+  handle.addEventListener('dragend', () => card.classList.remove('dragging'));
+  card.addEventListener('dragover', e => { e.preventDefault(); card.classList.add('drag-over'); });
+  card.addEventListener('dragleave', () => card.classList.remove('drag-over'));
+  card.addEventListener('drop', async e => {
+    e.preventDefault(); card.classList.remove('drag-over');
+    if (dayDragSrc && dayDragSrc !== dayId) {
+      const days = [...D.planning].sort((a, b) => a.sort_order - b.sort_order);
+      const srcIdx = days.findIndex(d => d.id === dayDragSrc);
+      const dstIdx = days.findIndex(d => d.id === dayId);
+      if (srcIdx !== -1 && dstIdx !== -1) {
+        const [moved] = days.splice(srcIdx, 1);
+        days.splice(dstIdx, 0, moved);
+        await Promise.all(days.map((d, i) => db.from('planning').update({ sort_order: i }).eq('id', d.id)));
+      }
+      dayDragSrc = null;
+    }
+  });
+  // Touch
+  let touchTarget;
+  handle.addEventListener('touchstart', e => { dayDragSrc = dayId; card.style.opacity = '.45'; }, { passive: true });
+  handle.addEventListener('touchmove', e => {
+    e.preventDefault();
+    const tc = document.elementFromPoint(e.touches[0].clientX, e.touches[0].clientY)?.closest('.day-card');
+    if (touchTarget && touchTarget !== tc) touchTarget.classList.remove('drag-over');
+    if (tc && tc !== card) { touchTarget = tc; tc.classList.add('drag-over'); }
+  }, { passive: false });
+  handle.addEventListener('touchend', async () => {
+    card.style.opacity = '';
+    if (touchTarget) {
+      touchTarget.classList.remove('drag-over');
+      const dstId = touchTarget.dataset.id;
+      if (dstId && dstId !== dayId) {
+        const days = [...D.planning].sort((a, b) => a.sort_order - b.sort_order);
+        const srcIdx = days.findIndex(d => d.id === dayId);
+        const dstIdx = days.findIndex(d => d.id === dstId);
+        if (srcIdx !== -1 && dstIdx !== -1) {
+          const [moved] = days.splice(srcIdx, 1);
+          days.splice(dstIdx, 0, moved);
+          await Promise.all(days.map((d, i) => db.from('planning').update({ sort_order: i }).eq('id', d.id)));
+        }
+      }
+    }
+    touchTarget = null; dayDragSrc = null;
+  });
+}
+
+// ── PICKER (sélectionner activité/resto/café dans planning) ──
+function openPicker(dayId, type) {
+  currentPickerState = { dayId, type };
+  const existingItems = D.planning_items.filter(pi => pi.planning_id === dayId && pi.item_type === type);
+  const existingIds = existingItems.map(pi => pi.item_id);
+  const cityDay = D.planning.find(p => p.id === dayId);
+  const dayVille = cityDay ? [cityDay.matin, cityDay.aprem, cityDay.soir].join(' ') : '';
+
+  document.getElementById('pickerTitle').textContent = { activites:'Choisir une activité', restaurants:'Choisir un restaurant', cafes:'Choisir un café' }[type];
+  document.getElementById('pickerPeriode').value = '';
+
+  const list = document.getElementById('pickerList');
+  list.innerHTML = '';
+
+  // Filter by relevant city if possible
+  let items = D[type];
+  // Try to find a city match
+  const matchedVille = VILLES.find(v => dayVille.toLowerCase().includes(v.toLowerCase()));
+  if (matchedVille) items = D[type].filter(x => x.ville === matchedVille).concat(D[type].filter(x => x.ville !== matchedVille));
+
+  items.forEach(item => {
+    const isSelected = existingIds.includes(item.id);
+    const div = document.createElement('div');
+    div.className = 'picker-item';
+    div.dataset.id = item.id;
+    div.dataset.selected = isSelected ? '1' : '0';
+    div.innerHTML = `
+      <div class="picker-check${isSelected ? ' on' : ''}">${isSelected ? '✓' : ''}</div>
+      <div style="flex:1;"><div class="picker-name">${esc(item.nom)}</div><div class="picker-meta">${esc(item.ville)}${item.quartier ? ' · ' + esc(item.quartier) : ''}</div></div>`;
+    div.onclick = () => {
+      const cur = div.dataset.selected === '1';
+      div.dataset.selected = cur ? '0' : '1';
+      const chk = div.querySelector('.picker-check');
+      chk.classList.toggle('on', !cur);
+      chk.textContent = !cur ? '✓' : '';
+    };
+    list.appendChild(div);
+  });
+  openSheet('picker-sheet');
+}
+
+async function confirmPicker() {
+  if (!currentPickerState) return;
+  const { dayId, type } = currentPickerState;
+  const periode = document.getElementById('pickerPeriode').value;
+  const selected = [...document.querySelectorAll('#pickerList .picker-item')].filter(d => d.dataset.selected === '1').map(d => d.dataset.id);
+  const existing = D.planning_items.filter(pi => pi.planning_id === dayId && pi.item_type === type);
+
+  // Remove deselected
+  const toRemove = existing.filter(pi => !selected.includes(pi.item_id));
+  await Promise.all(toRemove.map(pi => db.from('planning_items').delete().eq('id', pi.id)));
+
+  // Add new
+  const existingIds = existing.map(pi => pi.item_id);
+  const toAdd = selected.filter(id => !existingIds.includes(id));
+  if (toAdd.length) {
+    await db.from('planning_items').insert(toAdd.map(item_id => ({ planning_id: dayId, item_type: type, item_id, periode })));
+  }
+
+  closeSheet('picker-sheet');
+  currentPickerState = null;
+}
+
+async function removePlanningItem(piId) {
+  await db.from('planning_items').delete().eq('id', piId);
+}
+
+// ── CHECKLIST ──
+function renderChecklist() {
+  renderCLSection('clDep', 'depart');
+  renderCLSection('clSur', 'surplace');
+}
+
+function renderCLSection(elId, cat) {
+  const el = document.getElementById(elId);
+  el.innerHTML = '';
+  D.checklist.filter(c => c.categorie === cat).sort((a, b) => a.sort_order - b.sort_order).forEach(item => {
+    const d = document.createElement('div');
+    d.className = 'cl-item' + (item.done ? ' done' : '');
+    d.innerHTML = `<input type="checkbox" class="cl-cb" ${item.done ? 'checked' : ''} onchange="toggleCL('${item.id}',this.checked,this)"><span class="cl-lbl">${esc(item.label)}</span>`;
+    el.appendChild(d);
+  });
+}
+
+async function toggleCL(id, done, cb) {
+  cb.closest('.cl-item').className = 'cl-item' + (done ? ' done' : '');
+  await db.from('checklist').update({ done }).eq('id', id);
+}
+
+async function addCL(cat) {
+  const label = prompt('Nouvelle tâche :');
+  if (!label) return;
+  const maxOrder = Math.max(0, ...D.checklist.filter(c => c.categorie === cat).map(c => c.sort_order));
+  await db.from('checklist').insert({ label, categorie: cat, sort_order: maxOrder + 1 });
+}
+
+// ── NOTES ──
+function renderNotes() {
+  const cont = document.getElementById('notesCont');
+  cont.innerHTML = '';
+  D.notes.sort((a, b) => a.sort_order - b.sort_order).forEach(note => {
+    const d = document.createElement('div');
+    d.className = 'note-card';
+    d.innerHTML = `
+      <div class="note-title-row">
+        <input class="note-title-inp" value="${esc(note.titre)}" placeholder="Titre..." onblur="updateNote('${note.id}','titre',this.value)">
+        <button class="note-del" onclick="deleteNote('${note.id}')">✕</button>
+      </div>
+      <textarea class="note-body-ta" rows="4" placeholder="Contenu..." onblur="updateNote('${note.id}','corps',this.value)">${esc(note.corps)}</textarea>`;
+    cont.appendChild(d);
+  });
+}
+
+async function updateNote(id, field, value) { await db.from('notes').update({ [field]: value }).eq('id', id); }
+async function deleteNote(id) { if (confirm('Supprimer cette note ?')) await db.from('notes').delete().eq('id', id); }
+async function addNote() {
+  const maxOrder = Math.max(0, ...D.notes.map(n => n.sort_order));
+  await db.from('notes').insert({ titre: 'Nouvelle note', corps: '', sort_order: maxOrder + 1 });
+}
+
+// ── UTILS ──
+function esc(v) { if (!v && v !== 0) return ''; return String(v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function fmt(n) { return (Math.round(n * 100) / 100).toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 0 }) + ' €'; }
+
+// ── SCROLL TOP ──
+window.addEventListener('scroll', () => { document.getElementById('stBtn').classList.toggle('vis', window.scrollY > 200); }, { passive: true });
+
+// ── GO ──
+init();
+</script>
+</body>
+</html>
