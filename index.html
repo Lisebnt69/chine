@@ -1526,63 +1526,64 @@ async function removeSlot(id){
 }
 
 // ── TRANSPORTS ──
-function renderTransports(){
+function renderTransports() {
   const cont = document.getElementById('trTimeline');
   cont.innerHTML = '';
-  
+
   // Tri amélioré : Date (adresse) puis Heure (quartier)
   const transports = [...D.items.filter(x => x.type === 'transport')].sort((a, b) => {
-    // 1. Comparaison des dates (adresse stocke la date YYYY-MM-DD)
     const dateA = a.adresse || '9999-12-31';
     const dateB = b.adresse || '9999-12-31';
-    
-    if (dateA !== dateB) {
-      return dateA.localeCompare(dateB);
-    }
-    
-    // 2. Si même date, comparaison des heures (quartier stocke l'heure HHhMM)
-    // On nettoie pour transformer "10h30" en "10:30" pour la comparaison
+    if (dateA !== dateB) return dateA.localeCompare(dateB);
+
     const heureA = (a.quartier || '00h00').replace('h', ':');
     const heureB = (b.quartier || '00h00').replace('h', ':');
-    
     return heureA.localeCompare(heureB);
   });
 
-  if(!transports.length){
+  if (!transports.length) {
     cont.innerHTML = '<div class="empty"><div class="empty-ic">🚄</div>Aucun transport</div>';
     return;
   }
-  
-  // ... le reste de la fonction (le .forEach) reste identique
-  transports.forEach((t,i)=>{
-    const ico=(t.prix_type||'').split(' ')[0]||'🚄';
-    const bgMap={Vol:'rgba(41,128,185,.22)',Train:'rgba(39,174,96,.22)',Bus:'rgba(243,156,18,.22)'};
-    const bgKey=Object.keys(bgMap).find(k=>(t.prix_type||'').includes(k))||'Vol';
-    const d=document.createElement('div');d.className='tr-item';
-    const heureFR = formatHeureDecalage(t.quartier);
+
+  transports.forEach((t, i) => {
+    const ico = (t.prix_type || '').split(' ')[0] || '🚄';
+    const bgMap = { Vol: 'rgba(41,128,185,.22)', Train: 'rgba(39,174,96,.22)', Bus: 'rgba(243,156,18,.22)' };
+    const bgKey = Object.keys(bgMap).find(k => (t.prix_type || '').includes(k)) || 'Vol';
+    
+    // Extraction des fuseaux et de la durée depuis les notes
+    // Format attendu : "D:🇫🇷 FR | A:🇨🇳 CN (J+1) | Durée: 11h50"
+    const notesRaw = t.notes || "";
+    const parts = notesRaw.split('|');
+    const tzDep = parts[0] ? parts[0].replace('D:', '').trim() : "";
+    const tzArr = parts[1] ? parts[1].replace('A:', '').trim() : "";
+    const duree = parts[2] ? parts[2].replace('Durée:', '').trim() : "";
+
+    const d = document.createElement('div');
+    d.className = 'tr-item';
     d.innerHTML = `
-  <div class="tr-left">
-    <div class="tr-ic-wrap" style="background:${bgMap[bgKey]};">${ico}</div>
-    ${i < transports.length - 1 ? '<div class="tr-line-v"></div>' : ''}
-  </div>
-  <div class="tr-right">
-    <div class="tr-route">${esc(t.nom)}</div>
-    <div class="tr-meta">
-      ${t.adresse ? `<span class="tr-tag">📅 ${esc(t.adresse)}</span>` : ''}
-      ${t.quartier ? `<span class="tr-tag">🇨🇳 ${esc(t.quartier)}</span>` : ''}
-      ${heureFR ? `<span class="tr-tag" style="opacity:0.7;">🇫🇷 ${heureFR}</span>` : ''}
-      <span class="tr-prix">${fmtE(parseFloat(t.prix || 0))}</span>
-    </div>
-    <div class="tr-detail">
-      ${t.description ? `Arrivée : ${esc(t.description)}` : ''} 
-      ${t.notes ? ` • Durée : ${esc(t.notes)}` : ''}
-    </div>
-        ${t.fait?'<div class="tr-detail" style="color:var(--vert2);">✓ Billet acheté</div>':''}
+      <div class="tr-left">
+        <div class="tr-ic-wrap" style="background:${bgMap[bgKey]};">${ico}</div>
+        ${i < transports.length - 1 ? '<div class="tr-line-v"></div>' : ''}
+      </div>
+      <div class="tr-right">
+        <div class="tr-route">${esc(t.nom)}</div>
+        <div class="tr-meta">
+          ${t.adresse ? `<span class="tr-tag">📅 ${esc(t.adresse)}</span>` : ''}
+          <span class="tr-tag">🛫 ${esc(t.quartier)} <small style="opacity:0.8;">${tzDep}</small></span>
+          ${t.description ? `<span class="tr-tag">🛬 ${esc(t.description)} <small style="opacity:0.8;">${tzArr}</small></span>` : ''}
+          <span class="tr-prix">${fmtE(parseFloat(t.prix || 0))}</span>
+        </div>
+        <div class="tr-detail">
+          ${duree ? `⏱ Durée : ${esc(duree)}` : ''}
+          ${t.fait ? ' • <span style="color:var(--vert2);">✓ Billet acheté</span>' : ''}
+        </div>
       </div>`;
-    d.onclick=()=>openItemSheet('transport',t);cont.appendChild(d);
+    
+    d.onclick = () => openItemSheet('transport', t);
+    cont.appendChild(d);
   });
 }
-
 // ── CHECKLIST ──
 function renderChecklist(){
   renderCL('cl-depart','depart');
