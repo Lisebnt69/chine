@@ -1142,7 +1142,6 @@ function buildItemForm(type, item) {
     return `<div class="sh"></div><div class="st">${title}</div>
       <input type="hidden" id="if-id" value="${id}"><input type="hidden" id="if-type" value="transport">
       <div class="fg"><div class="fl">Trajet</div><input class="fi" id="if-nom" value="${v('nom')}" placeholder="Paris → Shanghai…"></div>
-      
       <div class="row2">
         <div class="fg">
           <div class="fl">Départ (Heure + Fuseau)</div>
@@ -1166,23 +1165,18 @@ function buildItemForm(type, item) {
           <select class="fi" id="if-day-rel" style="margin-top:5px; font-size:0.7rem;">
             <option value="" ${!nts.includes('J+') ? 'selected' : ''}>Même jour</option>
             <option value=" (J+1)" ${nts.includes('J+1') ? 'selected' : ''}>Arrivée Lendemain (J+1)</option>
-            <option value=" (J-1)" ${nts.includes('J-1') ? 'selected' : ''}>Arrivée Veille (J-1)</option>
           </select>
         </div>
       </div>
-      
       <div class="fg"><div class="fl">Durée du vol</div><input class="fi" id="if-duree" value="${nts.split('Durée: ')[1] || ''}" placeholder="11h50"></div>
       <div class="fg"><div class="fl">Date de départ</div><input class="fi" id="if-date" type="date" value="${v('adresse')}"></div>
       <div class="fg"><div class="fl">Prix total (€)</div><input class="fi" id="if-prix" type="number" value="${n('prix') || ''}"></div>
-      
       <div class="fg" style="background: rgba(39, 174, 96, 0.1); padding: 10px; border-radius: 10px; border: 1px solid rgba(39, 174, 96, 0.3); margin-bottom: 15px;">
         <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 600; font-size: 0.85rem; color: #2ecc71;">
           <input type="checkbox" id="if-fait" ${item && item.fait ? 'checked' : ''} style="width: 18px; height: 18px;"> ✅ Billet réservé / payé ?
         </label>
       </div>
-        <input type="hidden" id="if-file-data" value="">
-      </div>
-            
+      <input type="hidden" id="if-file-data" value="">
       <button class="btn-s" onclick="saveItem()">Enregistrer</button>
       ${!isNew ? `<button class="btn-d" onclick="deleteItem()">Supprimer</button>` : ''}
       <button class="btn-c" onclick="closeOverlay('item-overlay')">Annuler</button>`;
@@ -1200,40 +1194,24 @@ function buildItemForm(type, item) {
           <input type="checkbox" id="if-fait" ${item && item.fait ? 'checked' : ''} style="width: 18px; height: 18px;"> ✅ Billet réservé / payé ?
         </label>
       </div>
-        <input type="hidden" id="if-file-data" value="">
-      </div>
+      <input type="hidden" id="if-file-data" value="">
       ${bottom}`;
-    
-  const prixLabel=type==='restaurant'?'Prix moyen / pers. (€)':type==='cafe'?'Prix moyen (€)':'Prix estimé (€)';
-  // Type de repas pour restaurant / type de lieu pour café
-  const typeSel=type==='restaurant'
-    ?`<div class="fg"><div class="fl">Type de repas</div>
-        <select class="fi" id="if-moment">
-          <option value="">Indifférent</option>
-          <option value="Déjeuner" ${item&&item.prix_type==='Déjeuner'?'selected':''}>🌞 Déjeuner</option>
-          <option value="Dîner" ${item&&item.prix_type==='Dîner'?'selected':''}>🌙 Dîner</option>
-          <option value="Brunch" ${item&&item.prix_type==='Brunch'?'selected':''}>🥐 Brunch</option>
-          <option value="Street food" ${item&&item.prix_type==='Street food'?'selected':''}>🥢 Street food</option>
-        </select></div>`
-    :type==='cafe'
-    ?`<div class="fg"><div class="fl">Type de lieu</div>
-        <select class="fi" id="if-moment">
-          <option value="">Indifférent</option>
-          <option value="Café" ${item&&item.prix_type==='Café'?'selected':''}>☕ Café</option>
-          <option value="Bar" ${item&&item.prix_type==='Bar'?'selected':''}>🍸 Bar</option>
-          <option value="Rooftop" ${item&&item.prix_type==='Rooftop'?'selected':''}>🌆 Rooftop</option>
-          <option value="Salon de thé" ${item&&item.prix_type==='Salon de thé'?'selected':''}>🍵 Salon de thé</option>
-          <option value="Bar à thème" ${item&&item.prix_type==='Bar à thème'?'selected':''}>🐾 Bar à thème</option>
-        </select></div>`
-    :`<div class="fg"><div class="fl">Meilleur moment</div>
-        <select class="fi" id="if-moment"><option value="">Indifférent</option>${MOMENTS.filter(Boolean).map(m=>`<option ${item&&item.prix_type===m?'selected':''}>${m}</option>`).join('')}</select></div>`;
-    return commonTop+`
+  }
+
+  // LOGIQUE POUR RESTO ET ACTIVITÉ (EN DEHORS DU BLOC HOTEL)
+  const prixLabel = type === 'restaurant' ? 'Prix moyen / pers. (€)' : type === 'cafe' ? 'Prix moyen (€)' : 'Prix estimé (€)';
+  const typeSel = type === 'restaurant'
+    ? `<div class="fg"><div class="fl">Type de repas</div><select class="fi" id="if-moment"><option value="">Indifférent</option><option value="Déjeuner" ${item && item.prix_type === 'Déjeuner' ? 'selected' : ''}>🌞 Déjeuner</option><option value="Dîner" ${item && item.prix_type === 'Dîner' ? 'selected' : ''}>🌙 Dîner</option></select></div>`
+    : type === 'cafe'
+    ? `<div class="fg"><div class="fl">Type de lieu</div><select class="fi" id="if-moment"><option value="">Indifférent</option><option value="Café" ${item && item.prix_type === 'Café' ? 'selected' : ''}>☕ Café</option><option value="Bar" ${item && item.prix_type === 'Bar' ? 'selected' : ''}>🍸 Bar</option></select></div>`
+    : `<div class="fg"><div class="fl">Meilleur moment</div><select class="fi" id="if-moment"><option value="">Indifférent</option>${MOMENTS.filter(Boolean).map(m => `<option ${item && item.prix_type === m ? 'selected' : ''}>${m}</option>`).join('')}</select></div>`;
+
+  return commonTop + `
     <div class="row2">
-      <div class="fg"><div class="fl">${prixLabel}</div><input class="fi" id="if-prix" type="number" value="${n('prix')||''}" placeholder="0.00"></div>
+      <div class="fg"><div class="fl">${prixLabel}</div><input class="fi" id="if-prix" type="number" value="${n('prix') || ''}" placeholder="0.00"></div>
       <div class="fg"><div class="fl">Adresse</div><input class="fi" id="if-adresse" value="${v('adresse')}" placeholder="Adresse…"></div>
     </div>
     ${typeSel}${bottom}`;
-}
 }
 function setStar(who,val){
   document.getElementById('if-'+who).value=val;
