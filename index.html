@@ -335,11 +335,21 @@ select.fi{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.o
 .rc-tab.on{background:var(--or-dim);border-color:rgba(201,168,76,.32);color:var(--or);}
 
 /* ── QUICK ACTIONS BAR ── */
-.qa-bar{display:flex;gap:7px;padding:8px 14px;overflow-x:auto;scrollbar-width:none;background:rgba(9,9,15,.92);border-bottom:1px solid var(--border);}
-.qa-bar::-webkit-scrollbar{display:none;}
-.qa-btn{display:flex;align-items:center;gap:5px;padding:6px 11px;border-radius:20px;border:1px solid var(--border);background:var(--card);color:var(--txt);font-size:.7rem;font-family:var(--fs);cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .18s;}
-.qa-btn:active{background:var(--or-dim);border-color:var(--or);color:var(--or);}
-.qa-btn .qi{font-size:.9rem;}
+.qa-bar {
+  display: flex;
+  gap: 10px;
+  padding: 10px 14px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  background: rgba(9, 9, 15, 0.85); /* Un peu de transparence */
+  backdrop-filter: blur(20px);      /* Effet glassmorphism */
+  border-bottom: 1px solid var(--border);
+  position: fixed;                  /* On la fixe en haut */
+  top: var(--hdr);                  /* Juste en dessous du header */
+  left: 0;
+  right: 0;
+  z-index: 850;                     /* Sous le header mais sur le reste */
+}
 
 /* ── STATS ── */
 .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 16px 12px;}
@@ -550,7 +560,7 @@ select.fi{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.o
 
 <!-- PHRASES -->
 <div class="tab" id="tab-phrases">
-  <div class="ph"><h1>Mandarin</h1><p>Phrases utiles · Appuyer pour copier</p></div>
+  <div class="ph"><h1>Mandarin</h1><p>Phrases utiles</p></div>
   <div id="phrasesCont"></div>
 </div>
 
