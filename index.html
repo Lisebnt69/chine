@@ -1207,29 +1207,30 @@ async function saveItem() {
   
   let payload = { type, nom, fait };
 
-  if (type === 'transport') {
-    // Récupération des fuseaux horaires sélectionnés
+  // Dans saveItem, remplace la partie transport :
+if (type === 'transport') {
     const tzDep = document.getElementById('if-tz-dep')?.value || '🇫🇷 FR';
     const tzArr = document.getElementById('if-tz-arr')?.value || '🇨🇳 CN';
+    const dayRel = document.getElementById('if-day-rel')?.value || ''; // Récupère le (J+1)
     const duree = document.getElementById('if-duree')?.value || '';
     
-    // On stocke les fuseaux et la durée dans le champ notes sous un format structuré
-    // Format : "D:🇫🇷 FR | A:🇨🇳 CN | Durée: 11h50"
-    const notesTransport = `D:${tzDep} | A:${tzArr}${duree ? ' | Durée: ' + duree : ''}`;
+    // On combine tout dans les notes : Fuseaux | Jour Relatif | Durée
+    const notesTransport = `D:${tzDep} | A:${tzArr}${dayRel} | Durée: ${duree}`;
 
     payload = {
       type: 'transport',
       nom,
-      adresse: document.getElementById('if-date')?.value || '', // Date
-      quartier: document.getElementById('if-dep')?.value || '', // Heure Départ
-      description: document.getElementById('if-arr')?.value || '', // Heure Arrivée
-      notes: notesTransport, // Fuseaux + Durée
+      adresse: document.getElementById('if-date')?.value || '',
+      quartier: document.getElementById('if-dep')?.value || '',
+      description: document.getElementById('if-arr')?.value || '',
+      notes: notesTransport,
       prix,
       prix_type: document.getElementById('if-prix-type')?.value || '',
       matis: 0,
       lise: 0,
       fait
     };
+}
   } else if (type === 'hotel') {
     const nuits = parseInt(document.getElementById('if-nuits')?.value || 1);
     payload = {
