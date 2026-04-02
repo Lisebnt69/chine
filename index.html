@@ -1308,7 +1308,17 @@ function renderPlanning(){
     const dn=parts[2],mn=parseInt(parts[1]);
     const slots=D.slots.filter(s=>s.planning_id===day.id);
     const hotel=D.items.find(x=>x.id===day.hotel_id&&x.type==='hotel');
-    const transportsDay=D.items.filter(x=>x.type==='transport'&&x.adresse===day.date_voyage);
+        // On récupère la date de la veille pour chercher les arrivées J+1
+    const dateVeille = new Date(new Date(day.date_voyage) - 86400000).toISOString().split('T')[0];
+    
+    const transportsDay = D.items.filter(x => {
+      if (x.type !== 'transport') return false;
+      // Affiche si départ aujourd'hui OU si c'est une arrivée J+1 d'un vol parti hier
+      const partAujourdhui = x.adresse === day.date_voyage;
+      const arriveAujourdhui = x.adresse === dateVeille && x.notes && x.notes.includes('J+1');
+      
+      return partAujourdhui || arriveAujourdhui;
+    });
     const slotItems=slots.map(s=>({slot:s,item:D.items.find(x=>x.id===s.item_id)})).filter(x=>x.item);
 
     // Day total
