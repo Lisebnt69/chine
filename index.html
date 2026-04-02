@@ -1248,13 +1248,7 @@ async function saveItem() {
   const notes = document.getElementById('if-notes')?.value || '';
   const matis = parseInt(document.getElementById('if-matis')?.value || 0);
   const lise = parseInt(document.getElementById('if-lise')?.value || 0);
-  const fileData = document.getElementById('if-file-data')?.value;
-    // On vérifie si on a une nouvelle image, sinon on garde l'ancienne déjà présente dans les notes
-    let finalNotes = notes; 
-    if (fileData) {
-        // On injecte le DATA_IMG au début des notes
-        finalNotes = `DATA_IMG:${fileData} | ${notes}`;
-    }
+
   
   let payload = { type, nom, fait };
 
