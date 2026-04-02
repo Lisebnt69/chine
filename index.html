@@ -1207,22 +1207,21 @@ async function saveItem() {
   
   let payload = { type, nom, fait };
 
-  // Dans saveItem, remplace la partie transport :
-if (type === 'transport') {
+  if (type === 'transport') {
     const tzDep = document.getElementById('if-tz-dep')?.value || '🇫🇷 FR';
     const tzArr = document.getElementById('if-tz-arr')?.value || '🇨🇳 CN';
-    const dayRel = document.getElementById('if-day-rel')?.value || ''; // Récupère le (J+1)
+    const dayRel = document.getElementById('if-day-rel')?.value || ''; 
     const duree = document.getElementById('if-duree')?.value || '';
     
-    // On combine tout dans les notes : Fuseaux | Jour Relatif | Durée
+    // On combine les fuseaux, le jour relatif et la durée
     const notesTransport = `D:${tzDep} | A:${tzArr}${dayRel} | Durée: ${duree}`;
 
     payload = {
       type: 'transport',
       nom,
       adresse: document.getElementById('if-date')?.value || '',
-      quartier: document.getElementById('if-dep')?.value || '',
-      description: document.getElementById('if-arr')?.value || '',
+      quartier: document.getElementById('if-dep')?.value || '', // Heure Départ
+      description: document.getElementById('if-arr')?.value || '', // Heure Arrivée
       notes: notesTransport,
       prix,
       prix_type: document.getElementById('if-prix-type')?.value || '',
@@ -1272,7 +1271,8 @@ if (type === 'transport') {
   }
 
   if (prix > 0 && (type === 'hotel' || type === 'transport')) {
-    await syncItemBudget(savedId || id, type, nom, prix, type === 'hotel' ? parseInt(document.getElementById('if-nuits')?.value || 1) : 1);
+    const n = type === 'hotel' ? parseInt(document.getElementById('if-nuits')?.value || 1) : 1;
+    await syncItemBudget(savedId || id, type, nom, prix, n);
   }
 
   closeOverlay('item-overlay');
