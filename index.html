@@ -1235,6 +1235,7 @@ function buildItemForm(type, item) {
     </div>
     ${typeSel}${bottom}`;
 }
+}
 function setStar(who,val){
   document.getElementById('if-'+who).value=val;
   document.getElementById('sf-'+who).querySelectorAll('.star-edit').forEach((s,i)=>s.classList.toggle('on',i<val));
