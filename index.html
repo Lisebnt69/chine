@@ -1231,13 +1231,12 @@ function buildItemForm(type, item) {
         </select></div>`
     :`<div class="fg"><div class="fl">Meilleur moment</div>
         <select class="fi" id="if-moment"><option value="">Indifférent</option>${MOMENTS.filter(Boolean).map(m=>`<option ${item&&item.prix_type===m?'selected':''}>${m}</option>`).join('')}</select></div>`;
-  return commonTop+`
+    return commonTop+`
     <div class="row2">
       <div class="fg"><div class="fl">${prixLabel}</div><input class="fi" id="if-prix" type="number" value="${n('prix')||''}" placeholder="0.00"></div>
       <div class="fg"><div class="fl">Adresse</div><input class="fi" id="if-adresse" value="${v('adresse')}" placeholder="Adresse…"></div>
     </div>
     ${typeSel}${bottom}`;
-  
 }
 function setStar(who,val){
   document.getElementById('if-'+who).value=val;
