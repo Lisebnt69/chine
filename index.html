@@ -3977,50 +3977,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // ── LOGIN ──
 function loginAs(who){
-  const u=USERS[who];
-  if(!u)return;
+  const u = USERS.find(x => x.key === who);
+  if(!u) return;
 
-  // Visiteur — pas de MDP, lecture seule directe
-  if(who==='visiteur'){
-    currentUser='visiteur';
-    localStorage.setItem('chine_user','visiteur');
-    editorUnlocked=false;
-    document.getElementById('loginScreen').classList.add('hidden');
-    document.getElementById('loader').style.display='flex';
-    init()
-      .then(()=>{ updateEditorUI(); updateProfilUI(); showToast('👁️ Mode visiteur'); })
-      .catch(err=>{ const m=document.getElementById('loader-msg');if(m)m.textContent='Erreur : '+err?.message; });
-    return;
-  }
 
-  // Matis / Lise — demander le MDP
   openLoginModal(who, u.name);
-  return;
-  if(entered===null)return;
-  const { data, error } = await sb
-  .from('user_pins')
-  .select('pin')
-  .eq('user_key', who)
-  .single();
-
-if (error || !data) {
-  alert('❌ Impossible de récupérer le mot de passe.');
-  return;
-}
-
-const effectivePin = data.pin;
-  if(entered!==effectivePin){
-    alert('❌ Mot de passe incorrect.');
-    return;
-  }
-  currentUser=who;
-  localStorage.setItem('chine_user',who);
-  editorUnlocked=true;
-  document.getElementById('loginScreen').classList.add('hidden');
-  document.getElementById('loader').style.display='flex';
-  init()
-    .then(()=>{ updateEditorUI(); updateProfilUI(); showWelcome(); })
-    .catch(err=>{ const m=document.getElementById('loader-msg');if(m)m.textContent='Erreur : '+err?.message; });
 }
 
 function updateProfilUI(){
