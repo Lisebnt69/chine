@@ -1500,7 +1500,12 @@ function buildItemForm(type, item) {
   const n = k => item ? (item[k] || 0) : 0;
   const id = item ? item.id : '';
   const title = isNew ? `Ajouter ${TYPE_LABEL[type] || ''}` : TYPE_LABEL[type] || 'Modifier';
-
+  const amapF = `
+    <div class="form-group">
+      <div class="form-label">Lien Amap</div>
+      <input class="form-input" id="if-mapurl" value="${v('mapUrl')}" placeholder="https://uri.amap.com/search?keyword=...">
+    </div>
+  `;
 
   // Préparation des variables communes
   const commonTop = `<div class="sheet-handle"></div><div class="sheet-title">${title}</div>
