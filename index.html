@@ -4027,28 +4027,61 @@ function logout(){
   location.reload();
 }
 
-function changePin(){
-  if(!currentUser){showToast('Non connecté');return;}
-  const u=USERS[currentUser];
-  const old=document.getElementById('pp-pin-old')?.value||'';
-  const nw=document.getElementById('pp-pin-new')?.value||'';
-  const cf=document.getElementById('pp-pin-confirm')?.value||'';
-  // Récupérer le pin actuel (localStorage ou défaut)
-  const currentPin=localStorage.getItem('pin_'+currentUser)||u.pin;
-  if(old!==currentPin){showToast('❌ MDP actuel incorrect');return;}
-  if(!nw||nw.length<4){showToast('❌ Nouveau MDP trop court (min 4 car.)');return;}
-  if(nw!==cf){showToast('❌ Les deux MDP ne correspondent pas');return;}
-  const { error } = await sb
-  .from('user_pins')
-  .upsert({ user_key: currentUser, pin: nw, updated_at: new Date().toISOString() });
+async function changePin(){
+  if(!currentUser){
+    showToast('Non connecté');
+    return;
+  }
 
-if (error) {
-  showToast('❌ Erreur BDD : ' + error.message);
-  return;
-}
+  const old = document.getElementById('pp-pin-old')?.value || '';
+  const nw = document.getElementById('pp-pin-new')?.value || '';
+  const cf = document.getElementById('pp-pin-confirm')?.value || '';
+
+  const { data, error: readError } = await sb
+    .from('user_pins')
+    .select('pin')
+    .eq('user_key', currentUser)
+    .single();
+
+  if(readError || !data){
+    showToast('❌ Impossible de lire le mot de passe actuel');
+    return;
+  }
+
+  if(old !== data.pin){
+    showToast('❌ MDP actuel incorrect');
+    return;
+  }
+
+  if(!nw || nw.length < 4){
+    showToast('❌ Nouveau MDP trop court (min 4 car.)');
+    return;
+  }
+
+  if(nw !== cf){
+    showToast('❌ Les deux MDP ne correspondent pas');
+    return;
+  }
+
+  const { error } = await sb
+    .from('user_pins')
+    .upsert({
+      user_key: currentUser,
+      pin: nw,
+      updated_at: new Date().toISOString()
+    });
+
+  if(error){
+    showToast('❌ Erreur BDD : ' + error.message);
+    return;
+  }
+
   showToast('✅ Mot de passe changé !');
-  // Vider les champs
-  ['pp-pin-old','pp-pin-new','pp-pin-confirm'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+
+  ['pp-pin-old','pp-pin-new','pp-pin-confirm'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.value = '';
+  });
 }
   async function submitLogin(){
   const entered = document.getElementById('loginPassword').value;
