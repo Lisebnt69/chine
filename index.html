@@ -983,7 +983,7 @@ select.form-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://
 const SB_URL='https://nwskpowizbggdqghnhcw.supabase.co';
 const SB_KEY='sb_publishable_571IoCHNSZxkvF7MW77Fxg_CfWgvcT4';
 const sb=supabase.createClient(SB_URL,SB_KEY);*let editorUnlocked = false;
-const EDITOR_PIN = '1908';
+
 
 document.addEventListener('change', function(e) {
   if (e.target && e.target.id === 'if-file') {
@@ -1008,6 +1008,7 @@ document.addEventListener('change', function(e) {
     reader.readAsDataURL(file);
   }
 });
+const EDITOR_PIN = '1908';
 const D={budget:[],planning:[],items:[],slots:[],checklist:[],notes:[]};
 let budgetPP=parseFloat(localStorage.getItem('bpp')||'2500');
 let convRate=parseFloat(localStorage.getItem('convRate')||'7.78');
