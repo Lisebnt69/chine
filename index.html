@@ -3712,7 +3712,7 @@ let chatInited=false;
 let chatSub=null;
 
 let chatPollInterval=null;
-let lastChatId=null;
+let lastChatCreatedAt=null;
 
 async function initChat(){
   if(chatInited)return;
@@ -3724,16 +3724,14 @@ async function initChat(){
     chatSub=sb.channel('chat-realtime')
       .on('postgres_changes',{event:'INSERT',schema:'public',table:'chat_messages'},
         payload=>{
-          // Éviter doublon si déjà reçu via polling
-          if(payload.new&&payload.new.id!==lastChatId){
+          if(payload.new){
             appendChatMsg(payload.new);
-            lastChatId=payload.new.id;
+            lastChatCreatedAt=payload.new.created_at||lastChatCreatedAt;
             scrollChat();
           }
         })
       .subscribe(status=>{
         if(status==='SUBSCRIBED'){
-          // Realtime OK — pas besoin de polling
           if(chatPollInterval){clearInterval(chatPollInterval);chatPollInterval=null;}
         }else if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'){
           startChatPolling();
@@ -3757,7 +3755,7 @@ async function loadChatHistory(){
     }
     if(data){
       data.forEach(m=>appendChatMsg(m,false));
-      if(data.length>0)lastChatId=data[data.length-1].id;
+      if(data.length>0)lastChatCreatedAt=data[data.length-1].created_at;
     }
     scrollChat();
   }catch(e){showChatError();}
@@ -3818,17 +3816,12 @@ async function sendChat(){
   const inp=document.getElementById('chatInp');
   const text=(inp?.value||'').trim();
   if(!text||!currentUser){
-    if(!currentUser)showToast('Connecte-toi dabord');
+    if(!currentUser)showToast("Connecte-toi d'abord");
     return;
   }
   inp.value='';inp.style.height='';
 
-  // Affichage immédiat (optimistic)
-  const tempMsg={id:'temp_'+Date.now(),author:currentUser,content:text,created_at:new Date().toISOString()};
-  appendChatMsg(tempMsg,true);
-  scrollChat();
-
-  // Envoyer dans Supabase
+  // Envoyer dans Supabase — l'affichage arrive via realtime ou polling
   try{
     const{error}=await sb.from('chat_messages').insert({author:currentUser,content:text});
     if(error){showToast('❌ Erreur envoi — '+error.message);return;}
@@ -3844,14 +3837,12 @@ async function sendChat(){
       const reply=generateBotReply(question);
       hideBotTyping();
       try{await sb.from('chat_messages').insert({author:'bot',content:reply});}catch(e){}
-      appendChatMsg({author:'bot',content:reply,created_at:new Date().toISOString()});
-      scrollChat();
     },900+Math.random()*600);
   }
 }
 
 async function askBot(question){
-  if(!currentUser){showToast('Connecte-toi dabord');return;}
+  if(!currentUser){showToast("Connecte-toi d'abord");return;}
   goTabByName('chat');
   await initChat();
   // Afficher message de l'user
