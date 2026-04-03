@@ -1641,6 +1641,7 @@ async function saveItem() {
     const mergedNotes = [imageUrl ? `IMG:${imageUrl}` : '', notes].filter(Boolean).join(' | ');
     const matis = parseInt(document.getElementById('if-matis')?.value || 0);
     const lise = parseInt(document.getElementById('if-lise')?.value || 0);
+    const adresseCn = document.getElementById('if-adresse-cn')?.value?.trim() || '';
 
     let payload = { type, nom, fait };
 
@@ -1684,6 +1685,7 @@ async function saveItem() {
         lise,
         fait,
         mapUrl
+        adresse_cn: adresseCn,
 
       };
     } else {
@@ -1701,6 +1703,7 @@ async function saveItem() {
         lise,
         fait,
         mapUrl
+        adresse_cn: adresseCn,
 
       };
     }
