@@ -1678,7 +1678,6 @@ async function saveItem() {
     const prix = parseFloat(document.getElementById('if-prix')?.value || 0);
     const notes = document.getElementById('if-notes')?.value || '';
     const imageUrl = document.getElementById('if-image')?.value?.trim() || '';
-    const mapUrl = document.getElementById('if-mapurl')?.value?.trim() || '';
     const mergedNotes = [imageUrl ? `IMG:${imageUrl}` : '', notes].filter(Boolean).join(' | ');
     const matis = parseInt(document.getElementById('if-matis')?.value || 0);
     const lise = parseInt(document.getElementById('if-lise')?.value || 0);
@@ -1725,7 +1724,6 @@ async function saveItem() {
         matis,
         lise,
         fait,
-        mapUrl,
         adresse_cn: adresseCn
 
       };
@@ -1743,7 +1741,6 @@ async function saveItem() {
         matis,
         lise,
         fait,
-        mapUrl,
         adresse_cn: adresseCn
 
       };
