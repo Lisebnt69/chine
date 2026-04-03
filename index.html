@@ -1392,27 +1392,14 @@ function getExistingBudgetForItem(itemId){
   return D.budget.find(b=>b.item_id===itemId);
 }
 
-function buildAmapUrl(item, mode = 'auto'){
+function buildAmapUrl(item){
   if(item && item.mapUrl && String(item.mapUrl).trim()) return item.mapUrl;
 
-  const q = [item && item.nom, item && item.ville, item && item.adresse]
-    .filter(Boolean)
-    .join(' ')
-    .trim();
+  const q = (item && item.adresse_cn && String(item.adresse_cn).trim())
+    || [item && item.nom, item && item.ville, item && item.adresse].filter(Boolean).join(' ').trim();
 
   if(!q) return '';
-
-  const encoded = encodeURIComponent(q);
-
-  if(mode === 'app'){
-    return `androidamap://keywordNavi?sourceApplication=Chine2026&keyword=${encoded}`;
-  }
-
-  if(mode === 'ios'){
-    return `iosamap://path?sourceApplication=Chine2026&keyword=${encoded}`;
-  }
-
-  return `https://uri.amap.com/search?keyword=${encoded}`;
+  return `https://uri.amap.com/search?keyword=${encodeURIComponent(q)}`;
 }
 function openAmap(item){
   const ua = navigator.userAgent || '';
