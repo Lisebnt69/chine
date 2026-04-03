@@ -1376,7 +1376,7 @@ function buildItemForm(type, item) {
   const v = k => item ? esc(item[k] || '') : '';
   const n = k => item ? (item[k] || 0) : 0;
   const id = item ? item.id : '';
-  const title = isNew ? `Nouveau ${TYPE_LABEL[type] || ''}` : TYPE_LABEL[type] || 'Modifier';
+  const title = isNew ? `Ajouter ${TYPE_LABEL[type] || ''}` : TYPE_LABEL[type] || 'Modifier';
   const amapF = `
     <div class="form-group">
       <div class="form-label">Lien Amap</div>
