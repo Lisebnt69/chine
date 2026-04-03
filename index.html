@@ -1582,52 +1582,88 @@ function buildItemForm(type, item) {
   if (type === 'hotel') {
     return commonTop + `
       <div class="row-2">
-        <div class="form-group"><div class="form-label">Prix / nuit (€)</div><input class="form-input" id="if-prix" type="number" value="${n('prix') || ''}" placeholder="0.00"></div>
-        <div class="form-group"><div class="form-label">Nb de nuits</div><input class="form-input" id="if-nuits" type="number" value="${item && item.prix_type ? parseInt(item.prix_type) || 1 : 1}" placeholder="1"></div>
+        <div class="form-group">
+          <div class="form-label">Prix / nuit (€)</div>
+          <input class="form-input" id="if-prix" type="number" value="${n('prix') || ''}" placeholder="0.00">
+        </div>
+        <div class="form-group">
+          <div class="form-label">Nb de nuits</div>
+          <input class="form-input" id="if-nuits" type="number" value="${item && item.prix_type ? parseInt(item.prix_type) || 1 : 1}" placeholder="1">
+        </div>
       </div>
-      <div class="form-group"><div class="form-label">Check-in</div><input class="form-input" id="if-checkin" type="date" value="${v('adresse')}"></div>
+  
+      <div class="form-group">
+        <div class="form-label">Check-in</div>
+        <input class="form-input" id="if-checkin" type="date" value="${v('adresse')}">
+      </div>
+  
+      ${adresseCnF}
   
       <div class="form-group" style="background: rgba(39, 174, 96, 0.1); padding: 10px; border-radius: 10px; border: 1px solid rgba(39, 174, 96, 0.3); margin-bottom: 15px;">
         <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 600; font-size: 0.85rem; color: #2ecc71;">
           <input type="checkbox" id="if-fait" ${item && item.fait ? 'checked' : ''} style="width: 18px; height: 18px;"> ✅ Chambre réservée ?
         </label>
-        <div class="form-group"><div class="form-label">Check-in</div><input class="form-input" id="if-checkin" type="date" value="${v('adresse')}"></div>
-          ${adresseCnF}
-          ${amapF}
-        </div>
+      </div>
+  
       <input type="hidden" id="if-file-data" value="">
       ${bottom}`;
   }
 
-  // --- LOGIQUE RESTO / ACTIVITÉ ---
-  const prixLabel = type === 'restaurant' ? 'Prix moyen / pers. (€)' : type === 'cafe' ? 'Prix moyen (€)' : 'Prix estimé (€)';
-  const typeSel = type === 'restaurant'
-    ? `<div class="form-group"><div class="form-label">Type de repas</div><select class="form-input" id="if-moment"><option value="">Indifférent</option><option value="Déjeuner" ${item && item.prix_type === 'Déjeuner' ? 'selected' : ''}>🌞 Déjeuner</option><option value="Dîner" ${item && item.prix_type === 'Dîner' ? 'selected' : ''}>🌙 Dîner</option></select></div>`
+// --- LOGIQUE RESTO / ACTIVITÉ ---
+  const prixLabel = type === 'restaurant'
+    ? 'Prix moyen / pers. (€)'
     : type === 'cafe'
-    ? `<div class="form-group"><div class="form-label">Type de lieu</div><select class="form-input" id="if-moment"><option value="">Indifférent</option><option value="Café" ${item && item.prix_type === 'Café' ? 'selected' : ''}>☕ Café</option><option value="Bar" ${item && item.prix_type === 'Bar' ? 'selected' : ''}>🍸 Bar</option></select></div>`
-    : `<div class="form-group"><div class="form-label">Meilleur moment</div><select class="form-input" id="if-moment"><option value="">Indifférent</option>${MOMENTS.filter(Boolean).map(m => `<option ${item && item.prix_type === m ? 'selected' : ''}>${m}</option>`).join('')}</select></div>`;
-
+      ? 'Prix moyen (€)'
+      : 'Prix estimé (€)';
+  
+  const typeSel = type === 'restaurant'
+    ? `<div class="form-group">
+         <div class="form-label">Type de repas</div>
+         <select class="form-input" id="if-moment">
+           <option value="">Indifférent</option>
+           <option value="Déjeuner" ${item && item.prix_type === 'Déjeuner' ? 'selected' : ''}>🌞 Déjeuner</option>
+           <option value="Dîner" ${item && item.prix_type === 'Dîner' ? 'selected' : ''}>🌙 Dîner</option>
+         </select>
+       </div>`
+    : type === 'cafe'
+      ? `<div class="form-group">
+           <div class="form-label">Type de lieu</div>
+           <select class="form-input" id="if-moment">
+             <option value="">Indifférent</option>
+             <option value="Café" ${item && item.prix_type === 'Café' ? 'selected' : ''}>☕ Café</option>
+             <option value="Bar" ${item && item.prix_type === 'Bar' ? 'selected' : ''}>🍸 Bar</option>
+           </select>
+         </div>`
+      : `<div class="form-group">
+           <div class="form-label">Meilleur moment</div>
+           <select class="form-input" id="if-moment">
+             <option value="">Indifférent</option>
+             ${MOMENTS.filter(Boolean).map(m => `<option ${item && item.prix_type === m ? 'selected' : ''}>${m}</option>`).join('')}
+           </select>
+         </div>`;
+  
   return commonTop + `
-      <div class="row-2">
-        <div class="form-group"><div class="form-label">${prixLabel}</div><input class="form-input" id="if-prix" type="number" value="${n('prix') || ''}" placeholder="0.00"></div>
-        <div class="form-group"><div class="form-label">Adresse</div><input class="form-input" id="if-adresse" value="${v('adresse')}" placeholder="Adresse…"></div>
+    <div class="row-2">
+      <div class="form-group">
+        <div class="form-label">${prixLabel}</div>
+        <input class="form-input" id="if-prix" type="number" value="${n('prix') || ''}" placeholder="0.00">
       </div>
-      ${typeSel}
-     
-      <div class="form-group" style="background: rgba(255, 90, 95, 0.08); padding: 10px; border-radius: 14px; border: 1px solid rgba(255, 90, 95, 0.16); margin-bottom: 15px;">
-        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-weight:700;font-size:.82rem;color:#ff5a5f;">
-          <input type="checkbox" id="if-fait" ${item && item.fait ? 'checked' : ''} style="width:18px;height:18px;"> ✅ Déjà fait / payé
-        </label>
-        <div class="row-2">
-            <div class="form-group"><div class="form-label">${prixLabel}</div><input class="form-input" id="if-prix" type="number" value="${n('prix') || ''}" placeholder="0.00"></div>
-            <div class="form-group"><div class="form-label">Adresse</div><input class="form-input" id="if-adresse" value="${v('adresse')}" placeholder="Adresse…"></div>
-          </div>
-          ${adresseCnF}
-          ${typeSel}
-          ${amapF}
-        </div>
-  ${bottom}`;
-}
+      <div class="form-group">
+        <div class="form-label">Adresse</div>
+        <input class="form-input" id="if-adresse" value="${v('adresse')}" placeholder="Adresse…">
+      </div>
+    </div>
+  
+    ${adresseCnF}
+    ${typeSel}
+  
+    <div class="form-group" style="background: rgba(255, 90, 95, 0.08); padding: 10px; border-radius: 14px; border: 1px solid rgba(255, 90, 95, 0.16); margin-bottom: 15px;">
+      <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-weight:700;font-size:.82rem;color:#ff5a5f;">
+        <input type="checkbox" id="if-fait" ${item && item.fait ? 'checked' : ''} style="width:18px;height:18px;"> ✅ Déjà fait / payé
+      </label>
+    </div>
+  
+    ${bottom}`;
 function setStar(who,val){
   document.getElementById('if-'+who).value=val;
   document.getElementById('sf-'+who).querySelectorAll('.star-edit').forEach((s,i)=>s.classList.toggle('on',i<val));
