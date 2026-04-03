@@ -3977,58 +3977,99 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // ── LOGIN ──
 function loginAs(who){
-  const u = USERS.find(x => x.key === who);
+  const u = USERS[who];
   if(!u) return;
 
+  // Visiteur = accès direct en lecture seule
+  if(who === 'visiteur'){
+    currentUser = 'visiteur';
+    localStorage.setItem('chine_user', 'visiteur');
+    editorUnlocked = false;
+    closeLoginModal();
+    document.getElementById('loginScreen').classList.add('hidden');
+    document.getElementById('loader').style.display = 'flex';
 
+    init()
+      .then(() => {
+        updateEditorUI();
+        updateProfilUI();
+        showWelcome();
+      })
+      .catch(err => {
+        const m = document.getElementById('loader-msg');
+        if(m) m.textContent = 'Erreur : ' + (err?.message || err);
+      });
+    return;
+  }
+
+  // Matis / Lise = popup mot de passe
   openLoginModal(who, u.name);
 }
 
 function updateProfilUI(){
-  if(!currentUser)return;
-  const u=USERS[currentUser];
-  const isVisitor=currentUser==='visiteur';
-  const pill=document.getElementById('profilPill');
-  const av=document.getElementById('profilAv');
-  const name=document.getElementById('profilName');
-  const settBtn=document.getElementById('settingsBtn');
-  const vBanner=document.getElementById('visitorBanner');
+  if(!currentUser) return;
+  const u = USERS[currentUser];
+  if(!u) return;
+
+  const isVisitor = currentUser === 'visiteur';
+  const pill = document.getElementById('profilPill');
+  const av = document.getElementById('profilAv');
+  const name = document.getElementById('profilName');
+  const settBtn = document.getElementById('settingsBtn');
+  const vBanner = document.getElementById('visitorBanner');
+
   if(isVisitor){
-    if(pill)pill.style.display='none';
-    if(settBtn)settBtn.style.display='flex';
-    if(vBanner)vBanner.classList.add('on');
-    // Visitor = reader mode forcé
-    editorUnlocked=false;
+    if(pill) pill.style.display = 'none';
+    if(settBtn) settBtn.style.display = 'flex';
+    if(vBanner) vBanner.classList.add('on');
+    editorUnlocked = false;
     updateEditorUI();
   } else {
-    if(pill){pill.style.display='flex';if(av){av.className='profil-mini-av '+u.av;av.textContent=u.emoji;}if(name)name.textContent=u.name;}
-    if(settBtn)settBtn.style.display='none';
-    if(vBanner)vBanner.classList.remove('on');
+    if(pill){
+      pill.style.display = 'flex';
+      if(av){
+        av.className = 'profil-mini-av ' + u.av;
+        av.textContent = u.emoji;
+      }
+      if(name) name.textContent = u.name;
+    }
+    if(settBtn) settBtn.style.display = 'none';
+    if(vBanner) vBanner.classList.remove('on');
   }
 
-  // Remplir settings header
-  const avSettings=document.getElementById('settingsUserAv');
-  const nm=document.getElementById('settingsUserName');
-  if(avSettings){avSettings.textContent=u.emoji;avSettings.style.background=u.bg;}
-  if(nm)nm.textContent=u.name;}
+  const avSettings = document.getElementById('settingsUserAv');
+  const nm = document.getElementById('settingsUserName');
+  if(avSettings){
+    avSettings.textContent = u.emoji;
+    avSettings.style.background = u.bg;
+  }
+  if(nm) nm.textContent = u.name;
+}
 
 function showWelcome(){
-  const u=USERS[currentUser];
-  const h=new Date().getHours();
-  const greet=h<12?'Bonjour':h<18?'Bon après-midi':'Bonsoir';
-  showToast(u.emoji+' '+greet+' '+u.name+' !');
-  // Ajouter un message de bienvenue dans le chat
-  setTimeout(()=>addBotMessage(`${u.emoji} ${greet} ${u.name} ! Je suis ton assistant de voyage. Pose-moi une question sur le planning, le budget, ou les activités.`),800);
+  const u = USERS[currentUser];
+  if(!u) return;
+
+  const h = new Date().getHours();
+  const greet = h < 12 ? 'Bonjour' : h < 18 ? 'Bon après-midi' : 'Bonsoir';
+  showToast(u.emoji + ' ' + greet + ' ' + u.name + ' !');
+
+  if(typeof addBotMessage === 'function'){
+    setTimeout(() => {
+      addBotMessage(`${u.emoji} ${greet} ${u.name} ! Je suis ton assistant de voyage. Pose-moi une question sur le planning, le budget, ou les activités.`);
+    }, 800);
+  }
 }
 
 function logout(){
-  currentUser=null;
+  currentUser = null;
   localStorage.removeItem('chine_user');
+  editorUnlocked = false;
   location.reload();
 }
 
 async function changePin(){
-  if(!currentUser){
+  if(!currentUser || currentUser === 'visiteur'){
     showToast('Non connecté');
     return;
   }
@@ -4083,13 +4124,13 @@ async function changePin(){
     if(el) el.value = '';
   });
 }
-  async function submitLogin(){
-  const entered = document.getElementById('loginPassword').value;
+
+async function submitLogin(){
+  const entered = document.getElementById('loginPassword')?.value || '';
   const who = loginTargetUser;
 
   if(!who) return;
 
-  // 🔥 récupérer le pin depuis Supabase
   const { data, error } = await sb
     .from('user_pins')
     .select('pin')
@@ -4106,32 +4147,35 @@ async function changePin(){
     return;
   }
 
-  // ✅ login OK
   currentUser = who;
   localStorage.setItem('chine_user', who);
+  editorUnlocked = true;
 
   closeLoginModal();
-
   document.getElementById('loginScreen').classList.add('hidden');
   document.getElementById('loader').style.display = 'flex';
 
   init()
-    .then(()=>{
+    .then(() => {
       updateEditorUI();
       updateProfilUI();
-      showToast('👋 Connecté');
+      showWelcome();
     })
-    .catch(err=>{
-      const m=document.getElementById('loader-msg');
-      if(m) m.textContent='Erreur : '+err?.message;
+    .catch(err => {
+      const m = document.getElementById('loader-msg');
+      if(m) m.textContent = 'Erreur : ' + (err?.message || err);
     });
 }
-  document.getElementById('loginPassword')
-  .addEventListener('keydown', function(e){
+
+const loginPasswordEl = document.getElementById('loginPassword');
+if(loginPasswordEl){
+  loginPasswordEl.addEventListener('keydown', function(e){
     if(e.key === 'Enter'){
       submitLogin();
     }
-});
+  });
+}
+
 </script>
 </body>
 </html>
