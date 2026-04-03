@@ -1586,53 +1586,94 @@ const PACK_DEFAULT=[
 
 // ── INIT ──
 async function init(){
-  // Offline detection
-  window.addEventListener('offline',()=>document.getElementById('offlineBanner').classList.add('on'));
-  window.addEventListener('online',()=>document.getElementById('offlineBanner').classList.remove('on'));
-  if(!navigator.onLine)document.getElementById('offlineBanner').classList.add('on');
+  window.addEventListener('offline', () => {
+    document.getElementById('offlineBanner')?.classList.add('on');
+  });
 
-  // Load from cache first
-  const cached=localStorage.getItem('chine_cache');
+  window.addEventListener('online', () => {
+    document.getElementById('offlineBanner')?.classList.remove('on');
+  });
+
+  if(!navigator.onLine){
+    document.getElementById('offlineBanner')?.classList.add('on');
+  }
+
+  const cached = localStorage.getItem('chine_cache');
   if(cached){
-    try{const c=JSON.parse(cached);Object.assign(D,c);renderAll();}catch(e){}
+    try{
+      const c = JSON.parse(cached);
+      Object.assign(D, c);
+      renderAll();
+    }catch(e){
+      console.error('Erreur cache local :', e);
+    }
   }
 
   try{
-    document.getElementById('loader-msg').textContent='Chargement…';
+    const loaderMsg = document.getElementById('loader-msg');
+    if(loaderMsg) loaderMsg.textContent = 'Chargement…';
+
     await loadAll();
-    localStorage.setItem('chine_cache',JSON.stringify(D));
+
+    localStorage.setItem('chine_cache', JSON.stringify(D));
     subAll();
-    document.getElementById('loader').style.display='none';
-    document.getElementById('conv-rate-inp').value=convRate;
+
+    const loader = document.getElementById('loader');
+    if(loader) loader.style.display = 'none';
+
+    const convRateInp = document.getElementById('conv-rate-inp');
+    if(convRateInp) convRateInp.value = convRate;
+
     renderAll();
     loadMeteo();
+
+    updateEditorUI();
+    updateProfilUI();
+
   }catch(e){
-    if(cached){
-      document.getElementById('loader').style.display='none';
-      document.getElementById('offlineBanner').classList.add('on');
-      document.querySelector('.offline-banner').textContent='📵 Mode hors-ligne — données du '+new Date(JSON.parse(cached)._ts||0).toLocaleDateString('fr-FR');
-    }else{
-      document.getElementById('loader-msg').textContent='Erreur : '+e.message;
-    }
     console.error(e);
+
+    if(cached){
+      const loader = document.getElementById('loader');
+      if(loader) loader.style.display = 'none';
+
+      const offlineBanner = document.getElementById('offlineBanner');
+      if(offlineBanner){
+        offlineBanner.classList.add('on');
+        try{
+          const parsed = JSON.parse(cached);
+          offlineBanner.textContent =
+            '📵 Mode hors-ligne — données du ' +
+            new Date(parsed._ts || 0).toLocaleDateString('fr-FR');
+        }catch{
+          offlineBanner.textContent = '📵 Mode hors-ligne — données en cache';
+        }
+      }
+
+      renderAll();
+      loadMeteo();
+      updateEditorUI();
+      updateProfilUI();
+
+    }else{
+      const loaderMsg = document.getElementById('loader-msg');
+      if(loaderMsg) loaderMsg.textContent = 'Erreur : ' + (e?.message || e);
+    }
   }
 }
+
 function isEditorMode(){
-  return editorUnlocked === true;
+  return currentUser === 'matis' || currentUser === 'lise';
 }
 
-function requireEditor(action){
+function requireEditor(){
   if(isEditorMode()) return true;
 
-  const entered = prompt('Code PIN requis pour passer en mode éditeur :');
-  if(entered === EDITOR_PIN){
-    editorUnlocked = true;
-    updateEditorUI();
-    showToast('🔓 Mode éditeur activé pour cette session');
-    return true;
-  }
-
-  showToast('⛔ Code PIN incorrect');
+  showToast(
+    currentUser === 'visiteur'
+      ? '👁️ Mode visiteur : lecture seule'
+      : "Connecte-toi d'abord"
+  );
   return false;
 }
 
