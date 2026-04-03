@@ -1548,8 +1548,12 @@ function makeCard(item){
 function starsRO(v){let h='';for(let i=1;i<=5;i++)h+=`<span class="star${i<=(v||0)?' on':''}">★</span>`;return h;}
 
 // ── ITEM SHEET ──
-function openItemSheet(type,item=null){
-  document.getElementById('item-sheet-inner').innerHTML=buildItemForm(type,item);
+function openItemSheet(type, item = null){
+  if(!isEditorMode()){
+    showToast('🔒 Mode lecteur');
+    return;
+  }
+  document.getElementById('item-sheet-inner').innerHTML = buildItemForm(type, item);
   openOverlay('item-overlay');
 }
 function buildItemForm(type, item) {
