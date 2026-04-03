@@ -1726,7 +1726,7 @@ async function saveItem() {
         lise,
         fait,
         mapUrl,
-        adresse_cn: adresseCn,
+        adresse_cn: adresseCn
 
       };
     } else {
@@ -1744,18 +1744,39 @@ async function saveItem() {
         lise,
         fait,
         mapUrl,
-        adresse_cn: adresseCn,
+        adresse_cn: adresseCn
 
       };
     }
 
     let savedId = id;
-    if (id) {
-      await sb.from('items').update(payload).eq('id', id);
-    } else {
-      const { data } = await sb.from('items').insert(payload).select('id').single();
-      savedId = data?.id;
-    }
+
+      if (id) {
+        const { error } = await sb
+          .from('items')
+          .update(payload)
+          .eq('id', id);
+      
+        if (error) {
+          console.error('Erreur update items:', error);
+          alert('Erreur update items : ' + error.message);
+          return;
+        }
+      } else {
+        const { data, error } = await sb
+          .from('items')
+          .insert(payload)
+          .select('id')
+          .single();
+      
+        if (error) {
+          console.error('Erreur insert items:', error);
+          alert('Erreur insert items : ' + error.message);
+          return;
+        }
+      
+        savedId = data?.id;
+}
 
     const finalId = savedId || id;
     const currentItem = { id: finalId, type, prix, fait, nom };
