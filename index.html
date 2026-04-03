@@ -1259,7 +1259,7 @@ select.form-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://
   <button class="nb" onclick="goTab('phrases',this)"><span class="nic">🀄</span><span class="nlb">Mandarin</span></button>
   <button class="nb" onclick="goTab('stats',this)"><span class="nic">📊</span><span class="nlb">Stats</span></button>
   <button class="nb" onclick="goTab('carte',this)"><span class="nic">🗺️</span><span class="nlb">Carte</span></button>
-  <button class="nb" onclick="goTab('chat',this)"><span class="nic">💬</span><span class="nlb">Chat</span></button>
+  <button class="nb" id="chatBtn" onclick="goTab('chat',this)"><span class="nic">💬</span><span class="nlb">Chat</span></button>
 </nav>
 
 <!-- BUDGET SHEET -->
@@ -1305,23 +1305,60 @@ select.form-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://
     <!-- Qui est connecté -->
     <div style="display:flex;align-items:center;gap:10px;padding:12px;background:var(--sand);border-radius:var(--radius-sm);margin-bottom:14px;">
       <div id="settingsUserAv" style="width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.1rem;"></div>
-      <div><div id="settingsUserName" style="font-weight:700;font-size:.88rem;"></div><div id="settingsUserMode" style="font-size:.65rem;color:var(--green);font-weight:600;">✅ Mode éditeur</div></div>
+      <div>
+        <div id="settingsUserName" style="font-weight:700;font-size:.88rem;"></div>
+        <div id="settingsUserMode" style="font-size:.65rem;color:var(--green);font-weight:600;">✅ Mode éditeur</div>
+      </div>
     </div>
 
-    <div class="form-group"><label class="form-label">Budget par personne (€)</label><input class="form-input" id="pp-val" type="number" placeholder="2500"></div>
+    <div id="visitorSettingsBlock" style="display:none;">
+      <div class="form-group">
+        <label class="form-label">Mode actuel</label>
+        <div class="mode-badge">Visiteur · lecture seule</div>
+      </div>
 
-    <!-- Changer son MDP -->
-    <div style="background:var(--sand);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:14px;margin-bottom:14px;">
-      <div style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--txt2);margin-bottom:10px;">🔐 Changer mon mot de passe</div>
-      <div class="form-group" style="margin-bottom:8px;"><label class="form-label">MDP actuel</label><input class="form-input" id="pp-pin-old" type="password" placeholder="Mot de passe actuel"></div>
-      <div class="form-group" style="margin-bottom:8px;"><label class="form-label">Nouveau MDP</label><input class="form-input" id="pp-pin-new" type="password" placeholder="Nouveau mot de passe"></div>
-      <div class="form-group" style="margin-bottom:10px;"><label class="form-label">Confirmer</label><input class="form-input" id="pp-pin-confirm" type="password" placeholder="Confirmer le nouveau MDP"></div>
-      <button class="btn-primary" style="margin-top:0;" onclick="changePin()">Changer le mot de passe</button>
+      <div style="background:var(--sand);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:14px;margin-bottom:14px;">
+        <div style="font-size:.72rem;font-weight:700;margin-bottom:6px;">👁️ Compte visiteur</div>
+        <div style="font-size:.76rem;color:var(--txt2);line-height:1.5;">
+          Le visiteur peut consulter le voyage, mais ne peut pas modifier les données ni accéder au chat.
+        </div>
+      </div>
+
+      <button class="btn-cancel" style="background:#fff0e8;color:var(--accent);border:1.5px solid #fecaca;" onclick="logout()">🚪 Changer de compte</button>
+      <button class="btn-cancel" onclick="closeOverlay('pp-sheet')">Fermer</button>
     </div>
 
-    <button class="btn-primary" onclick="savePP()">Enregistrer paramètres</button>
-    <button class="btn-cancel" style="background:#fff0e8;color:var(--accent);border:1.5px solid #fecaca;" onclick="logout()">🚪 Changer de compte</button>
-    <button class="btn-cancel" onclick="closeOverlay('pp-sheet')">Fermer</button>
+    <div id="memberSettingsBlock" style="display:none;">
+      <div class="form-group">
+        <label class="form-label">Budget par personne (€)</label>
+        <input class="form-input" id="pp-val" type="number" placeholder="2500">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Mode éditeur</label>
+        <div id="editorModeLabel" class="mode-badge">Mode lecteur</div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Code PIN éditeur</label>
+        <input class="form-input" id="pp-pin" type="password" placeholder="Entrer le code PIN">
+      </div>
+
+      <button class="btn-primary" onclick="unlockEditorFromSettings()">Déverrouiller le mode éditeur</button>
+      <button class="btn-cancel" onclick="lockEditorMode()">Repasser en mode lecteur</button>
+
+      <div style="background:var(--sand);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:14px;margin:14px 0;">
+        <div style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--txt2);margin-bottom:10px;">🔐 Changer mon mot de passe</div>
+        <div class="form-group" style="margin-bottom:8px;"><label class="form-label">MDP actuel</label><input class="form-input" id="pp-pin-old" type="password" placeholder="Mot de passe actuel"></div>
+        <div class="form-group" style="margin-bottom:8px;"><label class="form-label">Nouveau MDP</label><input class="form-input" id="pp-pin-new" type="password" placeholder="Nouveau mot de passe"></div>
+        <div class="form-group" style="margin-bottom:10px;"><label class="form-label">Confirmer</label><input class="form-input" id="pp-pin-confirm" type="password" placeholder="Confirmer le nouveau MDP"></div>
+        <button class="btn-primary" style="margin-top:0;" onclick="changePin()">Changer le mot de passe</button>
+      </div>
+
+      <button class="btn-primary" onclick="savePP()">Enregistrer paramètres</button>
+      <button class="btn-cancel" style="background:#fff0e8;color:var(--accent);border:1.5px solid #fecaca;" onclick="logout()">🚪 Changer de compte</button>
+      <button class="btn-cancel" onclick="closeOverlay('pp-sheet')">Fermer</button>
+    </div>
   </div>
 </div>
 <div id="loginModal" style="
@@ -1629,6 +1666,12 @@ function updateEditorUI(){
   if(badge){
     badge.textContent = editorUnlocked ? 'Mode éditeur' : 'Mode lecteur';
   }
+
+  const modeLine = document.getElementById('settingsUserMode');
+  if(modeLine && currentUser !== 'visiteur'){
+    modeLine.textContent = editorUnlocked ? '✅ Mode éditeur' : '🔒 Mode lecteur';
+    modeLine.style.color = editorUnlocked ? 'var(--green)' : 'var(--txt2)';
+  }
 }
 
 function showToast(text){
@@ -1704,10 +1747,15 @@ function toggleMeteo(){
 
 // ── TABS ──
 function goTab(n,el){
+  if(n === 'chat' && currentUser === 'visiteur'){
+    showToast('🔒 Chat indisponible en mode visiteur');
+    return;
+  }
+
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
   document.querySelectorAll('.nb').forEach(t=>t.classList.remove('on'));
   document.getElementById('tab-'+n).classList.add('on');
-  el.classList.add('on');
+  if(el) el.classList.add('on');
   closeSearch();
   window.scrollTo({top:0,behavior:'instant'});
   if(n==='phrases')renderPhrases();
@@ -4017,11 +4065,30 @@ function updateProfilUI(){
   const name = document.getElementById('profilName');
   const settBtn = document.getElementById('settingsBtn');
   const vBanner = document.getElementById('visitorBanner');
+  const visitorSettingsBlock = document.getElementById('visitorSettingsBlock');
+  const memberSettingsBlock = document.getElementById('memberSettingsBlock');
+  const settingsUserMode = document.getElementById('settingsUserMode');
+  const chatBtn = document.getElementById('chatBtn');
+  const chatTab = document.getElementById('tab-chat');
+
+  document.body.classList.toggle('visitor-mode', isVisitor);
 
   if(isVisitor){
     if(pill) pill.style.display = 'none';
     if(settBtn) settBtn.style.display = 'flex';
     if(vBanner) vBanner.classList.add('on');
+    if(visitorSettingsBlock) visitorSettingsBlock.style.display = 'block';
+    if(memberSettingsBlock) memberSettingsBlock.style.display = 'none';
+    if(settingsUserMode){
+      settingsUserMode.textContent = '👁️ Visiteur · lecture seule';
+      settingsUserMode.style.color = 'var(--accent)';
+    }
+    if(chatBtn) chatBtn.style.display = 'none';
+    if(chatTab) chatTab.style.display = 'none';
+    if(document.getElementById('tab-chat')?.classList.contains('on')){
+      const firstBtn = document.querySelector('.nav .nb');
+      goTab('budget', firstBtn);
+    }
     editorUnlocked = false;
     updateEditorUI();
   } else {
@@ -4035,6 +4102,14 @@ function updateProfilUI(){
     }
     if(settBtn) settBtn.style.display = 'none';
     if(vBanner) vBanner.classList.remove('on');
+    if(visitorSettingsBlock) visitorSettingsBlock.style.display = 'none';
+    if(memberSettingsBlock) memberSettingsBlock.style.display = 'block';
+    if(settingsUserMode){
+      settingsUserMode.textContent = editorUnlocked ? '✅ Mode éditeur' : '🔒 Mode lecteur';
+      settingsUserMode.style.color = editorUnlocked ? 'var(--green)' : 'var(--txt2)';
+    }
+    if(chatBtn) chatBtn.style.display = '';
+    if(chatTab) chatTab.style.display = '';
   }
 
   const avSettings = document.getElementById('settingsUserAv');
