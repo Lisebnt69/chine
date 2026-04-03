@@ -6,6 +6,8 @@
 <title>Chine 2026 · Matis &amp; Lise</title>
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
 :root{
   --white:#ffffff;--bg:#fcf7f3;--surface:#ffffff;--surface2:#f7efe8;
@@ -750,9 +752,242 @@ select.form-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://
 }
 @media (max-width:640px){.ic{grid-template-columns:32px minmax(0,1fr);}.ic-hero{width:32px;min-width:32px;height:32px;border-radius:10px;font-size:.9rem;}.ic-quick{grid-column:2;justify-self:start;margin-top:3px;}.stars-row{display:none;}.stats-top{grid-template-columns:1fr 1fr;}.stats-progress-row{grid-template-columns:86px 1fr auto;}.stats-bar{grid-template-columns:74px 1fr auto;}}
 
+/* ══ STATUT SYSTEM ══ */
+.statut-toggle{display:flex;gap:4px;margin-top:8px;}
+.st-btn-state{flex:1;padding:6px 4px;border-radius:9px;border:1.5px solid var(--border);background:transparent;font-size:.65rem;font-weight:600;cursor:pointer;font-family:var(--font);transition:all .18s;color:var(--txt2);text-align:center;}
+.st-btn-state.active-idee{background:#fef9c3;border-color:#fcd34d;color:#92400e;}
+.st-btn-state.active-planifie{background:#dbeafe;border-color:#60a5fa;color:#1d4ed8;}
+.st-btn-state.active-fait{background:#dcfce7;border-color:#4ade80;color:#166534;}
+.st-btn-state:active{transform:scale(.96);}
+
+.statut-pill{display:inline-flex;align-items:center;gap:3px;font-size:.6rem;font-weight:700;padding:2px 8px;border-radius:20px;margin-left:6px;vertical-align:middle;flex-shrink:0;}
+.statut-pill.idee{background:#fef9c3;color:#92400e;border:1px solid #fcd34d;}
+.statut-pill.planifie{background:#dbeafe;color:#1d4ed8;border:1px solid #60a5fa;}
+.statut-pill.fait{background:#dcfce7;color:#166534;border:1px solid #4ade80;}
+
+.priorite-row{display:flex;gap:6px;margin-top:6px;}
+.prio-btn{flex:1;padding:5px 4px;border-radius:9px;border:1.5px solid var(--border);background:transparent;font-size:.7rem;cursor:pointer;font-family:var(--font);transition:all .18s;color:var(--txt2);text-align:center;}
+.prio-btn.active{border-color:var(--accent);background:var(--peach);color:var(--accent);font-weight:700;}
+.prio-btn:active{transform:scale(.95);}
+
+.duree-row{display:flex;gap:5px;margin-top:6px;}
+.duree-btn{flex:1;padding:5px;border-radius:9px;border:1.5px solid var(--border);background:transparent;font-size:.65rem;cursor:pointer;font-family:var(--font);transition:all .18s;color:var(--txt2);text-align:center;}
+.duree-btn.active{background:#f5f3ff;border-color:#a78bfa;color:#6d28d9;font-weight:700;}
+.duree-btn:active{transform:scale(.95);}
+
+/* ic card state overlay */
+.ic.statut-idee{border-left:3px solid #fcd34d;}
+.ic.statut-planifie{border-left:3px solid #60a5fa;}
+.ic.statut-fait{border-left:3px solid #4ade80;opacity:.7;}
+
+/* ══ FILTRES TERRAIN ══ */
+.terrain-bar{display:flex;gap:7px;padding:0 16px 10px;overflow-x:auto;scrollbar-width:none;flex-wrap:nowrap;}
+.terrain-bar::-webkit-scrollbar{display:none;}
+.tf-chip{display:flex;align-items:center;gap:4px;padding:7px 13px;border-radius:22px;border:1.5px solid var(--border);background:rgba(255,255,255,.85);color:var(--txt2);font-size:.7rem;font-weight:500;cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all .18s;font-family:var(--font);}
+.tf-chip.on{background:var(--txt);border-color:var(--txt);color:#fff;}
+.tf-chip:active{transform:scale(.95);}
+.tf-chip.mode-terrain-toggle{background:linear-gradient(135deg,#1e293b,#0f172a);color:#fff;border-color:#1e293b;font-weight:700;}
+.tf-chip.mode-terrain-toggle.on{background:linear-gradient(135deg,var(--accent),#f97316);border-color:var(--accent);}
+
+/* ══ MODE TERRAIN BANNER ══ */
+.terrain-banner{display:none;margin:0 16px 10px;background:linear-gradient(135deg,#1e293b,#0f172a);border-radius:14px;padding:12px 16px;color:#fff;animation:fadeUp .25s ease;}
+.terrain-banner.on{display:flex;align-items:center;gap:10px;}
+.terrain-banner-icon{font-size:1.3rem;}
+.terrain-banner-txt{flex:1;font-size:.76rem;font-weight:600;}
+.terrain-banner-close{background:rgba(255,255,255,.15);border:none;color:#fff;border-radius:8px;padding:4px 9px;font-size:.68rem;cursor:pointer;font-family:var(--font);}
+
+/* ══ "ON FAIT QUOI" WIDGET ══ */
+.quoi-widget{margin:0 16px 14px;background:linear-gradient(135deg,#fff7ed,#fffbeb);border:1.5px solid #fde68a;border-radius:var(--radius);padding:16px;box-shadow:var(--shadow-sm);}
+.quoi-header{display:flex;align-items:center;gap:10px;margin-bottom:12px;cursor:pointer;}
+.quoi-icon{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;}
+.quoi-title{font-size:.92rem;font-weight:700;flex:1;}
+.quoi-refresh{background:rgba(0,0,0,.06);border:none;border-radius:8px;padding:5px 9px;font-size:.72rem;cursor:pointer;font-family:var(--font);}
+.quoi-list{display:flex;flex-direction:column;gap:7px;}
+.quoi-item{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;cursor:pointer;transition:all .18s;}
+.quoi-item:active{transform:scale(.98);}
+.quoi-item-ic{width:34px;height:34px;border-radius:9px;background:var(--peach);display:flex;align-items:center;justify-content:center;font-size:.95rem;flex-shrink:0;}
+.quoi-item-body{flex:1;min-width:0;}
+.quoi-item-name{font-size:.84rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.quoi-item-meta{font-size:.65rem;color:var(--txt2);margin-top:2px;}
+.quoi-prio{font-size:.9rem;flex-shrink:0;}
+.quoi-empty{text-align:center;padding:12px;font-size:.78rem;color:var(--txt2);}
+
+/* ══ DRAG TO PLAN ══ */
+.drag-to-plan-zone{border:2px dashed var(--border2);border-radius:12px;padding:10px 14px;margin:0 16px 12px;text-align:center;font-size:.72rem;color:var(--txt2);transition:all .2s;display:none;}
+.drag-to-plan-zone.active{display:block;}
+.drag-to-plan-zone.drag-over{border-color:var(--accent);background:var(--peach);color:var(--accent);}
+
+/* ic card drag */
+.ic[draggable="true"]{cursor:grab;}
+.ic[draggable="true"]:active{cursor:grabbing;opacity:.75;transform:scale(.97);}
+
+/* ══ CARTE ══ */
+#map{width:100%;height:100%;background:#f0ede8;}
+.map-wrap{position:relative;width:100%;height:calc(100svh - var(--hdr) - 46px - var(--nav) - var(--safe));}
+.map-controls{position:absolute;top:10px;right:10px;z-index:800;display:flex;flex-direction:column;gap:6px;}
+.map-ctrl-btn{width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,.95);border:1px solid var(--border);color:var(--txt);display:flex;align-items:center;justify-content:center;font-size:1rem;cursor:pointer;box-shadow:var(--shadow-sm);transition:var(--transition);}
+.map-ctrl-btn:active{transform:scale(.92);background:var(--peach);}
+.map-ctrl-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+.map-filter-row{position:absolute;bottom:calc(var(--nav) + var(--safe) + 14px);left:0;right:0;display:flex;gap:6px;padding:0 14px;overflow-x:auto;scrollbar-width:none;z-index:800;}
+.map-filter-row::-webkit-scrollbar{display:none;}
+.map-f-chip{display:flex;align-items:center;gap:4px;padding:7px 13px;border-radius:22px;border:1.5px solid rgba(255,255,255,.6);background:rgba(255,255,255,.92);color:var(--txt);font-size:.7rem;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0;font-family:var(--font);backdrop-filter:blur(8px);box-shadow:var(--shadow-sm);transition:var(--transition);}
+.map-f-chip.on{background:var(--accent);border-color:var(--accent);color:#fff;}
+.map-f-chip:active{transform:scale(.95);}
+.gps-banner{position:absolute;top:10px;left:10px;right:58px;z-index:800;background:rgba(255,255,255,.95);border:1px solid var(--border);border-radius:12px;padding:8px 12px;display:none;align-items:center;gap:8px;box-shadow:var(--shadow-sm);backdrop-filter:blur(8px);}
+.gps-banner.on{display:flex;}
+.gps-dot{width:10px;height:10px;border-radius:50%;background:var(--blue);box-shadow:0 0 0 3px rgba(59,130,246,.25);animation:pulse 1.4s ease infinite;flex-shrink:0;}
+.gps-txt{flex:1;font-size:.72rem;font-weight:600;color:var(--txt);}
+.gps-acc{font-size:.62rem;color:var(--txt2);}
+/* Popup Leaflet custom */
+.leaflet-popup-content-wrapper{border-radius:14px!important;box-shadow:var(--shadow)!important;padding:0!important;overflow:hidden;}
+.leaflet-popup-content{margin:0!important;width:220px!important;}
+.map-popup{padding:12px 14px;}
+.mp-type{font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--txt2);margin-bottom:4px;}
+.mp-name{font-size:.88rem;font-weight:700;color:var(--txt);margin-bottom:4px;}
+.mp-meta{font-size:.68rem;color:var(--txt2);margin-bottom:8px;}
+.mp-statut{display:inline-flex;align-items:center;gap:3px;font-size:.62rem;font-weight:700;padding:2px 7px;border-radius:20px;margin-bottom:8px;}
+.mp-statut.idee{background:#fef9c3;color:#92400e;}
+.mp-statut.planifie{background:#dbeafe;color:#1d4ed8;}
+.mp-statut.fait{background:#dcfce7;color:#166534;}
+.mp-actions{display:flex;gap:6px;}
+.mp-btn{flex:1;padding:7px 4px;border-radius:9px;border:1.5px solid var(--border);background:var(--bg);color:var(--txt);font-size:.68rem;font-weight:600;cursor:pointer;font-family:var(--font);text-align:center;}
+.mp-btn.nav{background:var(--accent);border-color:var(--accent);color:#fff;}
+.mp-btn:active{transform:scale(.96);}
+/* Marker custom couleur */
+.map-marker{width:32px;height:32px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,.2);}
+.map-marker .mm-ic{transform:rotate(45deg);font-size:.95rem;}
+.marker-activite{background:#7c3aed;}
+.marker-restaurant{background:#ea580c;}
+.marker-cafe{background:#0891b2;}
+.marker-hotel{background:var(--accent);}
+.marker-me{background:var(--blue);}
+/* Proche badge */
+.proche-badge{display:inline-flex;align-items:center;gap:3px;font-size:.58rem;font-weight:700;padding:2px 6px;border-radius:20px;background:#dbeafe;color:#1d4ed8;margin-left:4px;vertical-align:middle;}
+
+/* ══ LOGIN SCREEN ══ */
+.login-screen{position:fixed;inset:0;background:linear-gradient(160deg,#fffaf6 0%,#fff0e8 60%,#ffe8e0 100%);z-index:9998;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;gap:0;animation:fadeIn .4s ease;}
+.login-screen.hidden{display:none;}
+.login-hero{font-size:3.5rem;margin-bottom:8px;animation:floatSoft 4s ease-in-out infinite;}
+.login-title{font-size:1.6rem;font-weight:700;color:var(--txt);margin-bottom:4px;text-align:center;}
+.login-sub{font-size:.82rem;color:var(--txt2);margin-bottom:32px;text-align:center;}
+.login-profiles{display:flex;gap:16px;width:100%;max-width:340px;}
+.login-card{flex:1;background:#fff;border:2px solid var(--border);border-radius:22px;padding:24px 16px;display:flex;flex-direction:column;align-items:center;gap:10px;cursor:pointer;transition:all .22s cubic-bezier(.22,1,.36,1);box-shadow:0 8px 32px rgba(92,56,36,.08);}
+.login-card:active{transform:scale(.96);}
+.login-card.matis{border-color:#bfdbfe;}.login-card.matis:hover{background:#eff6ff;border-color:#60a5fa;}
+.login-card.lise{border-color:#fbcfe8;}.login-card.lise:hover{background:#fdf2f8;border-color:#f472b6;}
+.login-avatar{width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.8rem;}
+.login-avatar.m{background:linear-gradient(135deg,#dbeafe,#bfdbfe);}
+.login-avatar.l{background:linear-gradient(135deg,#fce7f3,#fbcfe8);}
+.login-name{font-size:1.1rem;font-weight:700;color:var(--txt);}
+.login-role{font-size:.68rem;color:var(--txt2);font-weight:500;}
+.profil-pill{display:flex;align-items:center;gap:6px;background:#fff;border:1.5px solid var(--border);border-radius:22px;padding:4px 10px 4px 4px;cursor:pointer;transition:var(--transition);box-shadow:var(--shadow-sm);}
+.profil-pill:active{transform:scale(.95);}
+.profil-mini-av{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.85rem;flex-shrink:0;}
+.profil-mini-av.m{background:linear-gradient(135deg,#dbeafe,#bfdbfe);}
+.profil-mini-av.l{background:linear-gradient(135deg,#fce7f3,#fbcfe8);}
+.profil-mini-name{font-size:.72rem;font-weight:600;color:var(--txt);}
+/* ══ CHAT ══ */
+.tab-chat-wrap{display:flex;flex-direction:column;height:calc(100svh - var(--hdr) - 46px - var(--nav) - var(--safe));}
+.chat-messages{flex:1;overflow-y:auto;padding:12px 16px;display:flex;flex-direction:column;gap:10px;}
+.chat-msg{max-width:80%;animation:fadeUp .2s ease both;}
+.chat-msg.me{align-self:flex-end;}
+.chat-msg.other{align-self:flex-start;}
+.chat-bubble{padding:10px 14px;border-radius:18px;font-size:.84rem;line-height:1.5;word-break:break-word;}
+.chat-msg.me .chat-bubble{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border-bottom-right-radius:4px;}
+.chat-msg.other .chat-bubble{background:#fff;border:1px solid var(--border);color:var(--txt);border-bottom-left-radius:4px;box-shadow:var(--shadow-sm);}
+.chat-msg.bot .chat-bubble{background:linear-gradient(135deg,#1e293b,#0f172a);color:#fff;border-bottom-left-radius:4px;}
+.chat-meta{font-size:.6rem;color:var(--txt3);margin-top:3px;padding:0 4px;}
+.chat-meta.me{text-align:right;}
+.chat-sender{display:flex;align-items:center;gap:5px;margin-bottom:3px;}
+.chat-sender-av{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.6rem;flex-shrink:0;}
+.chat-sender-av.m{background:linear-gradient(135deg,#dbeafe,#bfdbfe);}
+.chat-sender-av.l{background:linear-gradient(135deg,#fce7f3,#fbcfe8);}
+.chat-sender-name{font-size:.64rem;font-weight:600;color:var(--txt2);}
+.chat-input-row{padding:10px 14px;background:rgba(255,250,246,.95);border-top:1px solid var(--border);display:flex;gap:8px;align-items:flex-end;backdrop-filter:blur(12px);}
+.chat-inp{flex:1;background:#fff;border:1.5px solid var(--border);border-radius:22px;padding:10px 14px;font-family:var(--font);font-size:.86rem;color:var(--txt);resize:none;max-height:100px;line-height:1.4;}
+.chat-inp:focus{outline:none;border-color:var(--accent);}
+.chat-send-btn{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;color:#fff;display:flex;align-items:center;justify-content:center;font-size:1rem;cursor:pointer;flex-shrink:0;transition:var(--transition);}
+.chat-send-btn:active{transform:scale(.9);}
+.chat-bot-chips{display:flex;gap:6px;padding:8px 16px 2px;overflow-x:auto;scrollbar-width:none;flex-shrink:0;}
+.chat-bot-chips::-webkit-scrollbar{display:none;}
+.bot-chip{padding:6px 12px;border-radius:20px;border:1.5px solid var(--border);background:#fff;color:var(--txt2);font-size:.68rem;font-weight:500;cursor:pointer;white-space:nowrap;flex-shrink:0;font-family:var(--font);transition:var(--transition);}
+.bot-chip:active{background:var(--peach);border-color:var(--accent);color:var(--accent);}
+.chat-typing{display:flex;gap:4px;align-items:center;padding:8px 12px;background:#fff;border:1px solid var(--border);border-radius:16px;width:fit-content;border-bottom-left-radius:4px;}
+.typing-dot{width:7px;height:7px;border-radius:50%;background:var(--txt3);animation:typingBounce .9s ease infinite;}
+.typing-dot:nth-child(2){animation-delay:.15s;}
+.typing-dot:nth-child(3){animation-delay:.3s;}
+@keyframes typingBounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
+
+/* ══ MODE GALERIE ══ */
+.gallery-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 14px 6px;}
+.gc{background:#fff;border-radius:18px;overflow:hidden;box-shadow:var(--shadow-sm);cursor:pointer;transition:var(--transition);animation:fadeUp .3s ease both;border:1px solid var(--border);position:relative;}
+.gc:active{transform:scale(.97);}
+.gc.statut-idee{border-top:3px solid #fcd34d;}
+.gc.statut-planifie{border-top:3px solid #60a5fa;}
+.gc.statut-fait{border-top:3px solid #4ade80;opacity:.8;}
+.gc-img{width:100%;height:110px;object-fit:cover;display:block;background:linear-gradient(135deg,#fff4ee,#ffe8dd);}
+.gc-img-placeholder{width:100%;height:110px;display:flex;align-items:center;justify-content:center;font-size:2.2rem;background:linear-gradient(135deg,#fff4ee,#ffe8dd);}
+.gc-body{padding:10px 11px 11px;}
+.gc-name{font-size:.83rem;font-weight:700;line-height:1.3;color:var(--txt);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.gc-tags{display:flex;gap:4px;flex-wrap:wrap;margin-top:5px;}
+.gc-tag{font-size:.55rem;font-weight:600;padding:2px 6px;border-radius:10px;}
+.gc-footer{display:flex;align-items:center;justify-content:space-between;margin-top:7px;padding-top:7px;border-top:1px solid var(--border);}
+.gc-price{font-size:.8rem;font-weight:700;color:var(--txt);}
+.gc-statut{font-size:.58rem;font-weight:700;padding:2px 6px;border-radius:10px;}
+.gc-statut.idee{background:#fef9c3;color:#92400e;}
+.gc-statut.planifie{background:#dbeafe;color:#1d4ed8;}
+.gc-statut.fait{background:#dcfce7;color:#166534;}
+.gc-prio{font-size:.9rem;line-height:1;}
+.gc-stat-btns{display:flex;gap:3px;margin-top:7px;}
+.gc-stat-btn{flex:1;padding:4px 2px;border-radius:7px;border:1px solid var(--border);background:transparent;font-size:.6rem;font-weight:600;cursor:pointer;font-family:var(--font);transition:all .15s;color:var(--txt2);text-align:center;}
+.gc-stat-btn.active-idee{background:#fef9c3;border-color:#fcd34d;color:#92400e;}
+.gc-stat-btn.active-planifie{background:#dbeafe;border-color:#60a5fa;color:#1d4ed8;}
+.gc-stat-btn.active-fait{background:#dcfce7;border-color:#4ade80;color:#166534;}
+
+/* toggle vue */
+.view-toggle{display:flex;gap:4px;padding:0 14px 8px;flex-shrink:0;}
+.view-btn{padding:5px 12px;border-radius:20px;border:1.5px solid var(--border);background:#fff;font-size:.68rem;font-weight:600;cursor:pointer;font-family:var(--font);transition:var(--transition);color:var(--txt2);}
+.view-btn.on{background:var(--txt);border-color:var(--txt);color:#fff;}
+.view-btn:active{transform:scale(.95);}
+
+/* ══ MODE VISITEUR ══ */
+.login-card.visiteur{border-color:#e5e7eb;}
+.login-card.visiteur:hover{background:#f9fafb;border-color:#9ca3af;}
+.login-avatar.v{background:linear-gradient(135deg,#f3f4f6,#e5e7eb);}
+.visitor-banner{display:none;align-items:center;gap:8px;background:#f1f5f9;border-bottom:1px solid var(--border);padding:8px 16px;font-size:.72rem;color:var(--txt2);}
+.visitor-banner.on{display:flex;}
+.visitor-banner b{color:var(--txt);}
 </style>
 </head>
 <body>
+
+<!-- LOGIN SCREEN -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-hero">🏮</div>
+  <div class="login-title">Chine 2026</div>
+  <div class="login-sub">Qui es-tu ?</div>
+  <div class="login-profiles">
+    <div class="login-card matis" onclick="loginAs('matis')">
+      <div class="login-avatar m">👨</div>
+      <div class="login-name">Matis</div>
+      <div class="login-role">Compte voyageur</div>
+    </div>
+    <div class="login-card lise" onclick="loginAs('lise')">
+      <div class="login-avatar l">👩</div>
+      <div class="login-name">Lise</div>
+      <div class="login-role">Compte voyageur</div>
+    </div>
+  </div>
+  <div style="margin-top:16px;width:100%;max-width:340px;">
+    <div class="login-card visiteur" onclick="loginAs('visiteur')" style="flex-direction:row;padding:14px 20px;gap:14px;">
+      <div class="login-avatar v" style="width:44px;height:44px;font-size:1.3rem;flex-shrink:0;">👁️</div>
+      <div style="text-align:left;">
+        <div class="login-name" style="font-size:.9rem;">Mode visiteur</div>
+        <div class="login-role">Lecture seule — sans compte</div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <div class="loader" id="loader">
   <div class="loader-hero">🏮</div>
@@ -771,9 +1006,17 @@ select.form-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://
   </div>
   <div class="live-pill"><div class="live-dot off" id="ld"></div><span class="live-txt" id="liveTxt">Sync</span></div>
   <div class="hdr-btn" onclick="toggleSearch()">🔍</div>
-  <div class="hdr-btn" onclick="openOverlay('pp-sheet')">⚙️</div>
+  <div class="profil-pill" id="profilPill" onclick="openOverlay('pp-sheet')" style="display:none;">
+    <div class="profil-mini-av" id="profilAv"></div>
+    <span class="profil-mini-name" id="profilName"></span>
+  </div>
+  <div class="hdr-btn" onclick="openOverlay('pp-sheet')" id="settingsBtn">⚙️</div>
 </header>
 
+<div class="visitor-banner" id="visitorBanner">
+  <span>👁️</span><span>Mode visiteur — <b>lecture seule</b>. Aucune modification possible.</span>
+  <span style="margin-left:auto;cursor:pointer;font-size:.68rem;color:var(--accent);" onclick="logout()">Se connecter →</span>
+</div>
 <div class="qa-row">
   <button class="qa-chip accent" onclick="openBudgetSheet()">＋ Dépense</button>
   <button class="qa-chip" onclick="goTabByName('planning')">📅 Planning</button>
@@ -781,6 +1024,9 @@ select.form-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://
   <button class="qa-chip" onclick="openItemSheet('restaurant')">🍜 Resto</button>
   <button class="qa-chip" onclick="openItemSheet('transport')">🚄 Transport</button>
   <button class="qa-chip" onclick="goTabByName('stats')">📊 Stats</button>
+  <button class="qa-chip" onclick="goTabByName('activites');toggleTerrainMode()" style="background:linear-gradient(135deg,#1e293b,#0f172a);color:#fff;border-color:#1e293b;font-weight:700;">🧭 Terrain</button>
+  <button class="qa-chip" onclick="goTabByName('carte')">🗺️ Carte</button>
+  <button class="qa-chip" onclick="goTabByName('chat')">💬 Chat</button>
 </div>
 
 <div class="search-wrap" id="searchBar">
@@ -837,12 +1083,61 @@ select.form-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://
 
 <!-- ACTIVITES -->
 <div class="tab" id="tab-activites">
-  <div class="ph"><h1>Activités</h1></div>
+  <div class="ph" style="padding-bottom:6px;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <h1 style="flex:1;">Activités</h1>
+      <button class="tf-chip mode-terrain-toggle" id="terrainToggle" onclick="toggleTerrainMode()">🧭 Terrain</button>
+    </div>
+  </div>
+
+  <!-- Bannière mode terrain -->
+  <div class="terrain-banner" id="terrainBanner">
+    <span class="terrain-banner-icon">🧭</span>
+    <span class="terrain-banner-txt">Mode Terrain — Idées masquées</span>
+    <button class="terrain-banner-close" onclick="toggleTerrainMode()">Quitter</button>
+  </div>
+
+  <!-- "On fait quoi maintenant ?" -->
+  <div class="quoi-widget" id="quoiWidget" style="display:none;">
+    <div class="quoi-header" onclick="refreshQuoi()">
+      <div class="quoi-icon">⚡</div>
+      <div class="quoi-title">On fait quoi maintenant ?</div>
+      <button class="quoi-refresh" onclick="event.stopPropagation();refreshQuoi()">↻ Refresh</button>
+    </div>
+    <div class="quoi-list" id="quoiList"></div>
+  </div>
+
+  <!-- Filtres terrain rapides -->
+  <div class="terrain-bar" id="terrainBar">
+    <button class="tf-chip on" onclick="setTerrainFilter('tous',this)">Tout</button>
+    <button class="tf-chip" onclick="setTerrainFilter('idee',this)">💡 Idées</button>
+    <button class="tf-chip" onclick="setTerrainFilter('planifie',this)">📅 Planifié</button>
+    <button class="tf-chip" onclick="setTerrainFilter('fait',this)">✅ Fait</button>
+    <button class="tf-chip" onclick="setTerrainFilter('coeur',this)">⭐ Coups de cœur</button>
+    <button class="tf-chip" onclick="setTerrainFilter('proche',this)">📍 Proche</button>
+    <button class="tf-chip" onclick="setTerrainFilter('rapide',this)">⚡ Rapide</button>
+    <button class="tf-chip" onclick="setTerrainFilter('pasCher',this)">💸 Pas cher</button>
+    <span style="width:1px;background:var(--border);flex-shrink:0;margin:4px 2px;"></span>
+    <button class="tf-chip" onclick="setTerrainFilter('Shanghai',this)">🏙️ Shanghai</button>
+    <button class="tf-chip" onclick="setTerrainFilter('Chongqing',this)">🌆 Chongqing</button>
+    <button class="tf-chip" onclick="setTerrainFilter('Chengdu',this)">🐼 Chengdu</button>
+    <button class="tf-chip" onclick="setTerrainFilter('Zhangjiajie',this)">🏞️ Zhangjiajie</button>
+    <button class="tf-chip" onclick="setTerrainFilter('Furong',this)">🌸 Furong</button>
+  </div>
+
+  <!-- Zone drag vers planning -->
+  <div class="drag-to-plan-zone" id="dragToPlanZone"
+    ondragover="event.preventDefault();this.classList.add('drag-over')"
+    ondragleave="this.classList.remove('drag-over')"
+    ondrop="handleDragToPlan(event)">
+    📅 Glisser ici pour ajouter au planning
+  </div>
+
   <div class="sort-row" id="sort-activite"></div>
   <div id="cont-activite"></div>
   <button class="add-btn" onclick="openItemSheet('activite')" data-editor-only>
-  <div class="add-btn-icon">＋</div>Nouvelle activité
-</button>
+    <div class="add-btn-icon">＋</div>Nouvelle activité
+  </button>
 </div>
 
 <!-- RESTOS & CAFES -->
@@ -897,6 +1192,25 @@ select.form-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://
   <div id="phrasesCont"></div>
 </div>
 
+<!-- CHAT -->
+<div class="tab" id="tab-chat">
+  <div class="tab-chat-wrap">
+    <div class="chat-bot-chips" id="chatBotChips">
+      <button class="bot-chip" onclick="askBot('On fait quoi demain ?')">🤔 On fait quoi demain ?</button>
+      <button class="bot-chip" onclick="askBot('Quel budget il nous reste ?')">💰 Budget restant ?</button>
+      <button class="bot-chip" onclick="askBot('Activités non faites à Shanghai ?')">🎯 Idées Shanghai</button>
+      <button class="bot-chip" onclick="askBot('Meilleurs restos pas encore faits ?')">🍜 Restos à faire</button>
+      <button class="bot-chip" onclick="askBot('Planning de demain ?')">📅 Planning demain</button>
+      <button class="bot-chip" onclick="askBot('Combien on a dépensé chacun ?')">👥 Dépenses perso</button>
+    </div>
+    <div class="chat-messages" id="chatMessages"></div>
+    <div class="chat-input-row">
+      <textarea class="chat-inp" id="chatInp" rows="1" placeholder="Message…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat();}"></textarea>
+      <button class="chat-send-btn" onclick="sendChat()">↑</button>
+    </div>
+  </div>
+</div>
+
 <!-- STATS -->
 <div class="tab" id="tab-stats">
   <div class="ph"><h1>Statistiques</h1><p>Vue d'ensemble du voyage</p></div>
@@ -904,9 +1218,39 @@ select.form-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://
 </div>
 
 <div id="printContent" style="display:none;"></div>
+
+<!-- CARTE -->
+<div class="tab" id="tab-carte">
+  <div class="map-wrap">
+    <div id="map"></div>
+    <!-- GPS banner -->
+    <div class="gps-banner" id="gpsBanner">
+      <div class="gps-dot"></div>
+      <div class="gps-txt" id="gpsTxt">Localisation…</div>
+      <span class="gps-acc" id="gpsAcc"></span>
+    </div>
+    <!-- Controls -->
+    <div class="map-controls">
+      <button class="map-ctrl-btn" id="gpsBtn" onclick="centerOnMe()" title="Ma position">📍</button>
+      <button class="map-ctrl-btn" id="mapFilterBtn" onclick="cycleMapLayer()" title="Couche carte">🗺️</button>
+      <button class="map-ctrl-btn" onclick="fitAllMarkers()" title="Voir tout">⊞</button>
+    </div>
+    <!-- Filtre types -->
+    <div class="map-filter-row">
+      <button class="map-f-chip on" onclick="toggleMapFilter('all',this)">Tout</button>
+      <button class="map-f-chip" onclick="toggleMapFilter('activite',this)">🎯 Activités</button>
+      <button class="map-f-chip" onclick="toggleMapFilter('restaurant',this)">🍜 Restos</button>
+      <button class="map-f-chip" onclick="toggleMapFilter('cafe',this)">☕ Cafés</button>
+      <button class="map-f-chip" onclick="toggleMapFilter('hotel',this)">🏨 Hôtels</button>
+      <button class="map-f-chip" onclick="toggleMapFilter('proche',this)">📍 Proches</button>
+      <button class="map-f-chip" onclick="toggleMapFilter('planifie',this)">📅 Planifiés</button>
+    </div>
+  </div>
+</div>
+
 </main>
 
-<nav class="nav">
+<nav class="nav" style="grid-template-columns:repeat(12,1fr);">
   <button class="nb on" onclick="goTab('budget',this)"><span class="nic">💰</span><span class="nlb">Budget</span></button>
   <button class="nb" onclick="goTab('planning',this)"><span class="nic">📅</span><span class="nlb">Planning</span></button>
   <button class="nb" onclick="goTab('activites',this)"><span class="nic">🎯</span><span class="nlb">Activ.</span></button>
@@ -917,6 +1261,8 @@ select.form-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://
   <button class="nb" onclick="goTab('notes',this)"><span class="nic">📝</span><span class="nlb">Notes</span></button>
   <button class="nb" onclick="goTab('phrases',this)"><span class="nic">🀄</span><span class="nlb">Mandarin</span></button>
   <button class="nb" onclick="goTab('stats',this)"><span class="nic">📊</span><span class="nlb">Stats</span></button>
+  <button class="nb" onclick="goTab('carte',this)"><span class="nic">🗺️</span><span class="nlb">Carte</span></button>
+  <button class="nb" onclick="goTab('chat',this)"><span class="nic">💬</span><span class="nlb">Chat</span></button>
 </nav>
 
 <!-- BUDGET SHEET -->
@@ -959,21 +1305,26 @@ select.form-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://
   <div class="sheet">
     <div class="sheet-handle"></div>
     <div class="sheet-title">Paramètres</div>
+    <!-- Qui est connecté -->
+    <div style="display:flex;align-items:center;gap:10px;padding:12px;background:var(--sand);border-radius:var(--radius-sm);margin-bottom:14px;">
+      <div id="settingsUserAv" style="width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.1rem;"></div>
+      <div><div id="settingsUserName" style="font-weight:700;font-size:.88rem;"></div><div id="settingsUserMode" style="font-size:.65rem;color:var(--green);font-weight:600;">✅ Mode éditeur</div></div>
+    </div>
+
     <div class="form-group"><label class="form-label">Budget par personne (€)</label><input class="form-input" id="pp-val" type="number" placeholder="2500"></div>
-          <div class="form-group">
-        <label class="form-label">Mode actuel</label>
-        <div id="editorModeLabel" class="form-input" style="display:flex;align-items:center;">Mode lecteur</div>
-      </div>
 
-<div class="form-group">
-  <label class="form-label">Code PIN éditeur</label>
-  <input class="form-input" id="pp-pin" type="password" placeholder="Entrer le code PIN">
-</div>
+    <!-- Changer son MDP -->
+    <div style="background:var(--sand);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:14px;margin-bottom:14px;">
+      <div style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--txt2);margin-bottom:10px;">🔐 Changer mon mot de passe</div>
+      <div class="form-group" style="margin-bottom:8px;"><label class="form-label">MDP actuel</label><input class="form-input" id="pp-pin-old" type="password" placeholder="Mot de passe actuel"></div>
+      <div class="form-group" style="margin-bottom:8px;"><label class="form-label">Nouveau MDP</label><input class="form-input" id="pp-pin-new" type="password" placeholder="Nouveau mot de passe"></div>
+      <div class="form-group" style="margin-bottom:10px;"><label class="form-label">Confirmer</label><input class="form-input" id="pp-pin-confirm" type="password" placeholder="Confirmer le nouveau MDP"></div>
+      <button class="btn-primary" style="margin-top:0;" onclick="changePin()">Changer le mot de passe</button>
+    </div>
 
-<button class="btn-primary" onclick="unlockEditorFromSettings()">Déverrouiller le mode éditeur</button>
-<button class="btn-cancel" onclick="lockEditorMode()">Repasser en mode lecteur</button>
-    <button class="btn-primary" onclick="savePP()">Enregistrer</button>
-    <button class="btn-cancel" onclick="closeOverlay('pp-sheet')">Annuler</button>
+    <button class="btn-primary" onclick="savePP()">Enregistrer paramètres</button>
+    <button class="btn-cancel" style="background:#fff0e8;color:var(--accent);border:1.5px solid #fecaca;" onclick="logout()">🚪 Changer de compte</button>
+    <button class="btn-cancel" onclick="closeOverlay('pp-sheet')">Fermer</button>
   </div>
 </div>
 
@@ -1009,7 +1360,14 @@ document.addEventListener('change', function(e) {
     reader.readAsDataURL(file);
   }
 });
-const EDITOR_PIN = '1908';
+// ── UTILISATEURS avec MDP ──
+let currentUser = localStorage.getItem('chine_user') || null; // 'matis' | 'lise'
+const USERS = {
+  matis: { name:'Matis', emoji:'👨', color:'#3b82f6', bg:'#dbeafe', av:'m', pin:'matis2026' },
+  lise:  { name:'Lise',  emoji:'👩', color:'#ec4899', bg:'#fce7f3', av:'l', pin:'lise2026'  }
+};
+// Pin global (fallback pour unlock manuel depuis paramètres)
+const EDITOR_PIN = 'chine2026';
 const D={budget:[],planning:[],items:[],slots:[],checklist:[],notes:[]};
 let budgetPP=parseFloat(localStorage.getItem('bpp')||'2500');
 let convRate=parseFloat(localStorage.getItem('convRate')||'7.78');
@@ -1017,6 +1375,11 @@ let sortBy={activite:'ville',restaurant:'ville',cafe:'ville',hotel:'ville'};
 let pickerCtx=null;
 let dayDragSrc=null;
 let searchOpen=false;
+let viewMode={activite:'galerie',restaurant:'galerie',cafe:'galerie',hotel:'liste'};
+// ── STATUT & TERRAIN STATE ──
+let terrainMode=false;
+let terrainFilter='tous'; // 'tous'|'idee'|'planifie'|'fait'|'coeur'|'rapide'|'pasCher'|ville
+let dragItemId=null; // id of item being dragged to planning
 
 const VILLES=['Shanghai','Chongqing','Chengdu','Karst de Wulong','Furong','Zhangjiajie'];
 const VILLE_IC={Shanghai:'🏙️',Chongqing:'🌆',Chengdu:'🐼','Karst de Wulong':'🏔️',Furong:'🌸',Zhangjiajie:'🏞️'};
@@ -1278,6 +1641,8 @@ function goTab(n,el){
   if(n==='phrases')renderPhrases();
   if(n==='checklist')renderPacking();
   if(n==='stats')renderStats();
+  if(n==='carte'){initMap();}
+  if(n==='chat'){initChat();}
 }
 
 // ── SEARCH ──
@@ -1449,6 +1814,34 @@ async function deleteBudget(){
 function savePP(){budgetPP=parseFloat(document.getElementById('pp-val').value)||2500;localStorage.setItem('bpp',budgetPP);renderBudget();closeOverlay('pp-sheet');}
 
 // ── ITEMS ──
+function getItemStatut(item){
+  if(item.statut)return item.statut;
+  if(item.fait)return'fait';
+  if(D.slots.some(s=>s.item_id===item.id))return'planifie';
+  return'idee';
+}
+function getItemPriorite(item){
+  if(item.priorite)return item.priorite;
+  const avg=((item.matis||0)+(item.lise||0))/2;
+  if(avg>=4.5)return'coeur';
+  if(avg>=3)return'sympa';
+  return'optionnel';
+}
+function getItemDuree(item){return item.duree||'';}
+function applyTerrainFilter(items){
+  if(terrainFilter==='tous')return items;
+  if(terrainFilter==='idee')return items.filter(x=>getItemStatut(x)==='idee');
+  if(terrainFilter==='planifie')return items.filter(x=>getItemStatut(x)==='planifie');
+  if(terrainFilter==='fait')return items.filter(x=>getItemStatut(x)==='fait');
+  if(terrainFilter==='coeur')return items.filter(x=>getItemPriorite(x)==='coeur');
+  if(terrainFilter==='rapide')return items.filter(x=>getItemDuree(x)==='30min');
+  if(terrainFilter==='pasCher')return items.filter(x=>parseFloat(x.prix||0)<30);
+  if(terrainFilter==='proche'){
+    if(!myPos)return items; // pas de GPS = tout afficher
+    return items.filter(x=>{const d=getDistFromMe(x);return d!==null&&d<2;}).sort((a,b)=>(getDistFromMe(a)||999)-(getDistFromMe(b)||999));
+  }
+  return items.filter(x=>(x.ville||'')=== terrainFilter);
+}
 function renderItems(type){
   const contId='cont-'+type,sortId='sort-'+type;
   const cont=document.getElementById(contId);if(!cont)return;cont.innerHTML='';
@@ -1456,18 +1849,49 @@ function renderItems(type){
   const sort=sortBy[type]||'ville';
   if(sortEl){
     sortEl.innerHTML='';
-    [['ville','Par ville'],['quartier','Par quartier'],['envie','Par envie ⭐']].forEach(([k,lbl])=>{
+    // Vue toggle
+    const vm=viewMode[type]||'liste';
+    ['liste','galerie'].forEach(v=>{
+      const b=document.createElement('button');b.className='view-btn'+(vm===v?' on':'');
+      b.textContent=v==='liste'?'☰ Liste':'⊞ Galerie';
+      b.onclick=()=>{viewMode[type]=v;renderItems(type);};sortEl.appendChild(b);
+    });
+    // spacer
+    const sp=document.createElement('span');sp.style.cssText='width:1px;background:var(--border);margin:4px 4px;flex-shrink:0;';sortEl.appendChild(sp);
+    // Sort chips
+    [['ville','Ville'],['quartier','Quartier'],['envie','Envie'],['statut','Statut']].forEach(([k,lbl])=>{
       const b=document.createElement('button');b.className='s-chip'+(sort===k?' on':'');b.textContent=lbl;
       b.onclick=()=>{sortBy[type]=k;renderItems(type);};sortEl.appendChild(b);
     });
   }
-  const items=D.items.filter(x=>x.type===type);
-  if(!items.length){cont.innerHTML=`<div class="empty-state"><div class="empty-icon">${TYPE_IC[type]||'📍'}</div><div class="empty-txt">Aucun élément</div><div class="empty-sub">Ajoutez le premier</div></div>`;return;}
+  let items=D.items.filter(x=>x.type===type);
+  if(terrainMode && type==='activite'){
+    items=items.filter(x=>getItemStatut(x)!=='idee');
+  } else {
+    items=applyTerrainFilter(items);
+  }
+  if(!items.length){
+    cont.innerHTML=`<div class="empty-state"><div class="empty-icon">${TYPE_IC[type]||'📍'}</div><div class="empty-txt">${terrainMode?'Aucune activité planifiée':'Aucun élément'}</div><div class="empty-sub">${terrainMode?'Planifiez des activités':'Ajoutez le premier'}</div></div>`;
+    return;
+  }
+  if(sort==='statut'){
+    const order={planifie:0,idee:1,fait:2};
+    const sorted=[...items].sort((a,b)=>(order[getItemStatut(a)]||1)-(order[getItemStatut(b)]||1));
+    const blk=document.createElement('div');blk.className='city-section';
+    blk.innerHTML='<div class="city-header"><div class="city-icon">🏷️</div><div class="city-name">Par statut</div><span class="city-count">'+sorted.length+'</span></div>';
+    const vm0=viewMode[type]||'liste';
+    if(vm0==='galerie'){const g=document.createElement('div');g.className='gallery-grid';sorted.forEach((item,idx)=>{const c=makeGalleryCard(item);c.style.animationDelay=idx*0.04+'s';g.appendChild(c);});blk.appendChild(g);}
+    else{sorted.forEach((item,idx)=>{const c=makeCard(item);c.style.animationDelay=idx*0.04+'s';blk.appendChild(c);});}
+    cont.appendChild(blk);return;
+  }
   if(sort==='envie'){
     const sorted=[...items].sort((a,b)=>((b.matis||0)+(b.lise||0))-((a.matis||0)+(a.lise||0)));
     const blk=document.createElement('div');blk.className='city-section';
     blk.innerHTML='<div class="city-header"><div class="city-icon">⭐</div><div class="city-name">Par envie</div><span class="city-count">'+sorted.length+'</span></div>';
-    sorted.forEach(item=>blk.appendChild(makeCard(item)));cont.appendChild(blk);return;
+    const vmE=viewMode[type]||'liste';
+    if(vmE==='galerie'){const g=document.createElement('div');g.className='gallery-grid';sorted.forEach((item,idx)=>{const c=makeGalleryCard(item);c.style.animationDelay=idx*0.05+'s';g.appendChild(c);});blk.appendChild(g);}
+    else{sorted.forEach((item,idx)=>{const c=makeCard(item);c.style.animationDelay=idx*0.05+'s';blk.appendChild(c);});}
+    cont.appendChild(blk);return;
   }
   const gk=sort==='quartier'?'quartier':'ville';
   const groups={};
@@ -1476,9 +1900,21 @@ function renderItems(type){
     const blk=document.createElement('div');blk.className='city-section';
     const ico=sort==='ville'?(VILLE_IC[key]||'📍'):'📌';
     blk.innerHTML=`<div class="city-header"><div class="city-icon">${ico}</div><div class="city-name">${esc(key)}</div><span class="city-count">${grp.length}</span></div>`;
-    grp.forEach((item,idx)=>{const c=makeCard(item);c.style.animationDelay=idx*0.05+'s';blk.appendChild(c);});cont.appendChild(blk);
+    const vmG=viewMode[type]||'liste';
+    if(vmG==='galerie'){const g=document.createElement('div');g.className='gallery-grid';grp.forEach((item,idx)=>{const c=makeGalleryCard(item);c.style.animationDelay=idx*0.04+'s';g.appendChild(c);});blk.appendChild(g);}
+    else{grp.forEach((item,idx)=>{const c=makeCard(item);c.style.animationDelay=idx*0.04+'s';blk.appendChild(c);});}
+    cont.appendChild(blk);
   });
 }
+
+const CITY_IMG={
+  'Shanghai':'https://images.unsplash.com/photo-1537524337987-af2b83e7d96d?w=400&q=70&auto=format&fit=crop',
+  'Chongqing':'https://images.unsplash.com/photo-1567018759895-d78b0b82d9c0?w=400&q=70&auto=format&fit=crop',
+  'Chengdu':'https://images.unsplash.com/photo-1547981609-4b6bfe67ca0b?w=400&q=70&auto=format&fit=crop',
+  'Zhangjiajie':'https://images.unsplash.com/photo-1518599807935-37015b9cefcb?w=400&q=70&auto=format&fit=crop',
+  'Karst de Wulong':'https://images.unsplash.com/photo-1528360983277-13d401cdc186?w=400&q=70&auto=format&fit=crop',
+  'Furong':'https://images.unsplash.com/photo-1590010265989-cb28e35c0c06?w=400&q=70&auto=format&fit=crop',
+};
 
 function extractImageUrl(raw=''){
   if(!raw) return '';
@@ -1540,6 +1976,53 @@ function openAmap(item){
     }
   }, 900);
 }
+function makeGalleryCard(item){
+  const d=document.createElement('div');
+  const statut=getItemStatut(item);
+  const priorite=getItemPriorite(item);
+  const duree=getItemDuree(item);
+  d.className='gc statut-'+statut;
+
+  const prix=parseFloat(item.prix||0);
+  const nuits=parseInt(item.prix_type||1)||1;
+  const totalAffiche=item.type==='hotel'&&prix>0?prix*nuits:prix;
+  const prioIcon={coeur:'⭐',sympa:'👍',optionnel:'🤷'}[priorite]||'';
+  const typePill={activite:'🎯',restaurant:'🍜',cafe:'☕',hotel:'🏨'}[item.type]||'📍';
+
+  // Drag pour idées activités
+  if(item.type==='activite'&&statut==='idee'){
+    d.draggable=true;
+    d.addEventListener('dragstart',e=>{dragItemId=item.id;const z=document.getElementById('dragToPlanZone');if(z)z.classList.add('active');e.dataTransfer.effectAllowed='copy';});
+    d.addEventListener('dragend',()=>{const z=document.getElementById('dragToPlanZone');if(z){z.classList.remove('active');z.classList.remove('drag-over');}dragItemId=null;});
+  }
+
+  const statutBtns=`<div class="gc-stat-btns" onclick="event.stopPropagation()">
+    <button class="gc-stat-btn${statut==='idee'?' active-idee':''}" onclick="setStatut('${item.id}','idee')">💡</button>
+    <button class="gc-stat-btn${statut==='planifie'?' active-planifie':''}" onclick="setStatut('${item.id}','planifie')">📅</button>
+    <button class="gc-stat-btn${statut==='fait'?' active-fait':''}" onclick="setStatut('${item.id}','fait')">✅</button>
+  </div>`;
+
+  d.innerHTML=`
+    <div class="gc-img-placeholder">${prioIcon||typePill}</div>
+    <div class="gc-body">
+      <div class="gc-name">${esc(item.nom)}</div>
+      <div class="gc-tags">
+        ${item.ville?`<span class="gc-tag tag-city">${esc(item.ville)}</span>`:''}
+        ${item.quartier&&item.quartier!=='À définir'?`<span class="gc-tag tag-q">${esc(item.quartier)}</span>`:''}
+        ${duree?`<span class="gc-tag" style="background:#f5f3ff;color:#6d28d9;">⏱ ${esc(duree)}</span>`:''}
+      </div>
+      <div class="gc-footer">
+        <span class="gc-price">${prix>0?fmtE(totalAffiche):'Gratuit'}</span>
+        <span class="gc-statut ${statut}">${statut==='idee'?'💡':''}${statut==='planifie'?'📅':''}${statut==='fait'?'✅':''}</span>
+        ${prioIcon?`<span class="gc-prio">${prioIcon}</span>`:''}
+      </div>
+      ${statutBtns}
+    </div>`;
+
+  d.onclick=()=>openItemSheet(item.type,item);
+  return d;
+}
+
 function makeCard(item){
   const d=document.createElement('div');d.className='ic';
   const prix=parseFloat(item.prix||0);
@@ -1549,15 +2032,55 @@ function makeCard(item){
   const metaRight=item.type==='hotel'?(nuits+` nuit${nuits>1?'s':''}`):(item.prix_type||'');
   const cleanDesc=esc(String(item.description||'').replace(/IMG:[^|]+/ig,'').replace(/\s+\|\s+/g,' · ').trim());
   const hasAmap = !!buildAmapUrl(item, 'web');
+  // Pas d'image dans les cards
+
+  // Distance depuis ma position
+  const distKm=getDistFromMe(item);
+  const distBadge=distKm!==null?(distKm<0.5?`<span class="proche-badge">📍 ${Math.round(distKm*1000)}m</span>`:distKm<2?`<span class="proche-badge" style="background:#f0fdf4;color:#166534;">📍 ${Math.round(distKm*10)/10}km</span>`:''):'';
+
+  const statut=getItemStatut(item);
+  const priorite=getItemPriorite(item);
+  const duree=getItemDuree(item);
+
+  // Statut pill
+  const statutPills={idee:'💡 Idée',planifie:'📅 Planifié',fait:'✅ Fait'};
+  const statutPill=`<span class="statut-pill ${statut}">${statutPills[statut]||'💡 Idée'}</span>`;
+
+  // Priorité icon
+  const prioIcon={coeur:'⭐',sympa:'👍',optionnel:'🤷'}[priorite]||'';
+
+  // Durée badge
+  const dureeBadge=duree?`<span class="tag tt" style="background:#f5f3ff;color:#6d28d9;">⏱ ${esc(duree)}</span>`:'';
+
+  // Statut class on card
+  d.classList.add('statut-'+statut);
+
+  // Enable drag for activites
+  if(item.type==='activite'&&statut==='idee'){
+    d.draggable=true;
+    d.addEventListener('dragstart',e=>{
+      dragItemId=item.id;
+      const zone=document.getElementById('dragToPlanZone');
+      if(zone)zone.classList.add('active');
+      e.dataTransfer.effectAllowed='copy';
+    });
+    d.addEventListener('dragend',()=>{
+      const zone=document.getElementById('dragToPlanZone');
+      if(zone){zone.classList.remove('active');zone.classList.remove('drag-over');}
+      dragItemId=null;
+    });
+  }
+
   d.innerHTML=`
-    <div class="ic-hero">${typePill}</div>
+    <div class="ic-hero">${prioIcon||typePill}</div>
     <div class="ic-body">
       <div class="ic-topline">
         <div style="flex:1;min-width:0;">
-          <div class="ic-name">${esc(item.nom)}${item.fait?'<span class="ic-done">✓ Fait</span>':''}</div>
+          <div class="ic-name">${esc(item.nom)}${statutPill}${distBadge}</div>
           <div class="ic-tags">
             ${item.ville?`<span class="tag tv">${esc(item.ville)}</span>`:''}
             ${item.quartier&&item.quartier!=='À définir'?`<span class="tag tq">${esc(item.quartier)}</span>`:''}
+            ${dureeBadge}
             ${metaRight&&!['nuit','gratuit',''].includes(String(metaRight).toLowerCase())?`<span class="tag tt">${esc(metaRight)}</span>`:''}
           </div>
         </div>
@@ -1572,16 +2095,30 @@ function makeCard(item){
         </div>
         ${hasAmap ? `<button class="map-link" type="button" onclick="event.stopPropagation(); openAmap(${encodeURIComponent(JSON.stringify(item)).replace(/'/g, '%27')})">🗺 Amap</button>` : ''}
       </div>
+      <!-- Statut toggle -->
+      <div class="statut-toggle" onclick="event.stopPropagation()">
+        <button class="st-btn-state${statut==='idee'?' active-idee':''}" onclick="setStatut('${item.id}','idee')">💡 Idée</button>
+        <button class="st-btn-state${statut==='planifie'?' active-planifie':''}" onclick="setStatut('${item.id}','planifie')">📅 Planifié</button>
+        <button class="st-btn-state${statut==='fait'?' active-fait':''}" onclick="setStatut('${item.id}','fait')">✅ Fait</button>
+      </div>
+      <!-- Priorité (activités seulement) -->
+      ${item.type==='activite'?`<div class="priorite-row" onclick="event.stopPropagation()">
+        <button class="prio-btn${priorite==='coeur'?' active':''}" onclick="setPriorite('${item.id}','coeur')">⭐ Coup de cœur</button>
+        <button class="prio-btn${priorite==='sympa'?' active':''}" onclick="setPriorite('${item.id}','sympa')">👍 Sympa</button>
+        <button class="prio-btn${priorite==='optionnel'?' active':''}" onclick="setPriorite('${item.id}','optionnel')">🤷 Optionnel</button>
+      </div>
+      <div class="duree-row" onclick="event.stopPropagation()">
+        <button class="duree-btn${duree==='30min'?' active':''}" onclick="setDuree('${item.id}','30min')">⚡ 30min</button>
+        <button class="duree-btn${duree==='1h'?' active':''}" onclick="setDuree('${item.id}','1h')">⏱ 1h</button>
+        <button class="duree-btn${duree==='2h+'?' active':''}" onclick="setDuree('${item.id}','2h+')">🕐 2h+</button>
+        ${duree?`<button class="duree-btn" onclick="setDuree('${item.id}','')">✕</button>`:''}
+      </div>`:''}
     </div>`;
+
   if(hasAmap){
-  const mapBtn = d.querySelector('.map-link');
-  if(mapBtn){
-    mapBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      openAmap(item);
-    });
+    const mapBtn=d.querySelector('.map-link');
+    if(mapBtn){mapBtn.addEventListener('click',(e)=>{e.stopPropagation();openAmap(item);});}
   }
-}
   d.onclick=()=>openItemSheet(item.type,item);return d;
 }
 function starsRO(v){let h='';for(let i=1;i<=5;i++)h+=`<span class="star${i<=(v||0)?' on':''}">★</span>`;return h;}
@@ -1630,7 +2167,40 @@ function buildItemForm(type, item) {
 
   const bottom = `<div class="row-2">${starsF('matis')}${starsF('lise')}</div>
     <div class="form-group"><div class="form-label">Notes perso</div><input class="form-input" id="if-notes" value="${v('notes').replace(/IMG:[^|]+\|?/ig,'').trim()}" placeholder="Notes…"></div>
-  
+    <div class="form-group">
+      <div class="form-label" style="display:flex;align-items:center;justify-content:space-between;">
+        <span>📍 Coordonnées GPS</span>
+        <button type="button" onclick="geocodeItem()" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:4px 10px;font-size:.65rem;font-weight:600;cursor:pointer;font-family:var(--font);">🔍 Géocoder</button>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px;">
+        <input class="form-input" id="if-lat" type="number" step="0.000001" value="${n('lat')||''}" placeholder="Latitude ex: 31.2304">
+        <input class="form-input" id="if-lng" type="number" step="0.000001" value="${n('lng')||''}" placeholder="Longitude ex: 121.4737">
+      </div>
+      <div id="geocode-status" style="font-size:.65rem;color:var(--txt2);margin-top:4px;min-height:16px;"></div>
+    </div>
+    <div class="form-group"><div class="form-label">Statut</div>
+      <select class="form-input" id="if-statut">
+        <option value="idee" ${(!item||!item.statut||item.statut==='idee')?'selected':''}>💡 Idée — on pourrait faire</option>
+        <option value="planifie" ${item&&item.statut==='planifie'?'selected':''}>📅 Planifié — on va faire</option>
+        <option value="fait" ${item&&(item.statut==='fait'||item.fait)?'selected':''}>✅ Fait — on a fait</option>
+      </select>
+    </div>
+    <div class="form-group"><div class="form-label">Priorité</div>
+      <select class="form-input" id="if-priorite">
+        <option value="" ${!item||!item.priorite?'selected':''}>— Non définie</option>
+        <option value="coeur" ${item&&item.priorite==='coeur'?'selected':''}>⭐ Coup de cœur — must do</option>
+        <option value="sympa" ${item&&item.priorite==='sympa'?'selected':''}>👍 Sympa — si l'occasion</option>
+        <option value="optionnel" ${item&&item.priorite==='optionnel'?'selected':''}>🤷 Optionnel — bof</option>
+      </select>
+    </div>
+    <div class="form-group"><div class="form-label">Durée estimée</div>
+      <select class="form-input" id="if-duree-est">
+        <option value="" ${!item||!item.duree?'selected':''}>— Non définie</option>
+        <option value="30min" ${item&&item.duree==='30min'?'selected':''}>⚡ 30 min</option>
+        <option value="1h" ${item&&item.duree==='1h'?'selected':''}>⏱ 1 heure</option>
+        <option value="2h+" ${item&&item.duree==='2h+'?'selected':''}>🕐 2h+</option>
+      </select>
+    </div>
     <button class="btn-primary" onclick="saveItem()">Enregistrer</button>
     ${!isNew ? `<button class="btn-danger" onclick="deleteItem()">Supprimer</button>` : ''}
     <button class="btn-cancel" onclick="closeOverlay('item-overlay')">Annuler</button>
@@ -1858,8 +2428,12 @@ async function saveItem() {
         matis,
         lise,
         fait,
-        adresse_cn: adresseCn
-
+        adresse_cn: adresseCn,
+        statut: document.getElementById('if-statut')?.value || 'idee',
+        priorite: document.getElementById('if-priorite')?.value || '',
+        duree: document.getElementById('if-duree-est')?.value || '',
+        lat: parseFloat(document.getElementById('if-lat')?.value)||null,
+        lng: parseFloat(document.getElementById('if-lng')?.value)||null
       };
     }
 
@@ -2168,6 +2742,143 @@ async function removeSlot(id){
 }
 
 // ── TRANSPORTS ──
+// ══ GEOCODING ══
+async function geocodeItem(){
+  const nom=document.getElementById('if-nom')?.value||'';
+  const ville=document.getElementById('if-ville')?.value||'';
+  const quartier=document.getElementById('if-quartier')?.value||'';
+  const adresse=document.getElementById('if-adresse')?.value||'';
+  const adresseCn=document.getElementById('if-adresse-cn')?.value||'';
+  const status=document.getElementById('geocode-status');
+  if(!nom&&!adresse&&!adresseCn){if(status)status.textContent='⚠️ Saisis un nom ou une adresse dabord';return;}
+  if(status)status.textContent='🔍 Recherche en cours…';
+  // Construire la query : priorité adresse CN > adresse FR > nom + ville
+  const query=adresseCn||(adresse?(adresse+' '+ville).trim():(nom+' '+quartier+' '+ville).trim());
+  try{
+    const url=`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1&countrycodes=cn`;
+    const res=await fetch(url,{headers:{'Accept-Language':'fr','User-Agent':'Chine2026App'}});
+    const data=await res.json();
+    if(data&&data.length>0){
+      const r=data[0];
+      const lat=parseFloat(r.lat),lng=parseFloat(r.lon);
+      const latEl=document.getElementById('if-lat');
+      const lngEl=document.getElementById('if-lng');
+      if(latEl)latEl.value=Math.round(lat*1000000)/1000000;
+      if(lngEl)lngEl.value=Math.round(lng*1000000)/1000000;
+      if(status)status.innerHTML=`✅ Trouvé : <b>${esc(r.display_name.split(',').slice(0,3).join(', '))}</b>`;
+    }else{
+      if(status)status.textContent='❌ Lieu non trouvé — saisis les coords manuellement';
+    }
+  }catch(e){
+    if(status)status.textContent='❌ Erreur réseau — saisis les coords manuellement';
+  }
+}
+
+// ══ STATUT / PRIORITÉ / DURÉE ══
+async function setStatut(itemId,statut){
+  await sb.from('items').update({statut}).eq('id',itemId);
+  showToast(statut==='idee'?'💡 Idée':statut==='planifie'?'📅 Planifié':'✅ Fait !');
+}
+
+async function setPriorite(itemId,priorite){
+  await sb.from('items').update({priorite}).eq('id',itemId);
+  showToast(priorite==='coeur'?'⭐ Coup de cœur !':priorite==='sympa'?'👍 Sympa':'🤷 Optionnel');
+}
+
+async function setDuree(itemId,duree){
+  await sb.from('items').update({duree}).eq('id',itemId);
+}
+
+// ══ TERRAIN MODE ══
+function toggleTerrainMode(){
+  terrainMode=!terrainMode;
+  const toggle=document.getElementById('terrainToggle');
+  const banner=document.getElementById('terrainBanner');
+  const quoi=document.getElementById('quoiWidget');
+  const zone=document.getElementById('dragToPlanZone');
+  if(toggle)toggle.classList.toggle('on',terrainMode);
+  if(banner)banner.classList.toggle('on',terrainMode);
+  if(quoi)quoi.style.display=terrainMode?'block':'none';
+  if(terrainMode){refreshQuoi();}
+  // Reset filter when entering terrain
+  if(terrainMode){terrainFilter='tous';document.querySelectorAll('.tf-chip:not(.mode-terrain-toggle)').forEach(c=>c.classList.toggle('on',c.textContent.trim()==='Tout'));}
+  renderItems('activite');
+}
+
+function setTerrainFilter(f,el){
+  terrainFilter=f;
+  document.querySelectorAll('.tf-chip:not(.mode-terrain-toggle)').forEach(c=>c.classList.remove('on'));
+  if(el)el.classList.add('on');
+  renderItems('activite');
+  renderItems('restaurant');
+  renderItems('cafe');
+}
+
+// ══ "ON FAIT QUOI ?" ══
+function refreshQuoi(){
+  const list=document.getElementById('quoiList');if(!list)return;
+  // Get current day city from planning
+  const today=new Date();
+  const todayStr=today.toISOString().split('T')[0];
+  const todayPlan=D.planning.find(p=>p.date_voyage===todayStr);
+  const cityHint=[todayPlan?.matin_lieu,todayPlan?.aprem_lieu,todayPlan?.soir_lieu].filter(Boolean).join(' ').toLowerCase();
+  const matchVille=VILLES.find(v=>cityHint.includes(v.toLowerCase()))||null;
+
+  let candidates=D.items.filter(x=>
+    (x.type==='activite'||x.type==='restaurant'||x.type==='cafe')&&
+    getItemStatut(x)!=='fait'&&
+    getItemStatut(x)!=='planifie'
+  );
+
+  // Boost by city proximity
+  if(matchVille)candidates.sort((a,b)=>(a.ville===matchVille?-1:1)-(b.ville===matchVille?-1:1));
+  // Then by priorité
+  const prioOrder={coeur:0,sympa:1,optionnel:2};
+  candidates.sort((a,b)=>(prioOrder[getItemPriorite(a)]||1)-(prioOrder[getItemPriorite(b)]||1));
+
+  const top=candidates.slice(0,4);
+  if(!top.length){list.innerHTML='<div class="quoi-empty">🎉 Toutes les idées traitées !</div>';return;}
+  list.innerHTML='';
+  top.forEach(item=>{
+    const duree=getItemDuree(item);
+    const prio={coeur:'⭐',sympa:'👍',optionnel:'🤷'}[getItemPriorite(item)]||'';
+    const d=document.createElement('div');d.className='quoi-item';
+    d.innerHTML=`<div class="quoi-item-ic">${TYPE_IC[item.type]||'📍'}</div>
+      <div class="quoi-item-body">
+        <div class="quoi-item-name">${esc(item.nom)}</div>
+        <div class="quoi-item-meta">${esc(item.ville||'')}${item.quartier&&item.quartier!=='À définir'?' · '+esc(item.quartier):''}${duree?' · ⏱ '+esc(duree):''}</div>
+      </div>
+      <span class="quoi-prio">${prio}</span>`;
+    d.onclick=()=>openItemSheet(item.type,item);
+    list.appendChild(d);
+  });
+}
+
+// ══ DRAG TO PLANNING ══
+async function handleDragToPlan(e){
+  e.preventDefault();
+  const zone=document.getElementById('dragToPlanZone');
+  if(zone){zone.classList.remove('drag-over');zone.classList.remove('active');}
+  if(!dragItemId)return;
+
+  // Find today's planning day or first available
+  const today=new Date().toISOString().split('T')[0];
+  let targetDay=D.planning.find(p=>p.date_voyage===today)||D.planning[0];
+  if(!targetDay){showToast('❌ Aucun jour dans le planning');dragItemId=null;return;}
+
+  // Add to planning_slots
+  const alreadyIn=D.slots.find(s=>s.planning_id===targetDay.id&&s.item_id===dragItemId);
+  if(!alreadyIn){
+    await sb.from('planning_slots').insert({planning_id:targetDay.id,item_id:dragItemId,periode:'',ordre:0});
+    // Auto set statut to planifie
+    await sb.from('items').update({statut:'planifie'}).eq('id',dragItemId);
+    showToast('📅 Ajouté au planning du '+targetDay.date_voyage);
+  } else {
+    showToast('Déjà dans ce jour !');
+  }
+  dragItemId=null;
+}
+
 function renderTransports() {
   const cont = document.getElementById('trTimeline');
   cont.innerHTML = '';
@@ -2404,7 +3115,7 @@ function switchRCTab(t){
 // ── QUICK NAV helper ──
 function goTabByName(name){
   const btns = document.querySelectorAll('.nb');
-  const tabs = ['budget','planning','activites','restaurants','hotels','transport','checklist','notes','phrases','stats'];
+  const tabs = ['budget','planning','activites','restaurants','hotels','transport','checklist','notes','phrases','stats','carte','chat'];
   const idx = tabs.indexOf(name);
   if(idx > -1 && btns[idx]) goTab(name, btns[idx]);
 }
@@ -2567,6 +3278,566 @@ function renderStats(){
     </div>
   `;
 }
+// ══════════════════════════════════════════════════════════
+// CARTE — Leaflet + GPS + filtres + navigation Amap
+// ══════════════════════════════════════════════════════════
+let mapInst=null;
+let mapMarkers=[];
+let meMarker=null;
+let meCircle=null;
+let myPos=null; // {lat,lng,acc}
+let mapFilter='all';
+let watchId=null;
+let mapLayerIdx=0;
+
+// Coordonnées par ville (pour placer les marqueurs sans lat/lng exact)
+const VILLE_COORDS={
+  'Shanghai':[31.2304,121.4737],
+  'Chongqing':[29.5630,106.5516],
+  'Chengdu':[30.5723,104.0665],
+  'Karst de Wulong':[29.3568,107.7560],
+  'Furong':[28.9822,109.6753],
+  'Zhangjiajie':[29.1248,110.4795],
+};
+
+const TYPE_COLOR={activite:'#7c3aed',restaurant:'#ea580c',cafe:'#0891b2',hotel:'#e85d5d'};
+const TYPE_EMOJI={activite:'🎯',restaurant:'🍜',cafe:'☕',hotel:'🏨'};
+
+function getItemCoords(item){
+  // Use stored lat/lng if available
+  if(item.lat&&item.lng)return[parseFloat(item.lat),parseFloat(item.lng)];
+  // Fallback to city center — pas de jitter, marqueur au centre de la ville
+  const base=VILLE_COORDS[item.ville||''];
+  if(!base)return null;
+  // Jitter léger déterministe basé sur l'id pour éviter la superposition
+  const seed=String(item.id||'').split('').reduce((a,c)=>a+c.charCodeAt(0),0);
+  const jitter=(s,r)=>((s*9301+49297)%233280/233280-.5)*r;
+  return[base[0]+jitter(seed,0.012),base[1]+jitter(seed*7,0.012)];
+}
+
+function buildMarkerIcon(type,isMe=false){
+  const color=isMe?'#3b82f6':(TYPE_COLOR[type]||'#888');
+  const emoji=isMe?'📍':(TYPE_EMOJI[type]||'📍');
+  return L.divIcon({
+    className:'',
+    html:`<div style="
+      width:34px;height:34px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);
+      background:${color};display:flex;align-items:center;justify-content:center;
+      box-shadow:0 4px 14px rgba(0,0,0,.25);border:2px solid rgba(255,255,255,.8);
+    "><span style="transform:rotate(45deg);font-size:1rem;line-height:1;">${emoji}</span></div>`,
+    iconSize:[34,34],iconAnchor:[17,34],popupAnchor:[0,-36]
+  });
+}
+
+function buildMeIcon(){
+  return L.divIcon({
+    className:'',
+    html:`<div style="
+      width:22px;height:22px;border-radius:50%;background:#3b82f6;
+      border:3px solid #fff;box-shadow:0 0 0 4px rgba(59,130,246,.3),0 4px 12px rgba(0,0,0,.2);
+    "></div>`,
+    iconSize:[22,22],iconAnchor:[11,11]
+  });
+}
+
+function initMap(){
+  if(mapInst){mapInst.invalidateSize();renderMapMarkers();return;}
+  const mapEl=document.getElementById('map');
+  if(!mapEl)return;
+
+  // Init carte centrée sur Shanghai par défaut
+  mapInst=L.map('map',{zoomControl:false,attributionControl:false}).setView([31.2,121.47],11);
+
+  // CartoDB Voyager — pas de restriction referer, fonctionne partout
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{
+    subdomains:'abcd',maxZoom:19,attribution:'© OpenStreetMap © CARTO'
+  }).addTo(mapInst);
+
+  // Attribution discrète
+  L.control.attribution({position:'bottomleft',prefix:false}).addTo(mapInst);
+
+  // Zoom controls personnalisés
+  L.control.zoom({position:'topright'}).addTo(mapInst);
+
+  renderMapMarkers();
+
+  // Start GPS watch automatically
+  startGPS();
+}
+
+const MAP_LAYERS=[
+  {name:'Carte',url:'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',opts:{subdomains:'abcd',maxZoom:19}},
+  {name:'Sombre',url:'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',opts:{subdomains:'abcd',maxZoom:19}},
+  {name:'Satellite',url:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',opts:{maxZoom:19}},
+];
+let currentLayer=null;
+function cycleMapLayer(){
+  if(!mapInst)return;
+  mapLayerIdx=(mapLayerIdx+1)%MAP_LAYERS.length;
+  if(currentLayer)mapInst.removeLayer(currentLayer);
+  const l=MAP_LAYERS[mapLayerIdx];
+  currentLayer=L.tileLayer(l.url,l.opts||{maxZoom:19}).addTo(mapInst);
+  showToast('🗺️ '+l.name);
+}
+
+function renderMapMarkers(){
+  if(!mapInst)return;
+  // Clear old markers
+  mapMarkers.forEach(m=>m.remove());
+  mapMarkers=[];
+
+  const types=['activite','restaurant','cafe','hotel'];
+  const items=D.items.filter(x=>types.includes(x.type));
+
+  items.forEach(item=>{
+    const coords=getItemCoords(item);
+    if(!coords)return;
+
+    // Filtre
+    if(mapFilter!=='all'&&mapFilter!=='proche'&&mapFilter!=='planifie'){
+      if(item.type!==mapFilter)return;
+    }
+    if(mapFilter==='planifie'&&getItemStatut(item)!=='planifie')return;
+    if(mapFilter==='proche'&&myPos){
+      const dist=getDistKm(myPos.lat,myPos.lng,coords[0],coords[1]);
+      if(dist>2)return; // >2km = pas proche
+    }
+
+    // Distance depuis ma position
+  const distKm=getDistFromMe(item);
+  const distBadge=distKm!==null?(distKm<0.5?`<span class="proche-badge">📍 ${Math.round(distKm*1000)}m</span>`:distKm<2?`<span class="proche-badge" style="background:#f0fdf4;color:#166534;">📍 ${Math.round(distKm*10)/10}km</span>`:''):'';
+
+  const statut=getItemStatut(item);
+    const statutLabel={idee:'💡 Idée',planifie:'📅 Planifié',fait:'✅ Fait'}[statut]||'💡 Idée';
+    const dist=myPos?Math.round(getDistKm(myPos.lat,myPos.lng,coords[0],coords[1])*1000)+'m':null;
+    const prix=parseFloat(item.prix||0);
+
+    const marker=L.marker(coords,{icon:buildMarkerIcon(item.type)});
+
+    const popupHtml=`<div class="map-popup">
+      <div class="mp-type">${TYPE_EMOJI[item.type]||'📍'} ${esc(item.type?.toUpperCase()||'')}</div>
+      <div class="mp-name">${esc(item.nom)}</div>
+      <div class="mp-meta">${esc(item.ville||'')}${item.quartier&&item.quartier!=='À définir'?' · '+esc(item.quartier):''}${dist?' · 📍 '+dist:''}${!(item.lat&&item.lng)?'<span style="color:#f59e0b;font-size:.6rem;"> ⚠️ approx.</span>':''}</div>
+      <span class="mp-statut ${statut}">${statutLabel}</span>
+      ${prix>0?`<div class="mp-meta">💰 ${fmtE(prix)}</div>`:''}
+      <div class="mp-actions">
+        <button class="mp-btn" onclick="event.stopPropagation();changeStatutFromMap('${item.id}')">✏️ Statut</button>
+        <button class="mp-btn nav" onclick="event.stopPropagation();navigateToItem(${JSON.stringify({nom:item.nom,lat:coords[0],lng:coords[1],adresse_cn:item.adresse_cn||''}).replace(/"/g,'&quot;')})">🧭 Y aller</button>
+      </div>
+    </div>`;
+
+    marker.bindPopup(popupHtml,{maxWidth:240,closeButton:true});
+    marker.addTo(mapInst);
+    mapMarkers.push(marker);
+  });
+
+  // "Proches de moi" dans la barre filtre activités aussi
+  updateProcheBadges();
+}
+
+function toggleMapFilter(f,el){
+  mapFilter=f;
+  document.querySelectorAll('.map-f-chip').forEach(c=>c.classList.remove('on'));
+  if(el)el.classList.add('on');
+  renderMapMarkers();
+}
+
+function fitAllMarkers(){
+  if(!mapInst)return;
+  if(mapMarkers.length===0){mapInst.setView([31.2,121.47],11);return;}
+  const group=L.featureGroup(mapMarkers);
+  mapInst.fitBounds(group.getBounds().pad(0.15));
+}
+
+// ══ GPS ══
+function startGPS(){
+  if(!navigator.geolocation){showToast('❌ GPS non disponible');return;}
+  const banner=document.getElementById('gpsBanner');
+  const txt=document.getElementById('gpsTxt');
+  const acc=document.getElementById('gpsAcc');
+  if(banner)banner.classList.add('on');
+  if(txt)txt.textContent='Recherche GPS…';
+
+  watchId=navigator.geolocation.watchPosition(
+    pos=>{
+      myPos={lat:pos.coords.latitude,lng:pos.coords.longitude,acc:pos.coords.accuracy};
+      const accM=Math.round(myPos.acc);
+      if(txt)txt.textContent='Position trouvée';
+      if(acc)acc.textContent='± '+accM+'m';
+      if(banner)setTimeout(()=>banner.classList.remove('on'),3000);
+      updateMeOnMap();
+      updateProcheBadges();
+      renderMapMarkers();
+    },
+    err=>{
+      if(txt)txt.textContent='GPS indisponible';
+      if(acc)acc.textContent=err.message;
+      setTimeout(()=>{if(banner)banner.classList.remove('on');},2500);
+    },
+    {enableHighAccuracy:true,timeout:15000,maximumAge:10000}
+  );
+}
+
+function updateMeOnMap(){
+  if(!mapInst||!myPos)return;
+  const pos=[myPos.lat,myPos.lng];
+  if(meMarker){meMarker.setLatLng(pos);}
+  else{meMarker=L.marker(pos,{icon:buildMeIcon(),zIndexOffset:1000}).addTo(mapInst);meMarker.bindPopup('<div style="padding:8px;font-size:.82rem;font-weight:600;">📍 Vous êtes ici<br><span style="font-size:.68rem;color:#888;">± '+Math.round(myPos.acc)+'m</span></div>');}
+  if(meCircle){meCircle.setLatLng(pos).setRadius(myPos.acc);}
+  else{meCircle=L.circle(pos,{radius:myPos.acc,color:'#3b82f6',fillColor:'#3b82f6',fillOpacity:.08,weight:1.5}).addTo(mapInst);}
+}
+
+function centerOnMe(){
+  if(!myPos){startGPS();showToast('📍 Recherche GPS…');return;}
+  if(!mapInst)return;
+  mapInst.setView([myPos.lat,myPos.lng],15,{animate:true});
+  const btn=document.getElementById('gpsBtn');
+  if(btn){btn.classList.add('active');setTimeout(()=>btn.classList.remove('active'),1200);}
+}
+
+function getDistKm(lat1,lng1,lat2,lng2){
+  const R=6371,dLat=(lat2-lat1)*Math.PI/180,dLng=(lng2-lng1)*Math.PI/180;
+  const a=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)*Math.sin(dLng/2);
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+
+function updateProcheBadges(){
+  // Met à jour le filtre "proche" dans renderItems si GPS dispo
+  if(!myPos)return;
+  // Rafraîchit les cartes pour afficher la distance
+  // (on re-render silencieusement si l'onglet activités est visible)
+  const act=document.getElementById('tab-activites');
+  if(act&&act.classList.contains('on')){
+    ['activite','restaurant','cafe'].forEach(t=>renderItems(t));
+  }
+}
+
+// ══ NAVIGATION VERS UN LIEU ══
+function navigateToItem(data){
+  // data = {nom, lat, lng, adresse_cn}
+  let d;
+  try{d=typeof data==='string'?JSON.parse(data):data;}catch(e){return;}
+  const lat=d.lat,lng=d.lng;
+  const nom=d.nom||'';
+  const adresseCn=d.adresse_cn||'';
+
+  // Priority: Amap deeplink (works in China)
+  // Format: https://uri.amap.com/navigation?to=lng,lat,name
+  const amapNav=`https://uri.amap.com/navigation?to=${lng},${lat},${encodeURIComponent(nom)}&mode=walking&src=chine2026`;
+
+  // Fallback: Amap web search
+  const amapSearch=adresseCn
+    ?`https://www.amap.com/search?query=${encodeURIComponent(adresseCn)}`
+    :`https://www.amap.com/search?query=${encodeURIComponent(nom)}`;
+
+  // Show choice
+  showNavChoice(nom,amapNav,amapSearch,lat,lng);
+}
+
+function showNavChoice(nom,amapNav,amapSearch,lat,lng){
+  // Remove existing
+  const old=document.getElementById('navChoiceSheet');
+  if(old)old.remove();
+
+  const sheet=document.createElement('div');
+  sheet.id='navChoiceSheet';
+  sheet.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:3000;display:flex;align-items:flex-end;backdrop-filter:blur(4px);animation:fadeIn .2s ease;';
+  sheet.innerHTML=`<div style="width:100%;background:#fff;border-radius:24px 24px 0 0;padding:0 20px calc(20px + env(safe-area-inset-bottom));animation:slideUp .28s cubic-bezier(.4,0,.2,1);box-shadow:0 -18px 48px rgba(92,56,36,.18);">
+    <div style="width:36px;height:4px;background:#ddd;border-radius:2px;margin:12px auto 18px;"></div>
+    <div style="font-size:1rem;font-weight:700;color:#231815;margin-bottom:4px;">🧭 Naviguer vers</div>
+    <div style="font-size:.8rem;color:#6b5b53;margin-bottom:18px;">${esc(nom)}</div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <a href="${amapNav}" target="_blank" style="display:flex;align-items:center;gap:12px;padding:14px;background:linear-gradient(135deg,#e85d5d,#f59b7a);border-radius:14px;color:#fff;text-decoration:none;font-weight:600;font-size:.88rem;">
+        <span style="font-size:1.3rem;">🧭</span>
+        <div><div>Ouvrir dans Amap</div><div style="font-size:.68rem;opacity:.8;">Navigation GPS en temps réel</div></div>
+      </a>
+      <a href="${amapSearch}" target="_blank" style="display:flex;align-items:center;gap:12px;padding:14px;background:#f7efe8;border:1.5px solid #eedfd3;border-radius:14px;color:#231815;text-decoration:none;font-weight:600;font-size:.88rem;">
+        <span style="font-size:1.3rem;">🔍</span>
+        <div><div>Rechercher sur Amap</div><div style="font-size:.68rem;color:#6b5b53;">Web — affiche l'adresse</div></div>
+      </a>
+      <a href="https://maps.apple.com/?daddr=${lat},${lng}&dirflg=w" target="_blank" style="display:flex;align-items:center;gap:12px;padding:14px;background:#f0f8ff;border:1.5px solid #dbeafe;border-radius:14px;color:#1d4ed8;text-decoration:none;font-weight:600;font-size:.88rem;">
+        <span style="font-size:1.3rem;">🍎</span>
+        <div><div>Apple Plans</div><div style="font-size:.68rem;color:#3b82f6;">Fallback si Amap indispo</div></div>
+      </a>
+    </div>
+    <button onclick="document.getElementById('navChoiceSheet').remove()" style="width:100%;margin-top:10px;padding:12px;background:#f7efe8;border:none;border-radius:12px;font-family:inherit;font-size:.86rem;color:#6b5b53;cursor:pointer;">Annuler</button>
+  </div>`;
+  sheet.onclick=e=>{if(e.target===sheet)sheet.remove();};
+  document.body.appendChild(sheet);
+}
+
+async function changeStatutFromMap(itemId){
+  const item=D.items.find(x=>x.id===itemId);
+  if(!item)return;
+  const current=getItemStatut(item);
+  const next={idee:'planifie',planifie:'fait',fait:'idee'}[current]||'idee';
+  await setStatut(itemId,next);
+  setTimeout(()=>renderMapMarkers(),600);
+}
+
+// Filtre proche dans renderItems — ajout badge distance
+function getDistFromMe(item){
+  if(!myPos)return null;
+  const coords=getItemCoords(item);
+  if(!coords)return null;
+  return getDistKm(myPos.lat,myPos.lng,coords[0],coords[1]);
+}
+
+// ══════════════════════════════════════════════════════════
+// CHAT — Messages Supabase realtime + Bot IA locale
+// ══════════════════════════════════════════════════════════
+let chatInited=false;
+let chatSub=null;
+
+let chatPollInterval=null;
+let lastChatId=null;
+
+async function initChat(){
+  if(chatInited)return;
+  chatInited=true;
+  await loadChatHistory();
+
+  // Realtime Supabase
+  try{
+    chatSub=sb.channel('chat-realtime')
+      .on('postgres_changes',{event:'INSERT',schema:'public',table:'chat_messages'},
+        payload=>{
+          // Éviter doublon si déjà reçu via polling
+          if(payload.new&&payload.new.id!==lastChatId){
+            appendChatMsg(payload.new);
+            lastChatId=payload.new.id;
+            scrollChat();
+          }
+        })
+      .subscribe(status=>{
+        if(status==='SUBSCRIBED'){
+          // Realtime OK — pas besoin de polling
+          if(chatPollInterval){clearInterval(chatPollInterval);chatPollInterval=null;}
+        }else if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'){
+          startChatPolling();
+        }
+      });
+  }catch(e){startChatPolling();}
+
+  // Fallback polling toutes les 3s si realtime indisponible
+  setTimeout(()=>{if(!chatSub||chatSub.state!=='joined')startChatPolling();},4000);
+}
+
+async function loadChatHistory(){
+  try{
+    const {data,error}=await sb.from('chat_messages').select('*').order('created_at',{ascending:true}).limit(80);
+    const msgs=document.getElementById('chatMessages');
+    if(msgs)msgs.innerHTML='';
+    if(error){
+      // Table manquante — afficher message d'aide
+      showChatError();
+      return;
+    }
+    if(data){
+      data.forEach(m=>appendChatMsg(m,false));
+      if(data.length>0)lastChatId=data[data.length-1].id;
+    }
+    scrollChat();
+  }catch(e){showChatError();}
+}
+
+function showChatError(){
+  const msgs=document.getElementById('chatMessages');
+  if(!msgs)return;
+  msgs.innerHTML=`<div style="text-align:center;padding:24px 16px;">
+    <div style="font-size:2rem;margin-bottom:10px;">⚠️</div>
+    <div style="font-size:.84rem;font-weight:600;color:var(--txt);margin-bottom:6px;">Table chat_messages manquante</div>
+    <div style="font-size:.74rem;color:var(--txt2);line-height:1.5;">Crée la table dans Supabase SQL Editor :<br><code style="background:var(--sand);padding:4px 8px;border-radius:6px;font-size:.7rem;">create table chat_messages (id uuid default gen_random_uuid() primary key, author text not null, content text not null, created_at timestamptz default now());</code><br><br>Active aussi le <b>Realtime</b> sur cette table dans Database → Replication.</div>
+  </div>`;
+}
+
+function startChatPolling(){
+  if(chatPollInterval)return;
+  chatPollInterval=setInterval(async()=>{
+    try{
+      const q=lastChatId
+        ?sb.from('chat_messages').select('*').order('created_at',{ascending:true}).gt('id',lastChatId).limit(20)
+        :sb.from('chat_messages').select('*').order('created_at',{ascending:true}).limit(80);
+      const{data}=await q;
+      if(data&&data.length>0){
+        data.forEach(m=>appendChatMsg(m));
+        lastChatId=data[data.length-1].id;
+        scrollChat();
+      }
+    }catch(e){}
+  },3000);
+}
+
+function appendChatMsg(msg,animate=true){
+  const msgs=document.getElementById('chatMessages');
+  if(!msgs)return;
+  const isMe=msg.author===currentUser;
+  const isBot=msg.author==='bot';
+  const u=isBot?null:USERS[msg.author];
+
+  const d=document.createElement('div');
+  d.className='chat-msg '+(isBot?'bot':isMe?'me':'other');
+  if(animate)d.style.animationDelay='0s';
+
+  const time=msg.created_at?new Date(msg.created_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):'';
+  const senderHtml=(!isMe&&!isBot&&u)?`<div class="chat-sender"><div class="chat-sender-av ${u.av}">${u.emoji}</div><span class="chat-sender-name">${u.name}</span></div>`:'';
+  const botHtml=isBot?`<div class="chat-sender"><div class="chat-sender-av" style="background:#1e293b;color:#fff;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.6rem;">🤖</div><span class="chat-sender-name" style="color:#64748b;">Assistant</span></div>`:'';
+
+  d.innerHTML=`${senderHtml}${botHtml}<div class="chat-bubble">${esc(msg.content).replace(/\n/g,'<br>')}</div><div class="chat-meta ${isMe?'me':''}">${time}</div>`;
+  msgs.appendChild(d);
+}
+
+function scrollChat(){
+  const msgs=document.getElementById('chatMessages');
+  if(msgs)setTimeout(()=>msgs.scrollTo({top:msgs.scrollHeight,behavior:'smooth'}),80);
+}
+
+async function sendChat(){
+  const inp=document.getElementById('chatInp');
+  const text=(inp?.value||'').trim();
+  if(!text||!currentUser){
+    if(!currentUser)showToast('Connecte-toi dabord');
+    return;
+  }
+  inp.value='';inp.style.height='';
+
+  // Affichage immédiat (optimistic)
+  const tempMsg={id:'temp_'+Date.now(),author:currentUser,content:text,created_at:new Date().toISOString()};
+  appendChatMsg(tempMsg,true);
+  scrollChat();
+
+  // Envoyer dans Supabase
+  try{
+    const{error}=await sb.from('chat_messages').insert({author:currentUser,content:text});
+    if(error){showToast('❌ Erreur envoi — '+error.message);return;}
+  }catch(e){showToast('❌ Erreur réseau');return;}
+
+  // Bot ?
+  const isQuestion=text.startsWith('?')||text.toLowerCase().includes('@bot')||text.endsWith('?');
+  if(isQuestion){
+    showBotTyping();
+    setTimeout(async()=>{
+      const reply=generateBotReply(text);
+      hideBotTyping();
+      try{await sb.from('chat_messages').insert({author:'bot',content:reply});}catch(e){}
+      // Affichage immédiat du bot aussi
+      appendChatMsg({author:'bot',content:reply,created_at:new Date().toISOString()});
+      scrollChat();
+    },900+Math.random()*600);
+  }
+}
+
+async function askBot(question){
+  if(!currentUser){showToast('Connecte-toi dabord');return;}
+  const inp=document.getElementById('chatInp');
+  if(inp)inp.value=question;
+  sendChat();
+  goTabByName('chat');
+}
+
+function showBotTyping(){
+  const msgs=document.getElementById('chatMessages');
+  if(!msgs)return;
+  const d=document.createElement('div');d.className='chat-msg bot';d.id='bot-typing';
+  d.innerHTML='<div class="chat-typing"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>';
+  msgs.appendChild(d);scrollChat();
+}
+function hideBotTyping(){document.getElementById('bot-typing')?.remove();}
+
+function addBotMessage(text){
+  const msgs=document.getElementById('chatMessages');
+  if(!msgs)return;
+  const d=document.createElement('div');d.className='chat-msg bot';
+  d.innerHTML=`<div class="chat-sender"><div class="chat-sender-av" style="background:#1e293b;color:#fff;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.6rem;">🤖</div><span class="chat-sender-name" style="color:#64748b;">Assistant</span></div><div class="chat-bubble">${esc(text)}</div>`;
+  msgs.appendChild(d);scrollChat();
+}
+
+// ── BOT IA LOCALE ──
+function generateBotReply(question){
+  const q=question.toLowerCase();
+
+  // Budget
+  if(q.includes('budget')||q.includes('argent')||q.includes('dépens')||q.includes('rest')){
+    let depM=0,depL=0;
+    D.budget.forEach(r=>{const t=parseFloat(r.total||0);const w=(r.personne||'les deux').toLowerCase();if(w==='matis')depM+=t;else if(w==='lise')depL+=t;else{depM+=t/2;depL+=t/2;}});
+    const tot=depM+depL;const bud=budgetPP*2;
+    return `💰 Budget (2 pers.) : ${fmtE(bud)}\nDépensé : ${fmtE(tot)} (${Math.round(tot/bud*100)}%)\nRestant : ${fmtE(bud-tot)}\n\n👤 Matis : ${fmtE(depM)} (reste ${fmtE(budgetPP-depM)})\n👤 Lise : ${fmtE(depL)} (reste ${fmtE(budgetPP-depL)})`;
+  }
+
+  // Planning demain / aujourd'hui
+  if(q.includes('demain')||q.includes('aujourd')||q.includes('planning')){
+    const today=new Date();const tomorrow=new Date(today);tomorrow.setDate(today.getDate()+1);
+    const target=q.includes('demain')?tomorrow:today;
+    const dateStr=target.toISOString().split('T')[0];
+    const day=D.planning.find(p=>p.date_voyage===dateStr);
+    if(!day)return `📅 Aucun jour planifié pour le ${dateStr}.`;
+    const slots=D.slots.filter(s=>s.planning_id===day.id);
+    const acts=slots.map(s=>D.items.find(x=>x.id===s.item_id)).filter(Boolean);
+    const hotel=D.items.find(x=>x.id===day.hotel_id);
+    let reply=`📅 ${dateStr}\n`;
+    if(day.matin_lieu)reply+=`🌅 Matin : ${day.matin_lieu}\n`;
+    if(day.aprem_lieu)reply+=`☀️ Aprem : ${day.aprem_lieu}\n`;
+    if(day.soir_lieu)reply+=`🌙 Soir : ${day.soir_lieu}\n`;
+    if(acts.length)reply+=`\n🎯 Activités : ${acts.map(a=>a.nom).join(', ')}`;
+    if(hotel)reply+=`\n🏨 Hôtel : ${hotel.nom}`;
+    return reply||'Journée vide pour linstant.';
+  }
+
+  // Activités non faites
+  if(q.includes('activ')||q.includes('faire')||q.includes('idée')){
+    const ville=q.includes('shanghai')?'Shanghai':q.includes('chongqing')?'Chongqing':q.includes('chengdu')?'Chengdu':q.includes('zhangjiajie')?'Zhangjiajie':null;
+    let items=D.items.filter(x=>x.type==='activite'&&!x.fait);
+    if(ville)items=items.filter(x=>x.ville===ville);
+    const top=items.sort((a,b)=>((b.matis||0)+(b.lise||0))-((a.matis||0)+(a.lise||0))).slice(0,5);
+    if(!top.length)return `🎉 Toutes les activités${ville?' à '+ville:''} ont été faites !`;
+    return `🎯 Top activités${ville?' à '+ville:''} :\n`+top.map((a,i)=>`${i+1}. ${a.nom} (${a.ville||'?'})`).join('\n');
+  }
+
+  // Restos
+  if(q.includes('resto')||q.includes('manger')||q.includes('restaurant')){
+    const top=D.items.filter(x=>x.type==='restaurant'&&!x.fait)
+      .sort((a,b)=>((b.matis||0)+(b.lise||0))-((a.matis||0)+(a.lise||0))).slice(0,5);
+    if(!top.length)return '🎉 Tous les restos ont été faits !';
+    return '🍜 Meilleurs restos non encore faits :\n'+top.map((r,i)=>`${i+1}. ${r.nom} — ${r.ville||'?'}`).join('\n');
+  }
+
+  // Transport
+  if(q.includes('transport')||q.includes('train')||q.includes('vol')||q.includes('avion')){
+    const upcoming=D.items.filter(x=>x.type==='transport'&&!x.fait).sort((a,b)=>(a.adresse||'').localeCompare(b.adresse||''));
+    if(!upcoming.length)return '✅ Tous les transports sont faits !';
+    return '🚄 Prochains transports :\n'+upcoming.slice(0,4).map(t=>`${t.adresse||'?'} — ${t.nom} (${t.prix_type||'?'})`).join('\n');
+  }
+
+  // Checklist
+  if(q.includes('check')||q.includes('liste')||q.includes('prépar')){
+    const done=D.checklist.filter(x=>x.done).length;const tot=D.checklist.length;
+    const remaining=D.checklist.filter(x=>!x.done).slice(0,5);
+    return `✅ Checklist : ${done}/${tot} (${tot?Math.round(done/tot*100):0}%)\n${remaining.length?'\n⏳ Reste : '+remaining.map(x=>x.label).join(', '):'\n🎉 Tout est prêt !'}`;
+  }
+
+  // Hôtels
+  if(q.includes('hôtel')||q.includes('hotel')||q.includes('nuit')||q.includes('dormir')){
+    const hotels=D.items.filter(x=>x.type==='hotel');
+    if(!hotels.length)return '🏨 Aucun hôtel enregistré.';
+    return '🏨 Hôtels :\n'+hotels.map(h=>`${h.nom} — ${h.ville||'?'} ${h.fait?'✅':'⏳'}`).join('\n');
+  }
+
+  // Météo
+  if(q.includes('météo')||q.includes('temps')||q.includes('température')){
+    return '🌤 Météo novembre en Chine :\n🏙️ Shanghai : 10–18°C, nuageux\n🌆 Chongqing : 10–16°C, nuageux\n🐼 Chengdu : 9–15°C, brumeux\n🏞️ Zhangjiajie : 6–13°C, brume magnifique\n🌸 Furong : 8–14°C';
+  }
+
+  // Salutations
+  if(q.includes('bonjour')||q.includes('salut')||q.includes('coucou')||q.includes('hello')){
+    const u=USERS[currentUser];
+    return `${u.emoji} Bonjour ${u.name} ! Comment puis-je t'aider ? Tu peux me poser des questions sur le budget, le planning, les activités, ou les restos.`;
+  }
+
+  // Défaut
+  const tips=['budget','planning','activités','restos','hôtels','transports','checklist'];
+  return `Je ne suis pas sûr de comprendre ta question 🤔\nEssaie de me demander sur : ${tips.join(', ')}.\n\nTu peux aussi utiliser les boutons rapides ci-dessus !`;
+}
+
 function updateNextStep() {
   const now = new Date();
   const todayStr = now.toLocaleDateString('sv-SE'); 
@@ -2613,17 +3884,106 @@ function updateNextStep() {
   window.speechSynthesis.speak(msg);
 }
 document.addEventListener('DOMContentLoaded', () => {
-  init()
-    .then(() => {
-
-      updateEditorUI();
-    })
-    .catch(err => {
-      console.error(err);
-      const msg = document.getElementById('loader-msg');
-      if (msg) msg.textContent = 'Erreur : ' + (err?.message || err);
-    });
+  // Afficher login si pas de user, sinon passer directement
+  if(!currentUser){
+    document.getElementById('loginScreen').classList.remove('hidden');
+    document.getElementById('loader').style.display='none';
+  } else {
+    // Utilisateur déjà authentifié → toujours éditeur
+    editorUnlocked=true;
+    init()
+      .then(() => { updateEditorUI(); updateProfilUI(); showWelcome(); })
+      .catch(err => {
+        console.error(err);
+        const msg = document.getElementById('loader-msg');
+        if (msg) msg.textContent = 'Erreur : ' + (err?.message || err);
+      });
+  }
 });
+
+// ── LOGIN ──
+function loginAs(who){
+  const u=USERS[who];
+  if(!u)return;
+  // Demander le MDP
+  const entered=prompt(`🔐 Bonjour ${u.name} !\nTon mot de passe :`);
+  if(entered===null)return; // annulé
+  // Pin effectif = localStorage si modifié, sinon défaut
+  const effectivePin=localStorage.getItem('pin_'+who)||u.pin;
+  if(entered!==effectivePin){
+    alert('❌ Mot de passe incorrect.');
+    return;
+  }
+  // Connexion validée
+  currentUser=who;
+  localStorage.setItem('chine_user',who);
+  editorUnlocked=true; // Matis et Lise sont toujours éditeurs
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('loader').style.display='flex';
+  init()
+    .then(()=>{ updateEditorUI(); updateProfilUI(); showWelcome(); })
+    .catch(err=>{ const m=document.getElementById('loader-msg');if(m)m.textContent='Erreur : '+err?.message; });
+}
+
+function updateProfilUI(){
+  if(!currentUser)return;
+  const u=USERS[currentUser];
+  const isVisitor=currentUser==='visiteur';
+  const pill=document.getElementById('profilPill');
+  const av=document.getElementById('profilAv');
+  const name=document.getElementById('profilName');
+  const settBtn=document.getElementById('settingsBtn');
+  const vBanner=document.getElementById('visitorBanner');
+  if(isVisitor){
+    if(pill)pill.style.display='none';
+    if(settBtn)settBtn.style.display='flex';
+    if(vBanner)vBanner.classList.add('on');
+    // Visitor = reader mode forcé
+    editorUnlocked=false;
+    updateEditorUI();
+  } else {
+    if(pill){pill.style.display='flex';if(av){av.className='profil-mini-av '+u.av;av.textContent=u.emoji;}if(name)name.textContent=u.name;}
+    if(settBtn)settBtn.style.display='none';
+    if(vBanner)vBanner.classList.remove('on');
+  }
+
+  // Remplir settings header
+  const avSettings=document.getElementById('settingsUserAv');
+  const nm=document.getElementById('settingsUserName');
+  if(avSettings){avSettings.textContent=u.emoji;avSettings.style.background=u.bg;}
+  if(nm)nm.textContent=u.name;}
+
+function showWelcome(){
+  const u=USERS[currentUser];
+  const h=new Date().getHours();
+  const greet=h<12?'Bonjour':h<18?'Bon après-midi':'Bonsoir';
+  showToast(u.emoji+' '+greet+' '+u.name+' !');
+  // Ajouter un message de bienvenue dans le chat
+  setTimeout(()=>addBotMessage(`${u.emoji} ${greet} ${u.name} ! Je suis ton assistant de voyage. Pose-moi une question sur le planning, le budget, ou les activités.`),800);
+}
+
+function logout(){
+  currentUser=null;
+  localStorage.removeItem('chine_user');
+  location.reload();
+}
+
+function changePin(){
+  if(!currentUser){showToast('Non connecté');return;}
+  const u=USERS[currentUser];
+  const old=document.getElementById('pp-pin-old')?.value||'';
+  const nw=document.getElementById('pp-pin-new')?.value||'';
+  const cf=document.getElementById('pp-pin-confirm')?.value||'';
+  // Récupérer le pin actuel (localStorage ou défaut)
+  const currentPin=localStorage.getItem('pin_'+currentUser)||u.pin;
+  if(old!==currentPin){showToast('❌ MDP actuel incorrect');return;}
+  if(!nw||nw.length<4){showToast('❌ Nouveau MDP trop court (min 4 car.)');return;}
+  if(nw!==cf){showToast('❌ Les deux MDP ne correspondent pas');return;}
+  localStorage.setItem('pin_'+currentUser,nw);
+  showToast('✅ Mot de passe changé !');
+  // Vider les champs
+  ['pp-pin-old','pp-pin-new','pp-pin-confirm'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+}
 </script>
 </body>
 </html>
