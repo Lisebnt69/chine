@@ -659,6 +659,9 @@ select.form-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://
   border:1px solid #ffd7d8;
   border-radius:10px;
   padding:6px 10px;
+  cursor:pointer;
+  font-family:inherit;
+  line-height:1;
 }
   .widget-mini{
   background:linear-gradient(180deg,#ffffff 0%,#fffaf7 100%);
@@ -1389,13 +1392,57 @@ function getExistingBudgetForItem(itemId){
   return D.budget.find(b=>b.item_id===itemId);
 }
 
-function buildAmapUrl(item){
+function buildAmapUrl(item, mode = 'auto'){
   if(item && item.mapUrl && String(item.mapUrl).trim()) return item.mapUrl;
-  const q=[item&&item.nom,item&&item.ville,item&&item.adresse].filter(Boolean).join(' ').trim();
-  if(!q) return '';
-  return `https://uri.amap.com/search?keyword=${encodeURIComponent(q)}`;
-}
 
+  const q = [item && item.nom, item && item.ville, item && item.adresse]
+    .filter(Boolean)
+    .join(' ')
+    .trim();
+
+  if(!q) return '';
+
+  const encoded = encodeURIComponent(q);
+
+  if(mode === 'app'){
+    return `androidamap://keywordNavi?sourceApplication=Chine2026&keyword=${encoded}`;
+  }
+
+  if(mode === 'ios'){
+    return `iosamap://path?sourceApplication=Chine2026&keyword=${encoded}`;
+  }
+
+  return `https://uri.amap.com/search?keyword=${encoded}`;
+}
+function openAmap(item){
+  const ua = navigator.userAgent || '';
+  const isAndroid = /Android/i.test(ua);
+  const isIOS = /iPhone|iPad|iPod/i.test(ua);
+
+  const webUrl = buildAmapUrl(item, 'web');
+  const appUrl = isAndroid
+    ? buildAmapUrl(item, 'app')
+    : isIOS
+      ? buildAmapUrl(item, 'ios')
+      : webUrl;
+
+  if(!appUrl) return;
+
+  if(!isAndroid && !isIOS){
+    window.open(webUrl, '_blank');
+    return;
+  }
+
+  const start = Date.now();
+  window.location.href = appUrl;
+
+  setTimeout(() => {
+    // si l'app ne s'est pas ouverte, fallback web
+    if(Date.now() - start < 1400){
+      window.location.href = webUrl;
+    }
+  }, 900);
+}
 function makeCard(item){
   const d=document.createElement('div');d.className='ic';
   const prix=parseFloat(item.prix||0);
@@ -1404,7 +1451,7 @@ function makeCard(item){
   const totalAffiche=item.type==='hotel'&&prix>0?prix*nuits:prix;
   const metaRight=item.type==='hotel'?(nuits+` nuit${nuits>1?'s':''}`):(item.prix_type||'');
   const cleanDesc=esc(String(item.description||'').replace(/IMG:[^|]+/ig,'').replace(/\s+\|\s+/g,' · ').trim());
-  const amapUrl = buildAmapUrl(item);
+  const hasAmap = !!buildAmapUrl(item, 'web');
   d.innerHTML=`
     <div class="ic-hero">${typePill}</div>
     <div class="ic-body">
@@ -1426,9 +1473,18 @@ function makeCard(item){
           <span class="slbl2">M</span><div class="stars">${starsRO(item.matis)}</div>
           <span class="slbl2">L</span><div class="stars">${starsRO(item.lise)}</div>
         </div>
-        ${amapUrl ? `<a class="map-link" href="${amapUrl}" target="_blank" rel="noopener">🗺 Amap</a>` : ''}
+        ${hasAmap ? `<button class="map-link" type="button" onclick="event.stopPropagation(); openAmap(${encodeURIComponent(JSON.stringify(item)).replace(/'/g, '%27')})">🗺 Amap</button>` : ''}
       </div>
     </div>`;
+  if(hasAmap){
+  const mapBtn = d.querySelector('.map-link');
+  if(mapBtn){
+    mapBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openAmap(item);
+    });
+  }
+}
   d.onclick=()=>openItemSheet(item.type,item);return d;
 }
 function starsRO(v){let h='';for(let i=1;i<=5;i++)h+=`<span class="star${i<=(v||0)?' on':''}">★</span>`;return h;}
