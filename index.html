@@ -1335,17 +1335,9 @@ select.form-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://
       </div>
 
       <div class="form-group">
-        <label class="form-label">Mode éditeur</label>
-        <div id="editorModeLabel" class="mode-badge">Mode lecteur</div>
+        <label class="form-label">Type de compte</label>
+        <div id="editorModeLabel" class="mode-badge">Compte éditeur</div>
       </div>
-
-      <div class="form-group">
-        <label class="form-label">Code PIN éditeur</label>
-        <input class="form-input" id="pp-pin" type="password" placeholder="Entrer le code PIN">
-      </div>
-
-      <button class="btn-primary" onclick="unlockEditorFromSettings()">Déverrouiller le mode éditeur</button>
-      <button class="btn-cancel" onclick="lockEditorMode()">Repasser en mode lecteur</button>
 
       <div style="background:var(--sand);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:14px;margin:14px 0;">
         <div style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--txt2);margin-bottom:10px;">🔐 Changer mon mot de passe</div>
@@ -1422,9 +1414,6 @@ select.form-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://
 const SB_URL='https://nwskpowizbggdqghnhcw.supabase.co';
 const SB_KEY='sb_publishable_571IoCHNSZxkvF7MW77Fxg_CfWgvcT4';
 const sb=supabase.createClient(SB_URL,SB_KEY);
-  let editorUnlocked = false;
-
-
 document.addEventListener('change', function(e) {
   if (e.target && e.target.id === 'if-file') {
     const file = e.target.files[0];
@@ -1475,8 +1464,6 @@ function closeLoginModal(){
   document.getElementById('loginModal').style.display = 'none';
   loginTargetUser = null;
 }
-// Pin global (fallback pour unlock manuel depuis paramètres)
-const EDITOR_PIN = 'chine2026';
 const D={budget:[],planning:[],items:[],slots:[],checklist:[],notes:[]};
 let budgetPP=parseFloat(localStorage.getItem('bpp')||'2500');
 let convRate=parseFloat(localStorage.getItem('convRate')||'7.78');
@@ -1586,17 +1573,24 @@ const PACK_DEFAULT=[
 
 // ── INIT ──
 async function init(){
-  window.addEventListener('offline', () => {
-    document.getElementById('offlineBanner')?.classList.add('on');
-  });
+  const offlineBanner = document.getElementById('offlineBanner');
+  const loader = document.getElementById('loader');
+  const loaderMsg = document.getElementById('loader-msg');
+  const convRateInp = document.getElementById('conv-rate-inp');
 
-  window.addEventListener('online', () => {
-    document.getElementById('offlineBanner')?.classList.remove('on');
-  });
-
-  if(!navigator.onLine){
-    document.getElementById('offlineBanner')?.classList.add('on');
+  function syncOfflineBanner(){
+    if(!offlineBanner) return;
+    if(!navigator.onLine){
+      offlineBanner.classList.add('on');
+      offlineBanner.textContent = '📵 Mode hors-ligne — données en cache';
+    } else {
+      offlineBanner.classList.remove('on');
+    }
   }
+
+  window.addEventListener('offline', syncOfflineBanner);
+  window.addEventListener('online', syncOfflineBanner);
+  syncOfflineBanner();
 
   const cached = localStorage.getItem('chine_cache');
   if(cached){
@@ -1610,7 +1604,6 @@ async function init(){
   }
 
   try{
-    const loaderMsg = document.getElementById('loader-msg');
     if(loaderMsg) loaderMsg.textContent = 'Chargement…';
 
     await loadAll();
@@ -1618,15 +1611,11 @@ async function init(){
     localStorage.setItem('chine_cache', JSON.stringify(D));
     subAll();
 
-    const loader = document.getElementById('loader');
     if(loader) loader.style.display = 'none';
-
-    const convRateInp = document.getElementById('conv-rate-inp');
     if(convRateInp) convRateInp.value = convRate;
 
     renderAll();
     loadMeteo();
-
     updateEditorUI();
     updateProfilUI();
 
@@ -1634,29 +1623,13 @@ async function init(){
     console.error(e);
 
     if(cached){
-      const loader = document.getElementById('loader');
       if(loader) loader.style.display = 'none';
-
-      const offlineBanner = document.getElementById('offlineBanner');
-      if(offlineBanner){
-        offlineBanner.classList.add('on');
-        try{
-          const parsed = JSON.parse(cached);
-          offlineBanner.textContent =
-            '📵 Mode hors-ligne — données du ' +
-            new Date(parsed._ts || 0).toLocaleDateString('fr-FR');
-        }catch{
-          offlineBanner.textContent = '📵 Mode hors-ligne — données en cache';
-        }
-      }
-
       renderAll();
       loadMeteo();
       updateEditorUI();
       updateProfilUI();
-
+      syncOfflineBanner();
     }else{
-      const loaderMsg = document.getElementById('loader-msg');
       if(loaderMsg) loaderMsg.textContent = 'Erreur : ' + (e?.message || e);
     }
   }
@@ -1677,41 +1650,29 @@ function requireEditor(){
   return false;
 }
 
-function lockEditorMode(){
-  editorUnlocked = false;
-  updateEditorUI();
-  closeOverlay('pp-sheet');
-  showToast('🔒 Mode lecteur activé');
-}
-
-function unlockEditorFromSettings(){
-  const entered = document.getElementById('pp-pin')?.value || '';
-  if(entered === EDITOR_PIN){
-    editorUnlocked = true;
-    updateEditorUI();
-    document.getElementById('pp-pin').value = '';
-    showToast('🔓 Mode éditeur activé pour cette session');
-  } else {
-    showToast('⛔ Code PIN incorrect');
-  }
-}
-
 function updateEditorUI(){
-  document.body.classList.toggle('reader-mode', !editorUnlocked);
+  const canEdit = isEditorMode();
+
+  document.body.classList.toggle('reader-mode', !canEdit);
 
   document.querySelectorAll('[data-editor-only]').forEach(el => {
-    el.style.display = editorUnlocked ? '' : 'none';
+    el.style.display = canEdit ? '' : 'none';
   });
 
   const badge = document.getElementById('editorModeLabel');
   if(badge){
-    badge.textContent = editorUnlocked ? 'Mode éditeur' : 'Mode lecteur';
+    badge.textContent = canEdit ? 'Compte éditeur' : 'Lecture seule';
   }
 
   const modeLine = document.getElementById('settingsUserMode');
-  if(modeLine && currentUser !== 'visiteur'){
-    modeLine.textContent = editorUnlocked ? '✅ Mode éditeur' : '🔒 Mode lecteur';
-    modeLine.style.color = editorUnlocked ? 'var(--green)' : 'var(--txt2)';
+  if(modeLine){
+    if(currentUser === 'visiteur'){
+      modeLine.textContent = '👁️ Visiteur · lecture seule';
+      modeLine.style.color = 'var(--accent)';
+    } else {
+      modeLine.textContent = '✏️ Compte éditeur';
+      modeLine.style.color = 'var(--green)';
+    }
   }
 }
 
@@ -4053,7 +4014,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('loader').style.display='none';
   } else {
     // Utilisateur déjà authentifié
-    editorUnlocked=(currentUser!=='visiteur');
     init()
       .then(() => { updateEditorUI(); updateProfilUI(); showWelcome(); })
       .catch(err => {
@@ -4073,7 +4033,6 @@ function loginAs(who){
   if(who === 'visiteur'){
     currentUser = 'visiteur';
     localStorage.setItem('chine_user', 'visiteur');
-    editorUnlocked = false;
     closeLoginModal();
     document.getElementById('loginScreen').classList.add('hidden');
     document.getElementById('loader').style.display = 'flex';
@@ -4130,7 +4089,6 @@ function updateProfilUI(){
       const firstBtn = document.querySelector('.nav .nb');
       goTab('budget', firstBtn);
     }
-    editorUnlocked = false;
     updateEditorUI();
   } else {
     if(pill){
@@ -4146,8 +4104,8 @@ function updateProfilUI(){
     if(visitorSettingsBlock) visitorSettingsBlock.style.display = 'none';
     if(memberSettingsBlock) memberSettingsBlock.style.display = 'block';
     if(settingsUserMode){
-      settingsUserMode.textContent = editorUnlocked ? '✅ Mode éditeur' : '🔒 Mode lecteur';
-      settingsUserMode.style.color = editorUnlocked ? 'var(--green)' : 'var(--txt2)';
+      settingsUserMode.textContent = '✏️ Compte éditeur';
+      settingsUserMode.style.color = 'var(--green)';
     }
     if(chatBtn) chatBtn.style.display = '';
     if(chatTab) chatTab.style.display = '';
@@ -4180,7 +4138,6 @@ function showWelcome(){
 function logout(){
   currentUser = null;
   localStorage.removeItem('chine_user');
-  editorUnlocked = false;
   location.reload();
 }
 
@@ -4265,7 +4222,6 @@ async function submitLogin(){
 
   currentUser = who;
   localStorage.setItem('chine_user', who);
-  editorUnlocked = true;
 
   closeLoginModal();
   document.getElementById('loginScreen').classList.add('hidden');
