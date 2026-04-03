@@ -1608,7 +1608,7 @@ function buildItemForm(type, item) {
       <input type="hidden" id="if-file-data" value="">
       ${bottom}`;
   }
-}
+
 
 // --- LOGIQUE RESTO / ACTIVITÉ ---
   const prixLabel = type === 'restaurant'
@@ -1665,6 +1665,7 @@ function buildItemForm(type, item) {
     </div>
   
     ${bottom}`;
+}
 function setStar(who,val){
   document.getElementById('if-'+who).value=val;
   document.getElementById('sf-'+who).querySelectorAll('.star-edit').forEach((s,i)=>s.classList.toggle('on',i<val));
