@@ -806,7 +806,7 @@ select.form-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://
   </div>
   <div class="sl">Toutes les dépenses</div>
   <div class="b-list" id="bList"></div>
-  <button class="add-btn" onclick="openBudgetSheet()"><div class="add-btn-icon">＋</div>Ajouter une dépense</button>
+<button class="qa-chip accent" onclick="openBudgetSheet()" data-editor-only>＋ Dépense</button>
 </div>
 
 <!-- PLANNING -->
@@ -822,7 +822,9 @@ select.form-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://
   <div class="ph"><h1>Activités</h1></div>
   <div class="sort-row" id="sort-activite"></div>
   <div id="cont-activite"></div>
-  <button class="add-btn" onclick="openItemSheet('activite')"><div class="add-btn-icon">＋</div>Nouvelle activité</button>
+  <button class="add-btn" onclick="openItemSheet('activite')" data-editor-only>
+  <div class="add-btn-icon">＋</div>Nouvelle activité
+</button>
 </div>
 
 <!-- RESTOS & CAFES -->
@@ -832,8 +834,8 @@ select.form-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://
     <button id="rctab-restaurant" class="rc-tab on" onclick="switchRCTab('restaurant')">🍜 Restaurants</button>
     <button id="rctab-cafe" class="rc-tab" onclick="switchRCTab('cafe')">☕ Cafés &amp; Bars</button>
   </div>
-  <div id="rc-restaurant"><div class="sort-row" id="sort-restaurant"></div><div id="cont-restaurant"></div><button class="add-btn" onclick="openItemSheet('restaurant')"><div class="add-btn-icon">＋</div>Nouveau restaurant</button></div>
-  <div id="rc-cafe" style="display:none;"><div class="sort-row" id="sort-cafe"></div><div id="cont-cafe"></div><button class="add-btn" onclick="openItemSheet('cafe')"><div class="add-btn-icon">＋</div>Nouveau café</button></div>
+  <div id="rc-restaurant"><div class="sort-row" id="sort-restaurant"></div><div id="cont-restaurant"></div><button class="add-btn" onclick="openItemSheet('restaurant')"data-editor-only><div class="add-btn-icon">＋</div>Nouveau restaurant</button></div>
+  <div id="rc-cafe" style="display:none;"><div class="sort-row" id="sort-cafe"></div><div id="cont-cafe"></div><button class="add-btn" onclick="openItemSheet('cafe')"data-editor-only><div class="add-btn-icon">＋</div>Nouveau café</button></div>
 </div>
 
 <!-- HOTELS -->
@@ -841,14 +843,14 @@ select.form-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://
   <div class="ph"><h1>Hôtels</h1></div>
   <div class="sort-row" id="sort-hotel"></div>
   <div id="cont-hotel"></div>
-  <button class="add-btn" onclick="openItemSheet('hotel')"><div class="add-btn-icon">＋</div>Nouvel hôtel</button>
+  <button class="add-btn" onclick="openItemSheet('hotel')"data-editor-only><div class="add-btn-icon">＋</div>Nouvel hôtel</button>
 </div>
 
 <!-- TRANSPORT -->
 <div class="tab" id="tab-transport">
   <div class="ph"><h1>Transports</h1><p>Chronologique · par date</p></div>
   <div class="tr-container" id="trTimeline"></div>
-  <button class="add-btn" onclick="openItemSheet('transport')"><div class="add-btn-icon">＋</div>Nouveau trajet</button>
+  <button class="add-btn" onclick="openItemSheet('transport')"data-editor-only><div class="add-btn-icon">＋</div>Nouveau trajet</button>
 </div>
 
 <!-- CHECKLIST -->
@@ -856,20 +858,20 @@ select.form-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://
   <div class="ph"><h1>Checklist</h1></div>
   <div class="sl">🧳 Avant le départ</div>
   <div class="cl-section" id="cl-depart"></div>
-  <button class="add-btn" onclick="addCL('depart')"><div class="add-btn-icon">＋</div>Ajouter</button>
+  <button class="add-btn" onclick="addCL('depart')"data-editor-only><div class="add-btn-icon">＋</div>Ajouter</button>
   <div class="sl" style="margin-top:4px;">📱 Sur place</div>
   <div class="cl-section" id="cl-surplace"></div>
-  <button class="add-btn" onclick="addCL('surplace')"><div class="add-btn-icon">＋</div>Ajouter</button>
+  <button class="add-btn" onclick="addCL('surplace')"data-editor-only><div class="add-btn-icon">＋</div>Ajouter</button>
   <div class="sl" style="margin-top:4px;">🎒 Packing</div>
   <div id="packingCont"></div>
-  <button class="add-btn" onclick="addPackItem()"><div class="add-btn-icon">＋</div>Ajouter un article</button>
+  <button class="add-btn" onclick="addPackItem()"data-editor-only><div class="add-btn-icon">＋</div>Ajouter un article</button>
 </div>
 
 <!-- NOTES -->
 <div class="tab" id="tab-notes">
   <div class="ph"><h1>Notes</h1></div>
   <div id="cont-notes"></div>
-  <button class="add-btn" onclick="addNote()"><div class="add-btn-icon">＋</div>Nouvelle note</button>
+  <button class="add-btn" onclick="addNote()"data-editor-only><div class="add-btn-icon">＋</div>Nouvelle note</button>
 </div>
 
 <!-- PHRASES -->
