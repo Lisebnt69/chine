@@ -950,9 +950,9 @@ select.form-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://
 <script>
 const SB_URL='https://nwskpowizbggdqghnhcw.supabase.co';
 const SB_KEY='sb_publishable_571IoCHNSZxkvF7MW77Fxg_CfWgvcT4';
-const sb=supabase.createClient(SB_URL,SB_KEY);
+const sb=supabase.createClient(SB_URL,SB_KEY);*let editorUnlocked = false;
+const EDITOR_PIN = '1908';
 
-// À mettre n'importe où dans ton <script> (en dehors des fonctions)
 document.addEventListener('change', function(e) {
   if (e.target && e.target.id === 'if-file') {
     const file = e.target.files[0];
@@ -1111,7 +1111,64 @@ async function init(){
     console.error(e);
   }
 }
+function isEditorMode(){
+  return editorUnlocked === true;
+}
 
+function requireEditor(action){
+  if(isEditorMode()) return true;
+
+  const entered = prompt('Code PIN requis pour passer en mode éditeur :');
+  if(entered === EDITOR_PIN){
+    editorUnlocked = true;
+    updateEditorUI();
+    showToast('🔓 Mode éditeur activé pour cette session');
+    return true;
+  }
+
+  showToast('⛔ Code PIN incorrect');
+  return false;
+}
+
+function lockEditorMode(){
+  editorUnlocked = false;
+  updateEditorUI();
+  closeOverlay('pp-sheet');
+  showToast('🔒 Mode lecteur activé');
+}
+
+function unlockEditorFromSettings(){
+  const entered = document.getElementById('pp-pin')?.value || '';
+  if(entered === EDITOR_PIN){
+    editorUnlocked = true;
+    updateEditorUI();
+    document.getElementById('pp-pin').value = '';
+    showToast('🔓 Mode éditeur activé pour cette session');
+  } else {
+    showToast('⛔ Code PIN incorrect');
+  }
+}
+
+function updateEditorUI(){
+  document.body.classList.toggle('reader-mode', !editorUnlocked);
+
+  document.querySelectorAll('[data-editor-only]').forEach(el => {
+    el.style.display = editorUnlocked ? '' : 'none';
+  });
+
+  const badge = document.getElementById('editorModeLabel');
+  if(badge){
+    badge.textContent = editorUnlocked ? 'Mode éditeur' : 'Mode lecteur';
+  }
+}
+
+function showToast(text){
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = text;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2200);
+}
 async function loadAll(){
   const runs=[
     sb.from('budget').select('*').order('id',{ascending:true}),
