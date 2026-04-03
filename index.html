@@ -1506,6 +1506,12 @@ function buildItemForm(type, item) {
       <input class="form-input" id="if-mapurl" value="${v('mapUrl')}" placeholder="https://uri.amap.com/search?keyword=...">
     </div>
   `;
+  const adresseCnF = `
+  <div class="form-group">
+    <div class="form-label">Adresse en chinois</div>
+    <input class="form-input" id="if-adresse-cn" value="${v('adresse_cn')}" placeholder="上海市黄浦区中山东一路...">
+  </div>
+`;
 
   // Préparation des variables communes
   const commonTop = `<div class="sheet-handle"></div><div class="sheet-title">${title}</div>
@@ -1598,7 +1604,10 @@ function buildItemForm(type, item) {
         <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; font-weight: 600; font-size: 0.85rem; color: #2ecc71;">
           <input type="checkbox" id="if-fait" ${item && item.fait ? 'checked' : ''} style="width: 18px; height: 18px;"> ✅ Chambre réservée ?
         </label>
-      </div>
+        <div class="form-group"><div class="form-label">Check-in</div><input class="form-input" id="if-checkin" type="date" value="${v('adresse')}"></div>
+          ${adresseCnF}
+          ${amapF}
+        </div>
       <input type="hidden" id="if-file-data" value="">
       ${bottom}`;
   }
@@ -1622,7 +1631,14 @@ function buildItemForm(type, item) {
         <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-weight:700;font-size:.82rem;color:#ff5a5f;">
           <input type="checkbox" id="if-fait" ${item && item.fait ? 'checked' : ''} style="width:18px;height:18px;"> ✅ Déjà fait / payé
         </label>
-      </div>
+        <div class="row-2">
+            <div class="form-group"><div class="form-label">${prixLabel}</div><input class="form-input" id="if-prix" type="number" value="${n('prix') || ''}" placeholder="0.00"></div>
+            <div class="form-group"><div class="form-label">Adresse</div><input class="form-input" id="if-adresse" value="${v('adresse')}" placeholder="Adresse…"></div>
+          </div>
+          ${adresseCnF}
+          ${typeSel}
+          ${amapF}
+        </div>
   ${bottom}`;
 }
 function setStar(who,val){
