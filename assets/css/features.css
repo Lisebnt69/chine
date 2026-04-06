@@ -112,3 +112,17 @@ body.theme-dark .toast{background:linear-gradient(135deg,rgba(10,12,15,.96),rgba
 .countdown-mini{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
 .countdown-mini div{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:10px;text-align:center}
 .countdown-mini b{display:block;font-size:1rem}
+/* FORCE DARK MODE CLEAN */
+body.theme-dark * {
+  background-color: transparent;
+}
+
+/* Corrige les éléments qui gardent du blanc */
+body.theme-dark .phrase-row,
+body.theme-dark .phrase-section,
+body.theme-dark .note-card,
+body.theme-dark .tl-entry-card,
+body.theme-dark .tr-body {
+  background: var(--surface) !important;
+  color: var(--txt) !important;
+}
