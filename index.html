@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+
+<html lang="fr">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" name="viewport"/>
+<title>Chine 2026 · Matis &amp; Lise</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" rel="stylesheet">
+<link href="manifest.webmanifest" rel="manifest"/>
+<meta content="#e85d5d" name="theme-color"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+</link><link href="assets/css/base.css" rel="stylesheet"/><link href="assets/css/features.css" rel="stylesheet"/><meta content="App de voyage Chine 2026 pour budget, planning, carte, chat, stats et outils pratiques." name="description"/></head>
+<body>
+<!-- LOGIN SCREEN -->
+<div class="login-screen" id="loginScreen">
+<div class="login-hero">🏮</div>
+<div class="login-title">Chine 2026</div>
+<div class="login-sub">Qui es-tu ?</div>
+<div class="login-profiles">
+<div class="login-card matis" onclick="loginAs('matis')">
+<div class="login-avatar m">👨</div>
+<div class="login-name">Matis</div>
+<div class="login-role">Compte voyageur</div>
+</div>
+<div class="login-card lise" onclick="loginAs('lise')">
+<div class="login-avatar l">👩</div>
+<div class="login-name">Lise</div>
+<div class="login-role">Compte voyageur</div>
+</div>
+</div>
+<div style="margin-top:16px;width:100%;max-width:340px;">
+<div class="login-card visiteur" onclick="loginAs('visiteur')" style="flex-direction:row;padding:14px 20px;gap:14px;">
+<div class="login-avatar v" style="width:44px;height:44px;font-size:1.3rem;flex-shrink:0;">👁️</div>
+<div style="text-align:left;">
+<div class="login-name" style="font-size:.9rem;">Mode visiteur</div>
+<div class="login-role">Lecture seule — sans compte</div>
+</div>
+</div>
+</div>
+</div>
+<div class="loader" id="loader">
+<div class="loader-hero">🏮</div>
+<div class="loader-title">Chine 2026</div>
+<div class="loader-sub">Matis &amp; Lise · 09 → 22 novembre</div>
+<div class="loader-ring"></div>
+<div class="loader-msg" id="loader-msg">Connexion…</div>
+</div>
+<div class="offline-banner" id="offlineBanner">📵 Mode hors-ligne — données en cache</div>
+<header class="hdr">
+<div class="hdr-logo">
+<div class="hdr-logo-icon">🏮</div>
+<div class="hdr-logo-text">Chine 2026</div>
+</div>
+<div class="live-pill"><div class="live-dot off" id="ld"></div><span class="live-txt" id="liveTxt">Sync</span></div>
+<div class="hdr-btn" onclick="toggleSearch()">🔍</div>
+<div class="profil-pill" id="profilPill" onclick="openOverlay('pp-sheet')" style="display:none;">
+<div class="profil-mini-av" id="profilAv"></div>
+<span class="profil-mini-name" id="profilName"></span>
+</div>
+<div class="hdr-btn" id="settingsBtn" onclick="openOverlay('pp-sheet')">⚙️</div>
+</header>
+<div class="visitor-banner" id="visitorBanner">
+<span>👁️</span><span>Mode visiteur — <b>lecture seule</b>. Aucune modification possible.</span>
+<span onclick="logout()" style="margin-left:auto;cursor:pointer;font-size:.68rem;color:var(--accent);">Se connecter →</span>
+</div>
+<div class="qa-row">
+<button class="qa-chip accent" onclick="openBudgetSheet()">＋ Dépense</button>
+<button class="qa-chip" onclick="goTabByName('planning')">📅 Planning</button>
+<button class="qa-chip" onclick="openItemSheet('activite')">🎯 Activité</button>
+<button class="qa-chip" onclick="openItemSheet('restaurant')">🍜 Resto</button>
+<button class="qa-chip" onclick="isEditorMode()?openItemSheet('transport'):showToast('👁️ Lecture seule')">🚄 Transport</button>
+<button class="qa-chip" onclick="goTabByName('stats')">📊 Stats</button>
+<button class="qa-chip" onclick="goTabByName('activites');toggleTerrainMode()" style="background:linear-gradient(135deg,#1e293b,#0f172a);color:#fff;border-color:#1e293b;font-weight:700;">🧭 Terrain</button>
+<button class="qa-chip" onclick="goTabByName('carte')">🗺️ Carte</button>
+<button class="qa-chip" onclick="goTabByName('chat')">💬 Chat</button>
+</div>
+<div class="search-wrap" id="searchBar">
+<div class="search-box">
+<span style="color:var(--txt3);">🔍</span>
+<input autocomplete="off" id="searchInp" oninput="doSearch(this.value)" placeholder="Rechercher activité, ville, resto…"/>
+<span onclick="toggleSearch()" style="color:var(--txt3);cursor:pointer;">✕</span>
+</div>
+</div>
+<div class="search-results" id="searchResults" style="display:none;"></div>
+<main id="mainContent">
+<!-- BUDGET -->
+<div class="tab on" id="tab-budget">
+<div class="ph"><h1>Budget</h1><p>09 → 22 novembre 2026</p></div>
+<div class="budget-alert-bar" id="budgetAlert"><div class="ba-icon">⚠️</div><div class="ba-text" id="budgetAlertText"></div></div>
+<div class="budget-hero">
+<div class="bh-label">Budget total alloué</div>
+<div class="bh-amount" id="bTotal">—</div>
+<div class="bh-sub" id="bSub">—</div>
+<div class="bh-prog"><div class="bh-prog-fill" id="bProg" style="width:0%"></div></div>
+</div>
+<div class="stat-cards">
+<div class="stat-card"><div class="stat-v red" id="bDep">—</div><div class="stat-l">Dépensé</div></div>
+<div class="stat-card"><div class="stat-v green" id="bRest">—</div><div class="stat-l">Restant</div></div>
+<div class="stat-card"><div class="stat-v blue" id="bProg2">—</div><div class="stat-l">% utilisé</div></div>
+</div>
+<div class="person-cards">
+<div class="person-card matis"><div class="pc-avatar m">👤</div><div class="pc-name">Matis</div><div class="pc-amount" id="bMatisDep">—</div><div class="pc-rest" id="bMatisRest">—</div><div class="pc-bar"><div class="pc-bar-fill m" id="bMatisBar" style="width:0%"></div></div></div>
+<div class="person-card lise"><div class="pc-avatar l">👤</div><div class="pc-name">Lise</div><div class="pc-amount" id="bLiseDep">—</div><div class="pc-rest" id="bLiseRest">—</div><div class="pc-bar"><div class="pc-bar-fill l" id="bLiseBar" style="width:0%"></div></div></div>
+</div>
+<div class="conv-box">
+<div class="conv-title">💱 Convertisseur</div>
+<div class="conv-grid">
+<div class="conv-field"><label>Euros €</label><input class="conv-input" id="conv-eur" oninput="convEurToRmb()" placeholder="0" type="number"/></div>
+<div class="conv-swap">⇄</div>
+<div class="conv-field"><label>Yuan ¥</label><input class="conv-input" id="conv-rmb" oninput="convRmbToEur()" placeholder="0" type="number"/></div>
+</div>
+<div class="conv-rate-row">1 € = <input class="conv-rate-inp" id="conv-rate-inp" onchange="updateRate(this.value)" step="0.01" type="number" value="7.78"/> ¥ (modifiable)</div>
+</div>
+<div class="sl">Toutes les dépenses</div>
+<div class="b-list" id="bList"></div>
+<button class="qa-chip accent" data-editor-only="" onclick="openBudgetSheet()">＋ Dépense</button>
+</div>
+<!-- PLANNING -->
+<div class="tab" id="tab-planning">
+<div id="nextStepWidget" style="display:none; margin:0 16px 14px;"></div>
+<div class="plan-view-switch">
+<button class="pvs-btn on" id="pvs-timeline" onclick="switchPlanView('timeline')">📋 Timeline</button>
+<button class="pvs-btn" id="pvs-cal" onclick="switchPlanView('cal')">🗓 Calendrier</button>
+</div>
+<div style="display:flex;gap:8px;padding:0 16px 4px;flex-wrap:wrap;">
+<button class="gcal-btn" onclick="exportGoogleCal()" style="margin:0;flex:1;">📅 Google Calendar</button>
+<button class="pdf-export-btn" onclick="exportPlanningPDF()" style="flex:1;">🖨️ Exporter PDF</button>
+</div>
+<div class="tl-container" id="tlWrap"></div>
+<div class="cal-wrap" id="calWrap" style="display:none;"></div>
+<div style="height:14px;"></div>
+</div>
+<!-- ACTIVITES -->
+<div class="tab" id="tab-activites">
+<div class="ph" style="padding-bottom:6px;">
+<div style="display:flex;align-items:center;gap:10px;">
+<h1 style="flex:1;">Activités</h1>
+<button class="tf-chip mode-terrain-toggle" id="terrainToggle" onclick="toggleTerrainMode()">🧭 Terrain</button>
+</div>
+</div>
+<!-- Bannière mode terrain -->
+<div class="terrain-banner" id="terrainBanner">
+<span class="terrain-banner-icon">🧭</span>
+<span class="terrain-banner-txt">Mode Terrain — Idées masquées</span>
+<button class="terrain-banner-close" onclick="toggleTerrainMode()">Quitter</button>
+</div>
+<!-- "On fait quoi maintenant ?" -->
+<div class="quoi-widget" id="quoiWidget" style="display:none;">
+<div class="quoi-header" onclick="refreshQuoi()">
+<div class="quoi-icon">⚡</div>
+<div class="quoi-title">On fait quoi maintenant ?</div>
+<button class="quoi-refresh" onclick="event.stopPropagation();refreshQuoi()">↻ Refresh</button>
+</div>
+<div class="quoi-list" id="quoiList"></div>
+</div>
+<!-- Filtres terrain rapides -->
+<div class="terrain-bar" id="terrainBar">
+<button class="tf-chip on" onclick="setTerrainFilter('tous',this)">Tout</button>
+<button class="tf-chip" onclick="setTerrainFilter('Shanghai',this)">🏙️ Shanghai</button>
+<button class="tf-chip" onclick="setTerrainFilter('Chongqing',this)">🌆 Chongqing</button>
+<button class="tf-chip" onclick="setTerrainFilter('Chengdu',this)">🐼 Chengdu</button>
+<button class="tf-chip" onclick="setTerrainFilter('Zhangjiajie',this)">🏞️ Zhangjiajie</button>
+<button class="tf-chip" onclick="setTerrainFilter('Furong',this)">🌸 Furong</button>
+<button class="tf-chip" onclick="setTerrainFilter('Karst de Wulong',this)">🏔️ Wulong</button>
+</div>
+<!-- Zone drag vers planning -->
+<div class="drag-to-plan-zone" id="dragToPlanZone" ondragleave="this.classList.remove('drag-over')" ondragover="event.preventDefault();this.classList.add('drag-over')" ondrop="handleDragToPlan(event)">
+    📅 Glisser ici pour ajouter au planning
+  </div>
+<div class="sort-row" id="sort-activite"></div>
+<div id="cont-activite"></div>
+<button class="add-btn" data-editor-only="" onclick="openItemSheet('activite')">
+<div class="add-btn-icon">＋</div>Nouvelle activité
+  </button>
+</div>
+<!-- RESTOS & CAFES -->
+<div class="tab" id="tab-restaurants">
+<div class="ph"><h1>Restos &amp; Cafés</h1></div>
+<div class="rc-tabs">
+<button class="rc-tab on" id="rctab-restaurant" onclick="switchRCTab('restaurant')">🍜 Restaurants</button>
+<button class="rc-tab" id="rctab-cafe" onclick="switchRCTab('cafe')">☕ Cafés &amp; Bars</button>
+</div>
+<div id="rc-restaurant"><div class="sort-row" id="sort-restaurant"></div><div id="cont-restaurant"></div><button class="add-btn" data-editor-only="" onclick="openItemSheet('restaurant')"><div class="add-btn-icon">＋</div>Nouveau restaurant</button></div>
+<div id="rc-cafe" style="display:none;"><div class="sort-row" id="sort-cafe"></div><div id="cont-cafe"></div><button class="add-btn" data-editor-only="" onclick="openItemSheet('cafe')"><div class="add-btn-icon">＋</div>Nouveau café</button></div>
+</div>
+<!-- HOTELS -->
+<div class="tab" id="tab-hotels">
+<div class="ph"><h1>Hôtels</h1></div>
+<div class="sort-row" id="sort-hotel"></div>
+<div id="cont-hotel"></div>
+<button class="add-btn" data-editor-only="" onclick="openItemSheet('hotel')"><div class="add-btn-icon">＋</div>Nouvel hôtel</button>
+</div>
+<!-- TRANSPORT -->
+<div class="tab" id="tab-transport">
+<div class="ph"><h1>Transports</h1><p>Chronologique · par date</p></div>
+<div class="tr-container" id="trTimeline"></div>
+<button class="add-btn" data-editor-only="" onclick="openItemSheet('transport')"><div class="add-btn-icon">＋</div>Nouveau trajet</button>
+</div>
+<!-- CHECKLIST -->
+<div class="tab" id="tab-checklist">
+<div class="ph"><h1>Checklist</h1></div>
+<div class="sl">🧳 Avant le départ</div>
+<div class="cl-section" id="cl-depart"></div>
+<button class="add-btn" data-editor-only="" onclick="addCL('depart')"><div class="add-btn-icon">＋</div>Ajouter</button>
+<div class="sl" style="margin-top:4px;">📱 Sur place</div>
+<div class="cl-section" id="cl-surplace"></div>
+<button class="add-btn" data-editor-only="" onclick="addCL('surplace')"><div class="add-btn-icon">＋</div>Ajouter</button>
+<div class="sl" style="margin-top:4px;">🎒 Packing</div>
+<div id="packingCont"></div>
+<button class="add-btn" data-editor-only="" onclick="addPackItem()"><div class="add-btn-icon">＋</div>Ajouter un article</button>
+</div>
+<!-- NOTES -->
+<div class="tab" id="tab-notes">
+<div class="ph"><h1>Notes</h1></div>
+<div id="cont-notes"></div>
+<button class="add-btn" data-editor-only="" onclick="addNote()"><div class="add-btn-icon">＋</div>Nouvelle note</button>
+</div>
+<!-- PHRASES -->
+<div class="tab" id="tab-phrases">
+<div id="phrasesCont"></div>
+</div>
+<!-- CHAT -->
+<div class="tab" id="tab-chat">
+<div class="tab-chat-wrap">
+<div class="chat-bot-chips" id="chatBotChips">
+<button class="bot-chip" onclick="askBot('@bot on fait quoi demain ?')">🤔 Demain ?</button>
+<button class="bot-chip" onclick="askBot('@bot budget restant ?')">💰 Budget</button>
+<button class="bot-chip" onclick="askBot('@bot idées Shanghai')">🏙️ Shanghai</button>
+<button class="bot-chip" onclick="askBot('@bot meilleurs restos')">🍜 Restos</button>
+<button class="bot-chip" onclick="askBot('@bot planning demain')">📅 Planning</button>
+<button class="bot-chip" onclick="askBot('@bot dépenses perso')">👥 Dépenses</button>
+</div>
+<div class="chat-messages" id="chatMessages"></div>
+<div class="chat-media-row">
+<button class="chat-media-btn" onclick="openSnapCamera()" title="📸 Snap — photo immédiate">📸</button>
+<button class="chat-media-btn" onclick="openGallery()" title="Galerie photo/vidéo">🖼️</button>
+<button class="chat-media-btn" onclick="openPollSheet()" title="Sondage">📊</button>
+<input accept="image/*,video/*" id="chatFileInput" onchange="sendMedia(this)" style="display:none" type="file"/>
+<input accept="image/*" capture="environment" id="chatSnapInput" onchange="sendSnapMedia(this)" style="display:none" type="file"/>
+</div>
+<div class="chat-input-row">
+<textarea class="chat-inp" id="chatInp" onkeydown="if(event.key==='Enter'&amp;&amp;!event.shiftKey){event.preventDefault();sendChat();}" placeholder="Message… (@bot pour l'assistant)" rows="1"></textarea>
+<button class="chat-send-btn" onclick="sendChat()">↑</button>
+</div>
+</div>
+</div>
+<!-- STATS -->
+<div class="tab" id="tab-stats">
+<div class="ph"><h1>Statistiques</h1><p>Vue d'ensemble du voyage</p></div>
+<div id="budgetChartCont"></div>
+<div id="statsCont"></div>
+</div>
+<div id="printContent" style="display:none;"></div>
+<!-- CARTE -->
+<div class="tab" id="tab-carte">
+<div class="map-wrap">
+<div id="map"></div>
+<!-- GPS banner -->
+<div class="gps-banner" id="gpsBanner">
+<div class="gps-dot"></div>
+<div class="gps-txt" id="gpsTxt">Localisation…</div>
+<span class="gps-acc" id="gpsAcc"></span>
+</div>
+<!-- Controls -->
+<div class="map-controls">
+<button class="map-ctrl-btn" id="gpsBtn" onclick="centerOnMe()" title="Ma position">📍</button>
+<button class="map-ctrl-btn" id="mapFilterBtn" onclick="cycleMapLayer()" title="Couche carte">🗺️</button>
+<button class="map-ctrl-btn" onclick="fitAllMarkers()" title="Voir tout">⊞</button>
+</div>
+<!-- Filtre types -->
+<div class="map-filter-row">
+<button class="map-f-chip on" onclick="toggleMapFilter('all',this)">Tout</button>
+<button class="map-f-chip" onclick="toggleMapFilter('activite',this)">🎯 Activités</button>
+<button class="map-f-chip" onclick="toggleMapFilter('restaurant',this)">🍜 Restos</button>
+<button class="map-f-chip" onclick="toggleMapFilter('cafe',this)">☕ Cafés</button>
+<button class="map-f-chip" onclick="toggleMapFilter('hotel',this)">🏨 Hôtels</button>
+<button class="map-f-chip" onclick="toggleMapFilter('proche',this)">📍 &lt;2km</button>
+<button class="map-f-chip" onclick="toggleMapFilter('proche500',this)">🎯 &lt;500m</button>
+<button class="map-f-chip" onclick="toggleMapFilter('planifie',this)">📅 Planifiés</button>
+</div>
+</div>
+</div>
+<!-- GALERIE -->
+<div class="tab" id="tab-galerie">
+<div class="ph"><h1>Galerie</h1><p>Toutes vos photos</p></div>
+<div id="galerieCont"></div>
+</div>
+<!-- PRATIQUE -->
+<div class="tab" id="tab-pratique">
+<div class="ph"><h1>Chine pratique</h1><p>Tout ce qu'il faut sur place</p></div>
+<div id="pratiqueCont"></div>
+</div>
+</main>
+<nav class="nav">
+<button class="nb on" id="nb-budget" onclick="goTab('budget',this);closeNavDrawer()"><span class="nic">💰</span><span class="nlb">Budget</span></button>
+<button class="nb" id="nb-planning" onclick="goTab('planning',this);closeNavDrawer()"><span class="nic">📅</span><span class="nlb">Planning</span></button>
+<button class="nb" id="nb-activites" onclick="goTab('activites',this);closeNavDrawer()"><span class="nic">🎯</span><span class="nlb">Activ.</span></button>
+<button class="nb" id="nb-carte" onclick="goTab('carte',this);closeNavDrawer()"><span class="nic">🗺️</span><span class="nlb">Carte</span></button>
+<button class="nb" id="nb-chat" onclick="goTab('chat',this);closeNavDrawer()"><span class="nic">💬</span><span class="nlb">Chat</span><span class="nav-badge" id="chatBadge" style="display:none;">0</span></button>
+<button class="nb" id="nb-more" onclick="toggleNavDrawer()"><span class="nic nb-more">＋</span><span class="nlb">Plus</span></button>
+</nav>
+<!-- NAV DRAWER -->
+<div class="nav-drawer" id="navDrawer">
+<div class="nav-drawer-bg" onclick="closeNavDrawer()"></div>
+<div class="nav-drawer-panel">
+<div class="nav-drawer-title">Navigation rapide</div>
+<div class="nav-drawer-grid">
+<button class="nav-drawer-btn" id="nd-restaurants" onclick="goTab('restaurants',navBtnRef(this));closeNavDrawer()"><span class="nav-drawer-ic">🍜</span><span class="nav-drawer-lbl">Restos</span></button>
+<button class="nav-drawer-btn" id="nd-hotels" onclick="goTab('hotels',navBtnRef(this));closeNavDrawer()"><span class="nav-drawer-ic">🏨</span><span class="nav-drawer-lbl">Hôtels</span></button>
+<button class="nav-drawer-btn" id="nd-transport" onclick="goTab('transport',navBtnRef(this));closeNavDrawer()"><span class="nav-drawer-ic">🚄</span><span class="nav-drawer-lbl">Transport</span></button>
+<button class="nav-drawer-btn" id="nd-checklist" onclick="goTab('checklist',navBtnRef(this));closeNavDrawer()"><span class="nav-drawer-ic">✅</span><span class="nav-drawer-lbl">Checklist</span></button>
+<button class="nav-drawer-btn" id="nd-notes" onclick="goTab('notes',navBtnRef(this));closeNavDrawer()"><span class="nav-drawer-ic">📝</span><span class="nav-drawer-lbl">Notes</span></button>
+<button class="nav-drawer-btn" id="nd-phrases" onclick="goTab('phrases',navBtnRef(this));closeNavDrawer()"><span class="nav-drawer-ic">🀄</span><span class="nav-drawer-lbl">Mandarin</span></button>
+<button class="nav-drawer-btn" id="nd-stats" onclick="goTab('stats',navBtnRef(this));closeNavDrawer()"><span class="nav-drawer-ic">📊</span><span class="nav-drawer-lbl">Stats</span></button>
+<button class="nav-drawer-btn" id="nd-galerie" onclick="goTab('galerie',navBtnRef(this));closeNavDrawer()"><span class="nav-drawer-ic">🖼️</span><span class="nav-drawer-lbl">Galerie</span></button>
+<button class="nav-drawer-btn" id="nd-pratique" onclick="goTab('pratique',navBtnRef(this));closeNavDrawer()"><span class="nav-drawer-ic">🇨🇳</span><span class="nav-drawer-lbl">Pratique</span></button>
+</div>
+</div>
+</div>
+<!-- BUDGET SHEET -->
+<div class="overlay" id="budget-overlay" onclick="if(event.target===this)closeOverlay('budget-overlay')">
+<div class="sheet">
+<div class="sheet-handle"></div>
+<div class="sheet-title" id="b-sheet-title">Nouvelle dépense</div>
+<input id="b-id" type="hidden"/>
+<div class="form-group"><label class="form-label">Catégorie</label><select class="form-input" id="b-cat"><option value="">Choisir…</option><option>✈️ Vol</option><option>🚂 Train</option><option>🚌 Bus</option><option>🚗 Taxi / DiDi</option><option>🏨 Hôtel</option><option>🍽️ Restaurant</option><option>☕ Café / Bar</option><option>🎯 Activité / Entrée</option><option>🛍️ Shopping</option><option>💊 Pharmacie / Santé</option><option>📱 SIM / Internet</option><option>🎭 Spectacle</option><option>💸 Divers</option></select></div>
+<div class="form-group"><label class="form-label">Description</label><input class="form-input" id="b-desc" placeholder="Description…"/></div>
+<div class="form-group"><label class="form-label">Montant total (€)</label><input class="form-input" id="b-total" placeholder="0.00" step="0.01" type="number"/></div>
+<div class="form-group"><label class="form-label">Qui paie ?</label><select class="form-input" id="b-who"><option value="les deux">👥 Les deux (÷ 2)</option><option value="matis">👤 Matis seulement</option><option value="lise">👤 Lise seulement</option></select></div>
+<button class="btn-primary" onclick="saveBudget()">Enregistrer</button>
+<button class="btn-danger" id="b-del-btn" onclick="deleteBudget()" style="display:none;">Supprimer</button>
+<button class="btn-cancel" onclick="closeOverlay('budget-overlay')">Annuler</button>
+<div style="height:4px;"></div>
+</div>
+</div>
+<!-- ITEM SHEET -->
+<div class="overlay" id="item-overlay" onclick="if(event.target===this)closeOverlay('item-overlay')">
+<div class="sheet" id="item-sheet-inner"></div>
+</div>
+<!-- PICKER SHEET -->
+<div class="overlay" id="picker-overlay" onclick="if(event.target===this)closeOverlay('picker-overlay')">
+<div class="sheet">
+<div class="sheet-handle"></div>
+<div class="sheet-title" id="picker-title">Ajouter</div>
+<div class="form-group"><label class="form-label">Période / Repas</label><select class="form-input" id="picker-periode"><option value="">Sans catégorie</option><option value="Matin">🌅 Matin</option><option value="Après-midi">☀️ Après-midi</option><option value="Soir">🌙 Soir</option><option value="Journée">🌟 Journée entière</option><option value="Déjeuner">🌞 Déjeuner</option><option value="Dîner">🌙 Dîner</option></select></div>
+<div class="picker-search"><span style="color:var(--txt3);">🔍</span><input autocomplete="off" id="picker-search" oninput="filterPickerList(this.value)" placeholder="Rechercher…"/></div>
+<div id="picker-list" style="max-height:45svh;overflow-y:auto;"></div>
+<button class="btn-primary" onclick="confirmPicker()">Confirmer</button>
+<button class="btn-cancel" onclick="closeOverlay('picker-overlay')">Annuler</button>
+</div>
+</div>
+<!-- SETTINGS -->
+<div class="overlay" id="pp-sheet" onclick="if(event.target===this)closeOverlay('pp-sheet')">
+<div class="sheet">
+<div class="sheet-handle"></div>
+<div class="sheet-title">Paramètres</div>
+<!-- Qui est connecté -->
+<div style="display:flex;align-items:center;gap:10px;padding:12px;background:var(--sand);border-radius:var(--radius-sm);margin-bottom:14px;">
+<div id="settingsUserAv" style="width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:1.1rem;"></div>
+<div>
+<div id="settingsUserName" style="font-weight:700;font-size:.88rem;"></div>
+<div id="settingsUserMode" style="font-size:.65rem;color:var(--green);font-weight:600;">✅ Mode éditeur</div>
+</div>
+</div>
+<div id="visitorSettingsBlock" style="display:none;">
+<div class="form-group">
+<label class="form-label">Mode actuel</label>
+<div class="mode-badge">Visiteur · lecture seule</div>
+</div>
+<div style="background:var(--sand);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:14px;margin-bottom:14px;">
+<div style="font-size:.72rem;font-weight:700;margin-bottom:6px;">👁️ Compte visiteur</div>
+<div style="font-size:.76rem;color:var(--txt2);line-height:1.5;">
+          Le visiteur peut consulter le voyage, mais ne peut pas modifier les données ni accéder au chat.
+        </div>
+</div>
+<button class="btn-cancel" onclick="logout()" style="background:#fff0e8;color:var(--accent);border:1.5px solid #fecaca;">🚪 Changer de compte</button>
+<button class="btn-cancel" onclick="closeOverlay('pp-sheet')">Fermer</button>
+</div>
+<div id="memberSettingsBlock" style="display:none;">
+<div class="form-group">
+<label class="form-label">Budget par personne (€)</label>
+<input class="form-input" id="pp-val" placeholder="2500" type="number"/>
+</div>
+<div class="form-group">
+<label class="form-label">Type de compte</label>
+<div class="mode-badge" id="editorModeLabel">Compte éditeur</div>
+</div>
+<div style="background:var(--sand);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:14px;margin:14px 0;">
+<div style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--txt2);margin-bottom:10px;">🔐 Changer mon mot de passe</div>
+<div class="form-group" style="margin-bottom:8px;"><label class="form-label">MDP actuel</label><input class="form-input" id="pp-pin-old" placeholder="Mot de passe actuel" type="password"/></div>
+<div class="form-group" style="margin-bottom:8px;"><label class="form-label">Nouveau MDP</label><input class="form-input" id="pp-pin-new" placeholder="Nouveau mot de passe" type="password"/></div>
+<div class="form-group" style="margin-bottom:10px;"><label class="form-label">Confirmer</label><input class="form-input" id="pp-pin-confirm" placeholder="Confirmer le nouveau MDP" type="password"/></div>
+<button class="btn-primary" onclick="changePin()" style="margin-top:0;">Changer le mot de passe</button>
+</div>
+<button class="btn-primary" onclick="savePP()">Enregistrer paramètres</button>
+<button class="btn-cancel" onclick="logout()" style="background:#fff0e8;color:var(--accent);border:1.5px solid #fecaca;">🚪 Changer de compte</button>
+<button class="btn-cancel" onclick="closeOverlay('pp-sheet')">Fermer</button>
+</div>
+</div>
+</div>
+<div id="loginModal" style="
+  position:fixed; inset:0;
+  background:rgba(0,0,0,0.5);
+  display:none; align-items:center; justify-content:center;
+  z-index:9999;
+">
+<div style="
+    background:#fff;
+    padding:25px;
+    border-radius:16px;
+    width:320px;
+    box-shadow:0 20px 50px rgba(0,0,0,0.2);
+    text-align:center;
+  ">
+<h3 id="loginTitle">🔐 Connexion</h3>
+<input id="loginPassword" placeholder="Mot de passe" style="
+        width:100%;
+        padding:12px;
+        margin-top:15px;
+        border-radius:10px;
+        border:1px solid #ddd;
+        font-size:16px;
+      " type="password"/>
+<button onclick="submitLogin()" style="
+      margin-top:15px;
+      width:100%;
+      padding:12px;
+      border:none;
+      border-radius:10px;
+      background:#3b82f6;
+      color:white;
+      font-weight:600;
+      cursor:pointer;
+    ">
+      Se connecter
+    </button>
+<button onclick="closeLoginModal()" style="
+      margin-top:10px;
+      background:none;
+      border:none;
+      color:#999;
+      cursor:pointer;
+    ">
+      Annuler
+    </button>
+</div>
+</div>
+<button class="scroll-top" id="st-btn" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+
+<script src="assets/js/app-core.js"></script><script src="assets/js/map.js"></script><script src="assets/js/chat.js"></script><script src="assets/js/analytics.js"></script><script src="assets/js/features.js"></script></body>
+</html>

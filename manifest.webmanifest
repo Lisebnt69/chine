@@ -1,0 +1,11 @@
+{
+  "name": "Chine 2026 · Matis & Lise",
+  "short_name": "Chine 2026",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#fcf7f3",
+  "theme_color": "#e85d5d",
+  "lang": "fr",
+  "description": "Application de voyage collaborative pour la Chine : budget, planning, carte, chat, checklist, stats.",
+  "icons": []
+}
