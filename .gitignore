@@ -3,3 +3,6 @@ Cerveau des enregistrement insta titok/
 
 # Fichiers de travail de la CLI Supabase
 supabase/.temp/
+
+# Sauvegardes de la base : messages et mots de passe, à ne pas publier
+sauvegarde/

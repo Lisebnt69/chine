@@ -469,7 +469,8 @@ Deno.serve(async (req) => {
     new Response(JSON.stringify(body), { status, headers: { ...CORS, "Content-Type": "application/json" } });
 
   const secret = Deno.env.get("APP_SECRET");
-  if (secret && req.headers.get("x-app-secret") !== secret) return json({ error: "Code assistant invalide" }, 401);
+  // Sans secret configuré on refuse tout : un oubli ne doit pas ouvrir l'accès aux crédits API.
+  if (!secret || req.headers.get("x-app-secret") !== secret) return json({ error: "Code assistant invalide" }, 401);
 
   let body: Json;
   try { body = await req.json(); } catch { return json({ error: "JSON invalide" }, 400); }
