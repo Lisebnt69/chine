@@ -1,0 +1,12 @@
+{
+  "liveServer.settings.ignoreFiles": [
+    ".vscode/**",
+    ".git/**",
+    "Cerveau des enregistrement insta titok/**",
+    "tools/**",
+    "supabase/**",
+    "**/*.md",
+    "**/*.py",
+    "**/*.ts"
+  ]
+}

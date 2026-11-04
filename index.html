@@ -1765,7 +1765,7 @@ let currentUser = localStorage.getItem('chine_user') || null; // 'matis' | 'lise
 const USERS = {
   matis:   { name:'Matis', emoji:'👨', color:'#3b82f6', bg:'#dbeafe', av:'m', pin:'matis2026' },
   lise:    { name:'Lise',  emoji:'👩', color:'#ec4899', bg:'#fce7f3', av:'l', pin:'lise2026' },
-  visiteur:{ name:'Visiteur', emoji:'👁️', color:'#64748b', bg:'#f1f5f9', av:'v', pin:null }
+  visiteur:{ name:'Visiteur', emoji:'👁️', color:'#64748b', bg:'#f1f5utf9', av:'v', pin:null }
 };
   let loginTargetUser = null;
 
@@ -3911,7 +3911,7 @@ function exportPlanningPDF(){
   body+=`<div style="margin-top:24px;padding:14px;background:#fff4f1;border-radius:10px;border:1px solid #fdd;"><h2 style="font-size:13px;font-weight:700;margin-bottom:10px;color:#e85d5d;">💰 Résumé Budget</h2><table style="width:100%;font-size:11px;border-collapse:collapse;"><tr><td style="padding:4px 8px;border-bottom:1px solid #eee;">Total dépensé</td><td style="text-align:right;font-weight:700;padding:4px 8px;border-bottom:1px solid #eee;">${fmtE(depM+depL)}</td></tr><tr><td style="padding:4px 8px;border-bottom:1px solid #eee;">Matis</td><td style="text-align:right;font-weight:700;padding:4px 8px;border-bottom:1px solid #eee;">${fmtE(depM)}</td></tr><tr><td style="padding:4px 8px;">Lise</td><td style="text-align:right;font-weight:700;padding:4px 8px;">${fmtE(depL)}</td></tr></table></div>`;
 
   const w=window.open('','_blank');
-  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Chine 2026 — Planning</title></head><body>${body}</body></html>`);
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Chine 2026 — Planning</title></head><body>${body}<\/body></html>`);
   w.document.close();
   setTimeout(()=>w.print(),400);
 }
@@ -4153,7 +4153,7 @@ const VILLE_COORDS={
   'Chongqing':[29.5630,106.5516],
   'Chengdu':[30.5723,104.0665],
   'Karst de Wulong':[29.3568,107.7560],
-  'Furong':[28.9822,109.6753],
+  'Furong':[28.7621,109.9561],
   'Zhangjiajie':[29.1248,110.4795],
 };
 
@@ -4217,10 +4217,7 @@ function initMap(){
   // Init carte centrée sur Shanghai par défaut
   mapInst=L.map('map',{zoomControl:false,attributionControl:false}).setView([31.2,121.47],11);
 
-  // CartoDB Voyager — pas de restriction referer, fonctionne partout
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{
-    subdomains:'abcd',maxZoom:19,attribution:'© OpenStreetMap © CARTO'
-  }).addTo(mapInst);
+  currentLayer=L.tileLayer(MAP_LAYERS[mapLayerIdx].url,MAP_LAYERS[mapLayerIdx].opts).addTo(mapInst);
 
   // Attribution discrète
   L.control.attribution({position:'bottomleft',prefix:false}).addTo(mapInst);
@@ -4234,10 +4231,13 @@ function initMap(){
   startGPS();
 }
 
+// Amap d'abord : serveurs en Chine, et bien plus détaillé qu'OSM sur place. gcj02 : voir ia.js.
+const AMAP_OPTS={subdomains:'1234',maxZoom:18,gcj02:true,attribution:'© 高德地图 AutoNavi'};
 const MAP_LAYERS=[
-  {name:'Carte',url:'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',opts:{subdomains:'abcd',maxZoom:19}},
-  {name:'Sombre',url:'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',opts:{subdomains:'abcd',maxZoom:19}},
-  {name:'Satellite',url:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',opts:{maxZoom:19}},
+  {name:'Amap',url:'https://webrd0{s}.is.autonavi.com/appmaptile?lang=en&size=1&scale=1&style=8&x={x}&y={y}&z={z}',opts:AMAP_OPTS},
+  {name:'Amap 中文',url:'https://webrd0{s}.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}',opts:AMAP_OPTS},
+  {name:'Amap satellite',url:'https://webst0{s}.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}',opts:AMAP_OPTS},
+  {name:'OSM',url:'https://tile.openstreetmap.org/{z}/{x}/{y}.png',opts:{maxZoom:19,attribution:'© OpenStreetMap'}},
 ];
 let currentLayer=null;
 function cycleMapLayer(){
@@ -4432,7 +4432,8 @@ function navigateToItem(data){
 
   // Priority: Amap deeplink (works in China)
   // Format: https://uri.amap.com/navigation?to=lng,lat,name
-  const amapNav=`https://uri.amap.com/navigation?to=${lng},${lat},${encodeURIComponent(nom)}&mode=walking&src=chine2026`;
+  const [gLat,gLng]=wgs84ToGcj02(lat,lng);
+  const amapNav=`https://uri.amap.com/navigation?to=${gLng},${gLat},${encodeURIComponent(nom)}&mode=walking&src=chine2026`;
 
   // Fallback: Amap web search
   const amapSearch=adresseCn
@@ -6104,6 +6105,6 @@ if(loginPasswordEl){
 
 </script>
 
-<script src="ia.js?v=1"></script>
+<script src="ia.js?v=2"></script>
 </body>
 </html>

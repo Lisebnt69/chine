@@ -1,7 +1,7 @@
 // Cache offline. Réseau d'abord pour la page et les scripts (pour recevoir les mises à jour),
 // cache en secours quand il n'y a pas de réseau.
-const CACHE_NAME = 'chine-app-v4';
-const ASSETS = ['./', './index.html', './ia.js', './manifest.webmanifest'];
+const CACHE_NAME = 'chine-app-v5';
+const ASSETS = ['./', './index.html', './ia.js', './cerveau.json', './manifest.webmanifest'];
 
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS)).then(() => self.skipWaiting()));

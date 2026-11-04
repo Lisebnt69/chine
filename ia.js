@@ -210,8 +210,8 @@ function viewJour() {
       <div class="prog-next-name">${esc(e.label)}</div>
       <div class="prog-next-when">${when}${it?.ville ? ' · ' + esc(it.ville) : ''}</div>
       <div class="prog-next-actions">
-        ${pos ? `<button class="prog-btn light" onclick='navigateToItem(${JSON.stringify({ nom: it.nom, lat: pos[0], lng: pos[1], adresse_cn: it.adresse_cn || '' }).replace(/'/g, '&#39;')})'>🧭 Y aller</button>` : ''}
-        ${it?.adresse_cn ? `<button class="prog-btn light" onclick="copyPhrase('${esc(it.adresse_cn).replace(/'/g, "\\'")}')">📋 Adresse chinoise</button>` : ''}
+        ${pos ? `<button class="prog-btn light" data-nav="${esc(JSON.stringify({ nom: it.nom, lat: pos[0], lng: pos[1], adresse_cn: it.adresse_cn || '' }))}" onclick="navigateToItem(JSON.parse(this.dataset.nav))">🧭 Y aller</button>` : ''}
+        ${it?.adresse_cn ? `<button class="prog-btn light" data-cn="${esc(it.adresse_cn)}" onclick="copyPhrase(this.dataset.cn)">📋 Adresse chinoise</button>` : ''}
       </div></div>`;
   }
   h += `<div class="prog-section-t">${isToday ? 'Feuille de route du jour' : 'Prochaine journée'} — ${fmtDate(day.date_voyage)}</div>`;
@@ -248,15 +248,16 @@ function vitalCard(ic, nom, line1, line2, it) {
 /* ── Vue "Activités possibles" : idées non planifiées + cerveau, filtrables ville / moment ── */
 function viewActivites() {
   const idees = D.items.filter(x => ['activite', 'restaurant', 'cafe'].includes(x.type) && getItemStatut(x) === 'idee');
-  const reels = (D.cerveau || []).filter(c => !c.item_id && ['activite', 'restaurant', 'cafe', '', null, undefined].includes(c.categorie));
+  const reels = (D.cerveau || []).filter(c => !c.item_id && CER_IDEES.includes(c.categorie));
   const villes = [...new Set([...idees.map(x => x.ville), ...reels.map(c => c.ville)].filter(Boolean))];
-  const f = x => (!progVille || x.ville === progVille) && (!progMoment || (x.prix_type || x.meilleur_moment || '') === progMoment || (progMoment === 'Après-midi' && !(x.prix_type || x.meilleur_moment)));
+  const f = x => (!progVille || x.ville === progVille) && (!progMoment || !(x.prix_type || x.meilleur_moment) || (x.prix_type || x.meilleur_moment) === progMoment);
   const prio = { coeur: 0, sympa: 1, '': 2, optionnel: 3 };
   const list = idees.filter(f).sort((a, b) => (prio[a.priorite || ''] ?? 2) - (prio[b.priorite || ''] ?? 2));
-  const rl = reels.filter(f);
-  let h = `<div class="prog-chips">${['', ...villes].map(v => `<button class="${progVille === v ? 'on' : ''}" onclick="progVille='${esc(v)}';renderProgramme()">${v ? (VILLE_IC[v] || '') + ' ' + esc(v) : 'Toutes'}</button>`).join('')}</div>
+  const rl = reels.filter(f).sort(cerveauTri);
+  let h = `<div class="prog-chips">${['', ...villes].map(v => `<button class="${progVille === v ? 'on' : ''}" data-v="${esc(v)}" onclick="progVille=this.dataset.v;renderProgramme()">${v ? (VILLE_IC[v] || '') + ' ' + esc(v) : 'Toutes'}</button>`).join('')}</div>
     <div class="prog-chips">${['', 'Matin', 'Après-midi', 'Soir'].map(m => `<button class="${progMoment === m ? 'on' : ''}" onclick="progMoment='${m}';renderProgramme()">${m || 'Tout moment'}</button>`).join('')}</div>`;
-  h += `<button class="prog-wide" onclick="askIA('Qu\\'est-ce qu\\'on peut faire${progMoment ? ' le ' + progMoment.toLowerCase() : ''}${progVille ? ' à ' + progVille : ''} ? Pioche dans le cerveau puis vérifie sur le web.')">🧠 Idées de l'IA pour ce filtre</button>`;
+  const questionIA = `Qu'est-ce qu'on peut faire${progMoment ? ' le ' + progMoment.toLowerCase() : ''}${progVille ? ' à ' + progVille : ''} ? Pioche dans le cerveau puis vérifie sur le web.`;
+  h += `<button class="prog-wide" data-q="${esc(questionIA)}" onclick="askIA(this.dataset.q)">🧠 Idées de l'IA pour ce filtre</button>`;
   h += `<div class="prog-section-t">💡 Idées dans l'app (${list.length})</div>`;
   h += list.length ? list.map(it => `<div class="prog-card">
       <div class="prog-card-ic">${TYPE_IC[it.type] || '🎯'}</div>
@@ -268,7 +269,7 @@ function viewActivites() {
       <div class="prog-card-r"><button class="prog-btn" onclick="event.stopPropagation();quickPlan('${it.id}')">＋ Caser</button></div>
     </div>`).join('') : emptyBox('💡', 'Aucune idée pour ce filtre.');
   h += `<div class="prog-section-t">🧠 Dans le cerveau, pas encore dans l'app (${rl.length})</div>`;
-  h += rl.length ? rl.map(cerveauCard).join('') : emptyBox('🧠', D.cerveau.length ? 'Tout le cerveau est déjà dans l\'app 👌' : 'Cerveau vide — importe tes reels (onglet 🧠 Cerveau).');
+  h += rl.length ? listeCerveau(rl) : emptyBox('🧠', D.cerveau.length ? 'Rien du cerveau pour ce filtre.' : 'Cerveau vide — importe tes reels (onglet 🧠 Cerveau).');
   return h;
 }
 
@@ -343,45 +344,87 @@ async function confirmQuickPlan(itemId) {
 }
 
 /* ═══════════ 3. CERVEAU ═══════════ */
+const CER_A_PLACER = ['activite', 'restaurant', 'cafe', 'hotel'];
+const CER_IDEES = ['activite', 'restaurant', 'cafe', 'piste'];
+const CER_FILTRES = [['', 'Tout'], ['restaurant', '🍜 Restos'], ['activite', '🎯 Visites'], ['cafe', '☕ Bars & cafés'], ['hotel', '🏨 Hôtels'],
+  ['pratique', '🧳 Pratique'], ['astuce', '💡 Astuces'], ['itineraire', '🗺️ Itinéraires'], ['piste', '🔎 Pistes']];
+const CER_PAGE = 25;
+let cerLimite = CER_PAGE, cerCat = '', cerVille = '';
+
+const sansAccent = s => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+// Début de mot, comme la recherche côté base : « pot » ne doit pas trouver « spot ».
+function contientMots(texte, q) {
+  return sansAccent(q).split(/\s+/).filter(Boolean).every(m =>
+    /[\u4e00-\u9fff]/.test(m) ? texte.includes(m) : new RegExp('(^|[^a-z0-9])' + m.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).test(texte));
+}
+// Le fiable et déjà sur la carte d'abord : c'est le plus exploitable sur le terrain.
+function cerveauTri(a, b) {
+  const rang = c => ({ haute: 0, moyenne: 1 }[c.confiance] ?? 2) + (c.lat ? 0 : 0.5);
+  return rang(a) - rang(b);
+}
+function listeCerveau(list) {
+  const reste = list.length - cerLimite;
+  return list.slice(0, cerLimite).map(cerveauCard).join('')
+    + (reste > 0 ? `<button class="prog-wide" onclick="cerLimite+=50;renderCerveau();renderProgramme()">Voir les ${reste} autres</button>` : '');
+}
+// Les données du cerveau viennent de posts de tiers et d'une table ouverte : elles passent par
+// des attributs data-*, jamais dans le code d'un onclick, et seuls les liens http(s) sont gardés.
+const navAttr = c => esc(JSON.stringify({ nom: c.titre, lat: c.lat, lng: c.lng, adresse_cn: c.adresse_cn || '' }));
+const lienSur = u => /^https?:\/\//i.test(u || '') ? esc(u) : '';
+
 function cerveauCard(c) {
+  const surCarte = CER_A_PLACER.includes(c.categorie);
+  // Pas de position connue : on envoie la recherche à Amap, qui connaît le lieu mieux qu'OSM.
+  const amap = surCarte && !c.lat ? buildAmapUrl({ adresse_cn: c.adresse_cn, nom: (c.titre || '').replace(/\s*[(（«:].*$/, ''), ville: c.ville }) : '';
   return `<div class="prog-card cer">
     <div class="prog-card-ic">${c.source === 'tiktok' ? '🎵' : c.source === 'instagram' ? '📸' : '🧠'}</div>
     <div class="prog-card-main">
       <div class="prog-card-t">${esc(c.titre || c.lieu_nom || 'Reel')}</div>
-      <div class="prog-card-s">${esc([c.ville, c.lieu_nom && c.lieu_nom !== c.titre ? c.lieu_nom : '', c.auteur].filter(Boolean).join(' · '))}</div>
+      <div class="prog-card-s">${esc([c.ville, c.rubrique, c.auteur && '@' + c.auteur].filter(Boolean).join(' · '))}</div>
       ${c.resume ? `<div class="prog-card-s">${esc(c.resume)}</div>` : ''}
+      ${c.prix_texte ? `<div class="prog-card-s">💰 ${esc(c.prix_texte)}</div>` : ''}
+      ${c.adresse ? `<div class="prog-card-s">📍 ${esc(c.adresse)}</div>` : ''}
+      ${c.categorie === 'piste' ? '<div class="prog-tl-w">Piste : ce post n\'a pas encore été analysé.</div>' : c.confiance === 'basse' ? '<div class="prog-tl-w">Info peu sûre : à vérifier.</div>' : ''}
       ${(c.tags || []).length ? `<div class="prog-tags">${c.tags.slice(0, 5).map(t => `<span>#${esc(t)}</span>`).join('')}</div>` : ''}
     </div>
     <div class="prog-card-r" style="gap:6px;">
-      ${c.url ? `<a class="prog-btn light" href="${esc(c.url)}" target="_blank" rel="noopener">▶︎</a>` : ''}
-      ${c.item_id ? '<span class="prog-ok">✓ dans l\'app</span>' : `<button class="prog-btn" onclick="cerveauToItem('${c.id}')">＋ Idée</button>`}
+      ${lienSur(c.url) ? `<a class="prog-btn light" href="${lienSur(c.url)}" target="_blank" rel="noopener" title="Voir le post">▶︎</a>` : ''}
+      ${c.lat ? `<button class="prog-btn light" title="Y aller" data-nav="${navAttr(c)}" onclick="navigateToItem(JSON.parse(this.dataset.nav))">🧭</button>` : ''}
+      ${amap ? `<a class="prog-btn light" href="${esc(amap)}" target="_blank" rel="noopener" title="Chercher dans Amap">🔎 Amap</a>` : ''}
+      ${c.item_id ? '<span class="prog-ok">✓ dans l\'app</span>' : surCarte && c.categorie !== 'hotel' ? `<button class="prog-btn" data-cle="${esc(c.cle)}" onclick="cerveauToItem(this.dataset.cle)">＋ Idée</button>` : ''}
     </div></div>`;
 }
 
 function renderCerveau() {
   ensureProgrammeTab();
   const body = document.getElementById('cerBody'); if (!body) return;
-  if (D._cerveauMissing) { body.innerHTML = emptyBox('🛠️', 'La table « cerveau » n\'existe pas encore dans Supabase. Lance le script supabase/migrations/20261104000000_cerveau_assistant.sql (voir README).'); return; }
-  const q = (document.getElementById('cerQ')?.value || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
-  const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
-  const list = D.cerveau.filter(c => !q || norm([c.titre, c.lieu_nom, c.ville, c.resume, c.transcription, (c.tags || []).join(' ')].join(' ')).includes(q));
-  const byVille = {};
-  list.forEach(c => (byVille[c.ville || 'Sans ville'] = byVille[c.ville || 'Sans ville'] || []).push(c));
-  body.innerHTML = `<div class="prog-kpis"><div><b>${D.cerveau.length}</b><span>reels</span></div><div><b>${D.cerveau.filter(c => c.item_id).length}</b><span>dans l'app</span></div><div><b>${D.cerveau.filter(c => c.lat && c.lng).length}</b><span>sur la carte</span></div></div>`
-    + (list.length ? Object.entries(byVille).map(([v, cs]) => `<div class="prog-section-t">${VILLE_IC[v] || '📍'} ${esc(v)} (${cs.length})</div>${cs.map(cerveauCard).join('')}`).join('') : emptyBox('🧠', D.cerveau.length ? 'Rien ne correspond.' : 'Cerveau vide. Clique « Importer » pour coller l\'export de tes reels.'));
+  const q = document.getElementById('cerQ')?.value || '';
+  const compte = {};
+  D.cerveau.forEach(c => { if (c.ville) compte[c.ville] = (compte[c.ville] || 0) + 1; });
+  const villes = Object.keys(compte).sort((a, b) => compte[b] - compte[a]);
+  const list = D.cerveau
+    .filter(c => (!cerCat || c.categorie === cerCat) && (!cerVille || c.ville === cerVille))
+    .filter(c => !q.trim() || contientMots(sansAccent([c.titre, c.lieu_nom, c.ville, c.resume, c.rubrique, c.adresse, (c.tags || []).join(' ')].join(' ')), q))
+    .sort(cerveauTri);
+  const places = D.cerveau.filter(c => CER_A_PLACER.includes(c.categorie));
+  body.innerHTML = `<div class="prog-kpis"><div><b>${D.cerveau.length}</b><span>points</span></div><div><b>${places.filter(c => c.lat).length}/${places.length}</b><span>sur la carte</span></div><div><b>${D.cerveau.filter(c => c.item_id).length}</b><span>dans l'app</span></div></div>
+    <div class="prog-chips flush">${[['', 'Toutes'], ...villes.map(v => [v, `${VILLE_IC[v] || ''} ${v} ${compte[v]}`])].map(([v, l]) => `<button class="${cerVille === v ? 'on' : ''}" data-v="${esc(v)}" onclick="cerVille=this.dataset.v;cerLimite=CER_PAGE;renderCerveau()">${esc(l)}</button>`).join('')}</div>
+    <div class="prog-chips flush">${CER_FILTRES.map(([k, l]) => `<button class="${cerCat === k ? 'on' : ''}" onclick="cerCat='${k}';cerLimite=CER_PAGE;renderCerveau()">${l}</button>`).join('')}</div>`
+    + (list.length ? listeCerveau(list) : emptyBox('🧠', D.cerveau.length ? 'Rien trouvé dans le cerveau.' : 'Cerveau vide. Clique « Importer » pour ajouter tes reels.'));
 }
 
-async function cerveauToItem(id) {
+async function cerveauToItem(cle) {
   if (!requireEditorSoft()) return;
-  const c = D.cerveau.find(x => x.id == id); if (!c) return;
+  const c = D.cerveau.find(x => x.cle === cle); if (!c) return;
   const type = ['activite', 'restaurant', 'cafe'].includes(c.categorie) ? c.categorie : 'activite';
-  const row = { type, nom: c.lieu_nom || c.titre || 'Reel', ville: c.ville || '', quartier: '', description: c.resume || '', adresse: c.adresse || '', adresse_cn: c.adresse_cn || '',
-    prix: c.prix_estime || 0, prix_type: c.meilleur_moment || '', duree: c.duree || '', statut: 'idee', priorite: 'coeur', notes: c.url || '', fait: false, matis: 0, lise: 0,
-    lat: c.lat || null, lng: c.lng || null, cerveau_id: c.id };
+  // Le titre est le nom du lieu ; le champ « lieu » du cerveau est souvent juste la rue.
+  const row = { type, nom: c.titre || c.lieu_nom || 'Reel', ville: c.ville || '', quartier: c.lieu_nom && c.lieu_nom !== c.titre ? c.lieu_nom : '', description: c.resume || '',
+    adresse: c.adresse || '', adresse_cn: c.adresse_cn || '', prix: c.prix_estime || 0, prix_type: c.meilleur_moment || '', duree: c.duree || '', statut: 'idee', priorite: '',
+    notes: [c.prix_texte && 'Prix : ' + c.prix_texte, c.url].filter(Boolean).join(' | '), fait: false, matis: 0, lise: 0, lat: c.lat || null, lng: c.lng || null, cerveau_id: c.id || null };
   if (!row.lat) { const g = await geocodeQuery(row); if (g) { row.lat = g.lat; row.lng = g.lng; } }
   const { data, error } = await sb.from('items').insert(row).select('id').single();
   if (error) { showToast('❌ ' + error.message); return; }
-  await sb.from('cerveau').update({ item_id: data.id, lat: row.lat, lng: row.lng }).eq('id', id);
+  await sb.from('cerveau').update({ item_id: data.id, lat: row.lat, lng: row.lng }).eq('cle', cle);
   c.item_id = data.id; showToast('💡 Ajouté aux idées' + (row.lat ? ' + carte' : ''));
   renderCerveau(); renderProgramme();
 }
@@ -394,7 +437,7 @@ function openCerveauImport() {
   sh.className = 'overlay on'; sh.id = 'cer-import';
   sh.onclick = e => { if (e.target === sh) sh.remove(); };
   sh.innerHTML = `<div class="sheet"><div class="sheet-handle"></div><div class="sheet-title">Importer le cerveau</div>
-    <div class="prog-hint">Colle un JSON (liste de reels) ou un CSV avec en-têtes. Champs : url, source, auteur, titre, transcription, resume, categorie, ville, lieu_nom, adresse, adresse_cn, prix_estime, duree, meilleur_moment, tags. Les doublons (même url) sont mis à jour.</div>
+    <div class="prog-hint">Colle un JSON (liste de reels) ou un CSV avec en-têtes. Champs : cle, url, source, auteur, titre, transcription, resume, categorie, ville, lieu_nom, adresse, adresse_cn, prix_texte, duree, meilleur_moment, tags. Une entrée déjà présente (même cle, ou même url et même lieu) est mise à jour.</div>
     <textarea class="form-input" id="cer-raw" rows="9" placeholder='[{"url":"https://www.tiktok.com/@x/video/1","titre":"Hot pot caché","ville":"Chongqing","lieu_nom":"...","transcription":"..."}]'></textarea>
     <input type="file" accept=".json,.csv,.txt" style="margin:8px 0;" onchange="this.files[0]&&this.files[0].text().then(t=>document.getElementById('cer-raw').value=t)">
     <label style="display:flex;gap:8px;align-items:center;font-size:.8rem;margin:6px 0 12px;"><input type="checkbox" id="cer-geo" checked> Placer les adresses sur la carte (≈1 s par lieu)</label>
@@ -417,15 +460,16 @@ function parseCSV(text) {
   return rest.map(r => Object.fromEntries(head.map((h, i) => [h.trim().toLowerCase(), (r[i] || '').trim()])));
 }
 
-const CER_FIELDS = ['url', 'source', 'auteur', 'titre', 'transcription', 'resume', 'categorie', 'ville', 'lieu_nom', 'adresse', 'adresse_cn', 'lat', 'lng', 'prix_estime', 'duree', 'meilleur_moment', 'tags'];
+const CER_FIELDS = ['cle', 'url', 'source', 'auteur', 'titre', 'transcription', 'resume', 'categorie', 'rubrique', 'ville', 'lieu_nom', 'adresse', 'adresse_cn', 'lat', 'lng', 'geo', 'prix_estime', 'prix_texte', 'duree', 'meilleur_moment', 'tags', 'confiance'];
 function normaliseReel(o) {
-  const alias = { link: 'url', lien: 'url', title: 'titre', transcript: 'transcription', summary: 'resume', city: 'ville', place: 'lieu_nom', lieu: 'lieu_nom', nom: 'lieu_nom', address: 'adresse', category: 'categorie', author: 'auteur' };
+  const alias = { link: 'url', lien: 'url', title: 'titre', transcript: 'transcription', summary: 'resume', detail: 'resume', prix: 'prix_texte', city: 'ville', place: 'lieu_nom', lieu: 'lieu_nom', nom: 'lieu_nom', address: 'adresse', category: 'categorie', author: 'auteur' };
   const r = {};
   Object.entries(o || {}).forEach(([k, v]) => { const kk = alias[k.toLowerCase()] || k.toLowerCase(); if (CER_FIELDS.includes(kk) && v !== '' && v != null) r[kk] = v; });
   if (typeof r.tags === 'string') r.tags = r.tags.split(/[,#;|]/).map(s => s.trim()).filter(Boolean);
   ['lat', 'lng', 'prix_estime'].forEach(k => { if (r[k] != null) { r[k] = parseFloat(String(r[k]).replace(',', '.')); if (isNaN(r[k])) delete r[k]; } });
   if (!r.source && r.url) r.source = /tiktok/i.test(r.url) ? 'tiktok' : /instagram/i.test(r.url) ? 'instagram' : 'autre';
   if (r.ville) { const v = VILLES.find(x => x.toLowerCase() === String(r.ville).toLowerCase()); if (v) r.ville = v; }
+  r.cle = r.cle || [r.url, r.lieu_nom || r.titre].filter(Boolean).join('#');
   return r;
 }
 
@@ -447,37 +491,78 @@ async function importCerveau() {
     }
   }
   st.textContent = '⬆️ Envoi…';
-  const withUrl = rows.filter(r => r.url), noUrl = rows.filter(r => !r.url);
-  const res = [];
-  if (withUrl.length) res.push(await sb.from('cerveau').upsert(withUrl, { onConflict: 'url' }));
-  if (noUrl.length) res.push(await sb.from('cerveau').insert(noUrl));
-  const err = res.find(r => r.error)?.error;
-  if (err) { st.textContent = '❌ ' + err.message; return; }
+  const { error } = await sb.from('cerveau').upsert(rows, { onConflict: 'cle' });
+  if (error) { st.textContent = '❌ ' + error.message; return; }
   await loadCerveau(); st.textContent = `✅ ${rows.length} reel(s) importé(s)`;
   setTimeout(() => document.getElementById('cer-import')?.remove(), 1200);
 }
 
+// Sans la transcription : elle reste côté base pour l'IA, et ferait exploser le cache local.
+const CER_COLS = 'id,cle,source,url,auteur,titre,resume,categorie,rubrique,ville,lieu_nom,adresse,adresse_cn,lat,lng,geo,prix_estime,prix_texte,duree,meilleur_moment,tags,confiance,item_id';
+
+// La base d'abord (elle sait ce qui est déjà ajouté à l'app), sinon cerveau.json, livré
+// avec l'app : le cerveau reste consultable si la base ne répond pas.
 async function loadCerveau() {
+  let rows = null;
   try {
-    const { data, error } = await sb.from('cerveau').select('*').order('created_at', { ascending: false });
-    if (error) { D._cerveauMissing = /does not exist|schema cache|not find/i.test(error.message); return; }
-    D._cerveauMissing = false; D.cerveau = data || [];
-  } catch (e) { /* hors-ligne : on garde le cache */ }
+    const { data, error } = await sb.from('cerveau').select(CER_COLS);
+    if (!error && data?.length) rows = data;
+  } catch (e) { /* base injoignable */ }
+  if (!rows) {
+    try { const r = await fetch('cerveau.json'); if (r.ok) rows = await r.json(); } catch (e) { /* hors-ligne : on garde le cache */ }
+  }
+  if (rows) D.cerveau = rows;
   renderCerveau(); if (progView === 'activites') renderProgramme();
 }
 
 /* ═══════════ 4. CARTE : placer toutes les adresses automatiquement ═══════════ */
+// Limité à la ville quand on la connaît, et on refuse un résultat qui n'est que la ville
+// entière (rang OSM < 18) : mieux vaut pas de pin qu'un pin faux.
 async function geocodeQuery(x) {
-  const qs = [x.adresse_cn, x.adresse && `${x.adresse} ${x.ville || ''}`, x.nom && `${x.nom} ${x.ville || ''}`, x.quartier && `${x.quartier} ${x.ville || ''}`].filter(q => q && q.trim());
+  const centre = VILLE_COORDS[x.ville];
+  const zone = centre ? `&bounded=1&viewbox=${centre[1] - .6},${centre[0] + .6},${centre[1] + .6},${centre[0] - .6}` : '';
+  const dans = t => t && (centre ? t : `${t} ${x.ville || ''}`);
+  const qs = [x.adresse_cn, dans(x.adresse), dans(x.nom), dans(x.quartier)].filter(q => q && q.trim());
   for (const q of qs) {
     try {
-      const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=cn&q=${encodeURIComponent(q.trim())}`, { headers: { 'Accept-Language': 'fr,en,zh' } });
+      const r = await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=cn${zone}&q=${encodeURIComponent(q.trim())}`, { headers: { 'Accept-Language': 'fr,en,zh' } });
       const d = await r.json();
       await new Promise(res => setTimeout(res, 1100)); // 1 requête/s max (règle OSM)
-      if (d && d.length) return { lat: parseFloat(d[0].lat), lng: parseFloat(d[0].lon), label: d[0].display_name };
+      if (d?.length && d[0].place_rank >= 18) return { lat: parseFloat(d[0].lat), lng: parseFloat(d[0].lon), label: d[0].display_name };
     } catch (e) { /* requête suivante */ }
   }
   return null;
+}
+
+// Amap travaille en GCJ-02, le système imposé en Chine, alors que le GPS et OSM sont en
+// WGS-84 : l'écart est de plusieurs centaines de mètres.
+function wgs84ToGcj02(lat, lng) {
+  const a = 6378245, ee = 0.00669342162296594323, pi = Math.PI, x = lng - 105, y = lat - 35;
+  const dLat = -100 + 2 * x + 3 * y + .2 * y * y + .1 * x * y + .2 * Math.sqrt(Math.abs(x))
+    + (20 * Math.sin(6 * x * pi) + 20 * Math.sin(2 * x * pi)) * 2 / 3
+    + (20 * Math.sin(y * pi) + 40 * Math.sin(y / 3 * pi)) * 2 / 3
+    + (160 * Math.sin(y / 12 * pi) + 320 * Math.sin(y * pi / 30)) * 2 / 3;
+  const dLng = 300 + x + 2 * y + .1 * x * x + .1 * x * y + .1 * Math.sqrt(Math.abs(x))
+    + (20 * Math.sin(6 * x * pi) + 20 * Math.sin(2 * x * pi)) * 2 / 3
+    + (20 * Math.sin(x * pi) + 40 * Math.sin(x / 3 * pi)) * 2 / 3
+    + (150 * Math.sin(x / 12 * pi) + 300 * Math.sin(x / 30 * pi)) * 2 / 3;
+  const rad = lat / 180 * pi, m = 1 - ee * Math.sin(rad) ** 2, sq = Math.sqrt(m);
+  return [lat + dLat * 180 / (a * (1 - ee) / (m * sq) * pi), lng + dLng * 180 / (a / sq * Math.cos(rad) * pi)];
+}
+
+// Les tuiles Amap sont en GCJ-02. Plutôt que de convertir chaque pin, le GPS et les trajets,
+// on décale uniquement le calque de tuiles marqué gcj02 : tout le reste de l'app reste en WGS-84.
+{
+  const { _setZoomTransform: poser, _getTiledPixelBounds: bornes } = L.GridLayer.prototype;
+  const decale = (calque, c) => {
+    if (!calque.options.gcj02 || !c) return c;
+    const [lat, lng] = wgs84ToGcj02(c.lat, c.lng);
+    return L.latLng(lat, lng);
+  };
+  L.GridLayer.include({
+    _setZoomTransform(niveau, centre, zoom) { return poser.call(this, niveau, decale(this, centre), zoom); },
+    _getTiledPixelBounds(centre) { return bornes.call(this, decale(this, centre)); },
+  });
 }
 
 let geocodingAll = false;
@@ -502,13 +587,14 @@ async function geocodeAllMissing(silent) {
 }
 
 let cerveauLayer = [], routeLayer = null;
+const GEO_AVERT = { nom: '⚠️ Placé d\'après le nom : ça peut être une autre adresse de la même enseigne.', rue: '⚠️ Placé sur la rue, pas à la porte.', quartier: '⚠️ Position approximative : rue ou quartier.' };
 function renderCerveauMarkers() {
   if (!mapInst) return;
   cerveauLayer.forEach(m => m.remove()); cerveauLayer = [];
   if (mapFilter !== 'all' && mapFilter !== 'cerveau') return;
   D.cerveau.filter(c => c.lat && c.lng && !c.item_id).forEach(c => {
-    const m = L.marker([c.lat, c.lng], { icon: L.divIcon({ className: '', html: '<div class="cer-pin">🧠</div>', iconSize: [28, 28], iconAnchor: [14, 14] }) })
-      .bindPopup(`<div class="map-popup"><div class="mp-type">🧠 CERVEAU</div><div class="mp-name">${esc(c.titre || c.lieu_nom || 'Reel')}</div><div class="mp-meta">${esc(c.ville || '')}</div>${c.resume ? `<div class="mp-meta">${esc(c.resume)}</div>` : ''}<div class="mp-actions">${c.url ? `<a class="mp-btn" href="${esc(c.url)}" target="_blank">▶︎ Reel</a>` : ''}<button class="mp-btn nav" onclick="cerveauToItem('${c.id}')">＋ Idée</button></div></div>`)
+    const m = L.marker([c.lat, c.lng], { icon: L.divIcon({ className: '', html: `<div class="cer-pin">${TYPE_EMOJI[c.categorie] || '🧠'}</div>`, iconSize: [28, 28], iconAnchor: [14, 14] }) })
+      .bindPopup(`<div class="map-popup"><div class="mp-type">🧠 CERVEAU</div><div class="mp-name">${esc(c.titre || c.lieu_nom || 'Reel')}</div><div class="mp-meta">${esc(c.ville || '')}${c.rubrique ? ' · ' + esc(c.rubrique) : ''}</div>${c.resume ? `<div class="mp-meta">${esc(c.resume.slice(0, 160))}</div>` : ''}${GEO_AVERT[c.geo] ? `<div class="mp-meta" style="color:#b45309;">${GEO_AVERT[c.geo]}</div>` : ''}<div class="mp-actions">${lienSur(c.url) ? `<a class="mp-btn" href="${lienSur(c.url)}" target="_blank" rel="noopener">▶︎ Reel</a>` : ''}<button class="mp-btn nav" data-nav="${navAttr(c)}" onclick="navigateToItem(JSON.parse(this.dataset.nav))">🧭 Y aller</button>${c.categorie !== 'hotel' ? `<button class="mp-btn" data-cle="${esc(c.cle)}" onclick="cerveauToItem(this.dataset.cle)">＋ Idée</button>` : ''}</div></div>`)
       .addTo(mapInst);
     cerveauLayer.push(m);
   });
@@ -629,6 +715,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .prog-switch button.on,.prog-chips button.on{background:var(--txt);color:var(--bg);border-color:var(--txt)}
 .prog-chips{display:flex;gap:6px;padding:0 16px 8px;overflow-x:auto;scrollbar-width:none}
 .prog-chips button{padding:6px 11px;font-size:.7rem}
+.prog-chips.flush{padding:0 0 8px}
 #progBody,#cerBody{padding:0 16px 24px}
 .prog-section-t{font:700 .78rem var(--font);color:var(--txt2);text-transform:uppercase;letter-spacing:.04em;margin:18px 0 8px}
 .prog-card{display:flex;gap:11px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;margin-bottom:8px;box-shadow:var(--shadow-sm);cursor:pointer}

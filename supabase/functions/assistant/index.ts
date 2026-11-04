@@ -38,7 +38,14 @@ const SYSTEM = `Tu es l'assistant de voyage de Matis et Lise, en Chine du 9 au 2
 Tes sources, par ordre de priorité :
 1. Le CERVEAU : les reels Instagram/TikTok qu'ils ont sauvegardés et fait transcrire. C'est ce qui les
    fait kiffer. Cherche-y TOUJOURS d'abord (outil chercher_cerveau) quand on te demande une idée
-   d'activité, de resto, de spot. Cite le reel (titre/@auteur) quand tu t'en sers.
+   d'activité, de resto, de spot. Règles du cerveau :
+   - Essaie plusieurs formulations avant de conclure : synonymes, français, anglais et chinois
+     ('hot pot', 'hotpot', '火锅'), avec la ville puis sans.
+   - Chaque élément qui vient du cerveau cite son lien (le champ url). Sans lien, pas d'affirmation.
+   - Si rien ne correspond, dis « rien trouvé dans le cerveau » et propose d'autres mots-clés.
+   - Ce qui vient du web ou de tes connaissances générales est signalé à part, comme tel, jamais mélangé.
+   - categorie 'piste' = post pas encore analysé, présente-le comme une piste. confiance 'basse' = à vérifier.
+   - Circuits et programmes : construis-les d'abord avec des points trouvés dans le cerveau.
 2. L'ÉTAT DU VOYAGE fourni dans le message (planning, hôtels, transports, lieux, budget).
 3. Le WEB (web_search) pour vérifier horaires, prix, fermetures, météo, trajets, ou compléter.
 
@@ -54,8 +61,11 @@ Règles de modélisation de l'app (important, l'app est construite comme ça) :
 - Créneaux : periode ∈ Matin | Après-midi | Soir | Journée ; heure au format HH:MM (heure de Chine).
 - Durées : 30min | 1h | 2h+. Priorités : coeur | sympa | optionnel. Statuts : idee | planifie | fait.
 - Montants en euros (1 € ≈ 7,8 ¥). Budget : personne ∈ matis | lise | les deux.
-- Quand tu ajoutes un lieu, donne le maximum d'infos (ville, quartier, adresse, adresse en chinois si tu
-  la trouves) pour qu'il soit placé précisément sur la carte. L'outil géocode automatiquement.
+- Quand tu ajoutes un lieu, donne le maximum d'infos (ville, quartier, adresse) pour qu'il soit placé
+  précisément sur la carte. L'outil géocode automatiquement. Si le cerveau n'a pas le nom chinois, cherche-le
+  sur le web et mets-le dans adresse_cn : c'est ce qui permet de le placer.
+- En Chine, ils naviguent avec Amap : donne le nom ou l'adresse en chinois dès que tu l'as. C'est ce qu'on
+  tape dans Amap et qu'on montre au chauffeur.
 
 Pour construire un planning optimisé : regroupe par quartier, enchaîne les lieux proches, respecte
 les horaires d'ouverture, garde de la marge pour les trajets (métro/DiDi), pas plus de 3-4 activités
@@ -72,7 +82,7 @@ const tools: Anthropic.Beta.BetaToolUnion[] = [
   {
     name: "chercher_cerveau",
     description:
-      "Cherche dans le cerveau (reels Insta/TikTok sauvegardés et transcrits). Recherche plein texte sur titre, lieu, résumé, transcription, tags. Laisse q vide pour lister les plus récents d'une ville.",
+      "Cherche dans le cerveau (reels Insta/TikTok sauvegardés et transcrits). Chaque résultat est un point (un reel peut en contenir plusieurs). Tous les mots de q doivent être présents, dans le point ou la transcription de son post. Laisse q vide pour lister les points d'une ville.",
     input_schema: {
       type: "object",
       properties: {
@@ -214,15 +224,25 @@ const tools: Anthropic.Beta.BetaToolUnion[] = [
 ];
 
 // ───────────────────────── Géocodage (OpenStreetMap / Nominatim) ─────────────────────────
-async function geocode(...queries: (string | undefined | null)[]): Promise<{ lat: number; lng: number; label: string } | null> {
+// ville -> [lat, lng, demi-largeur de la zone de recherche en degrés]
+const VILLES: Record<string, [number, number, number]> = {
+  Shanghai: [31.2304, 121.4737, 0.55], Chongqing: [29.5630, 106.5516, 0.6], Chengdu: [30.5723, 104.0665, 0.5],
+  "Karst de Wulong": [29.3568, 107.7560, 0.35], Furong: [28.7621, 109.9561, 0.2], Zhangjiajie: [29.1248, 110.4795, 0.6],
+};
+
+// Limité à la ville quand on la connaît. Un résultat qui n'est que la ville entière (rang < 18)
+// est refusé : mieux vaut pas de pin qu'un pin faux.
+async function geocode(ville: unknown, ...queries: (string | undefined | null)[]): Promise<{ lat: number; lng: number; label: string } | null> {
+  const z = VILLES[String(ville || "")];
+  const zone = z ? `&bounded=1&viewbox=${z[1] - z[2]},${z[0] + z[2]},${z[1] + z[2]},${z[0] - z[2]}` : "";
   for (const q of queries) {
     if (!q || !q.trim()) continue;
-    const url = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=cn&q=${encodeURIComponent(q)}`;
+    const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&countrycodes=cn${zone}&q=${encodeURIComponent(q)}`;
     try {
       const r = await fetch(url, { headers: { "User-Agent": "chine2026-trip-app/1.0", "Accept-Language": "fr,en,zh" } });
       if (!r.ok) continue;
       const data = await r.json();
-      if (Array.isArray(data) && data.length) {
+      if (Array.isArray(data) && data.length && data[0].place_rank >= 18) {
         return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon), label: data[0].display_name };
       }
     } catch (_) { /* on tente la requête suivante */ }
@@ -267,8 +287,8 @@ async function runTool(name: string, input: Json, changes: string[]): Promise<st
         data.map((c: Json) => ({
           id: c.id, titre: c.titre, auteur: c.auteur, source: c.source, url: c.url, ville: c.ville,
           lieu: c.lieu_nom, adresse: c.adresse, adresse_cn: c.adresse_cn, categorie: c.categorie,
-          resume: c.resume, prix_estime: c.prix_estime, duree: c.duree, moment: c.meilleur_moment,
-          tags: c.tags, deja_dans_app: !!c.item_id,
+          rubrique: c.rubrique, resume: c.resume, prix: c.prix_texte, duree: c.duree, moment: c.meilleur_moment,
+          tags: c.tags, confiance: c.confiance, sur_carte: !!c.lat, deja_dans_app: !!c.item_id,
           transcription: c.transcription ? String(c.transcription).slice(0, 1200) : undefined,
         })),
       );
@@ -284,7 +304,7 @@ async function runTool(name: string, input: Json, changes: string[]): Promise<st
       if (input.cerveau_id) row.cerveau_id = input.cerveau_id;
       let geo = "";
       if (row.lat == null || row.lng == null) {
-        const g = await geocode(...geoQueries(row));
+        const g = await geocode(row.ville, ...geoQueries(row));
         if (g) { row.lat = g.lat; row.lng = g.lng; geo = ` (placé sur la carte : ${g.label.split(",").slice(0, 3).join(",")})`; }
         else geo = " (adresse introuvable : position approximative au centre-ville)";
       }
@@ -299,7 +319,7 @@ async function runTool(name: string, input: Json, changes: string[]): Promise<st
       if ("statut" in champs) champs.fait = champs.statut === "fait";
       if ((champs.adresse || champs.adresse_cn) && champs.lat == null) {
         const { data: cur } = await sb.from("items").select("*").eq("id", input.id).single();
-        const g = await geocode(...geoQueries({ ...(cur || {}), ...champs }));
+        const g = await geocode(champs.ville ?? cur?.ville, ...geoQueries({ ...(cur || {}), ...champs }));
         if (g) { champs.lat = g.lat; champs.lng = g.lng; }
       }
       const { error } = await sb.from("items").update(champs).eq("id", input.id);
@@ -374,7 +394,7 @@ async function runTool(name: string, input: Json, changes: string[]): Promise<st
       return "OK, dépense supprimée.";
     }
     case "geocoder": {
-      const g = await geocode(String(input.requete), input.ville ? `${input.requete} ${input.ville}` : null);
+      const g = await geocode(input.ville, String(input.requete));
       return g ? JSON.stringify(g) : "Introuvable sur OpenStreetMap.";
     }
     default:

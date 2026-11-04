@@ -1,0 +1,1290 @@
+{
+"Chengdu|Boutique Qiji": null,
+"Chengdu|Maison de thé Heming": null,
+"Chengdu|Obibi": null,
+"Chengdu|Temple Wuhou": {
+"classe": "amenity",
+"complet": "Wuhou Temple, Yanxi Avenue, Jiangxijie, Wuhou, Chengdu, Sichuan, 610072, Chine",
+"lat": 30.6478414,
+"lng": 104.0456552,
+"nom": "Wuhou Temple",
+"rang": 30
+},
+"Chengdu|Xiaohe Street": null,
+"Chengdu|成都大熊猫繁育研究基地": {
+"classe": "tourism",
+"complet": "Centre de recherche sur le Panda géant de Chengdu, 1375, Panda Avenue, Bailianchi, Chenghua, Chengdu, Sichuan, 610081, Chine",
+"lat": 30.7432278,
+"lng": 104.1329312,
+"nom": "Centre de recherche sur le Panda géant de Chengdu",
+"rang": 30
+},
+"Chengdu|锦里": {
+"classe": "tourism",
+"complet": "Jinli Ancient Street, Jinli Street, Jiangxijie, Wuhou, Chengdu, Sichuan, 610072, Chine",
+"lat": 30.6487093,
+"lng": 104.0473904,
+"nom": "Jinli Ancient Street",
+"rang": 30
+},
+"Chengdu|鹤鸣茶社": {
+"classe": "amenity",
+"complet": "鹤鸣茶社, 辛亥保路纪念广场, Citangjie, Shaocheng, Qingyang, Chengdu, Sichuan, 610016, Chine",
+"lat": 30.6593583,
+"lng": 104.0558477,
+"nom": "鹤鸣茶社",
+"rang": 30
+},
+"Chongqing|Autres lieux de Chongqing": null,
+"Chongqing|Beibuyuan": null,
+"Chongqing|Beibuyuan 北步园火锅": null,
+"Chongqing|Beicang Creative Street": {
+"classe": "highway",
+"complet": "Taping Main Street, BeiCang Cultural and Creative District, Guanyinqiao, Liangjiang, Liangjiang New Area, Chongqing, 400020, Chine",
+"lat": 29.579822,
+"lng": 106.5401731,
+"nom": "Taping Main Street",
+"rang": 26
+},
+"Chongqing|Beicang Hotpot": null,
+"Chongqing|Bombshelter Hotpot": null,
+"Chongqing|Cafés de la rue Xiahaoli": null,
+"Chongqing|Chenpopo": null,
+"Chongqing|Chongqing": {
+"classe": "place",
+"complet": "Chongqing, Yuzhong, Chongqing, 400014, Chine",
+"lat": 29.5656729,
+"lng": 106.5479189,
+"nom": "Chongqing",
+"rang": 16
+},
+"Chongqing|Chongqing 1949 theatre": {
+"classe": "amenity",
+"complet": "Chongqing 1949 Grand Theater, Yangshuang Road, Ciqikou, Shapingba, Chongqing, 400030, Chine",
+"lat": 29.5837741,
+"lng": 106.4432107,
+"nom": "Chongqing 1949 Grand Theater",
+"rang": 30
+},
+"Chongqing|Cliff Hotpot": null,
+"Chongqing|Daoji Thangka Art Museum": null,
+"Chongqing|Deyi World": null,
+"Chongqing|Eling Plank Road": null,
+"Chongqing|Food hall de Jiefangbei": null,
+"Chongqing|Guanyinqiao": {
+"classe": "railway",
+"complet": "Guanyinqiao, 观音桥步行街, Guanyinqiao Food Street, Guanyinqiao, Liangjiang, Liangjiang New Area, Chongqing, 400020, Chine",
+"lat": 29.5761428,
+"lng": 106.5289422,
+"nom": "Guanyinqiao",
+"rang": 30
+},
+"Chongqing|Hongyadong / Xiahao": null,
+"Chongqing|Hongyadong et vieille rue Xiahao": null,
+"Chongqing|Hotpot Chenpopo": null,
+"Chongqing|Huangyuming BBQ": null,
+"Chongqing|Huangyuming BBQ 黄玉明烤肉": null,
+"Chongqing|Huangyuming Kaorou": null,
+"Chongqing|Jiangbeizui Central Park": null,
+"Chongqing|Mahua": null,
+"Chongqing|Nautilus": null,
+"Chongqing|One Eyes Dinner": null,
+"Chongqing|Place Chaotianmen": null,
+"Chongqing|Raffles City Chongqing": {
+"classe": "shop",
+"complet": "Raffles City Chongqing, 接圣街, 朝天门街道, Yuzhong, Chongqing, 400013, Chine",
+"lat": 29.5675551,
+"lng": 106.5831253,
+"nom": "Raffles City Chongqing",
+"rang": 30
+},
+"Chongqing|Royal Banquet": null,
+"Chongqing|Rue piétonne de Guanyinqiao": null,
+"Chongqing|Shibati": {
+"classe": "landuse",
+"complet": "Eighteen Stairs, 响水桥社区, 南纪门街道, Yuzhong, Chongqing, Chine",
+"lat": 29.5537658,
+"lng": 106.5696236,
+"nom": "Eighteen Stairs",
+"rang": 24
+},
+"Chongqing|Shibati / Qu Chashan": null,
+"Chongqing|Shibati et nettoyage d'oreilles": null,
+"Chongqing|Spots photo de Chongqing": null,
+"Chongqing|Station Liziba": {
+"classe": "railway",
+"complet": "Liziba, 桂花园路, 上清寺街道, Yuzhong, Chongqing, 400015, Chine",
+"lat": 29.5556616,
+"lng": 106.5339223,
+"nom": "Liziba",
+"rang": 30
+},
+"Chongqing|Station de métro Liziba": null,
+"Chongqing|Temple Laojundong": null,
+"Chongqing|Temple Luohan": {
+"classe": "amenity",
+"complet": "Luohan Temple, 千厮门隧道, 筷和苑, Jiefangbei, 解放碑街道, Yuzhong, Chongqing, 400013, Chine",
+"lat": 29.5625664,
+"lng": 106.5778425,
+"nom": "Luohan Temple",
+"rang": 30
+},
+"Chongqing|Temple taoïste Laojundong": null,
+"Chongqing|The Ring Shopping Park": {
+"classe": "shop",
+"complet": "Halo Shopping Park, 湖彩路, Jinzhou, Yuanyang Subdistrict, Liangjiang, Liangjiang New Area, Chongqing, 401121, Chine",
+"lat": 29.6530663,
+"lng": 106.5259717,
+"nom": "Halo Shopping Park",
+"rang": 30
+},
+"Chongqing|Théâtre Chongqing 1949": {
+"classe": "amenity",
+"complet": "Chongqing Grand Theatre, 文华街, Jiangbei, 江北城街道, Liangjiang New Area, Chongqing, 400013, Chine",
+"lat": 29.5727233,
+"lng": 106.5774751,
+"nom": "Chongqing Grand Theatre",
+"rang": 30
+},
+"Chongqing|Xi Yue He Zi": {
+"classe": "landuse",
+"complet": "金科·御临河·月兰溪, Huilong, Longxing, Liangjiang New Area, Chongqing, Chine",
+"lat": 29.7052414,
+"lng": 106.8008913,
+"nom": "金科·御临河·月兰溪",
+"rang": 24
+},
+"Chongqing|Xiahao Li": null,
+"Chongqing|Xiahaoli": {
+"classe": "landuse",
+"complet": "Xiahaoli, 一天门社区, Longmenhao, Nan'an, Chongqing, Chine",
+"lat": 29.5604626,
+"lng": 106.5916274,
+"nom": "Xiahaoli",
+"rang": 24
+},
+"Chongqing|Xiaoshulin": null,
+"Chongqing|Xiyue Hezi": null,
+"Chongqing|下浩里": {
+"classe": "landuse",
+"complet": "Xiahaoli, 一天门社区, Longmenhao, Nan'an, Chongqing, Chine",
+"lat": 29.5604626,
+"lng": 106.5916274,
+"nom": "Xiahaoli",
+"rang": 24
+},
+"Chongqing|光环购物公园": null,
+"Chongqing|北步园火锅": null,
+"Chongqing|十八梯": {
+"classe": "highway",
+"complet": "十八梯, 响水桥社区, 南纪门街道, Yuzhong, Chongqing, 400010, Chine",
+"lat": 29.5541255,
+"lng": 106.568959,
+"nom": "十八梯",
+"rang": 26
+},
+"Chongqing|得意世界": {
+"classe": "landuse",
+"complet": "香港置地·壹号半岛, Jinzhou, Yuanyang Subdistrict, Liangjiang, Liangjiang New Area, Chongqing, Chine",
+"lat": 29.6591576,
+"lng": 106.5256133,
+"nom": "香港置地·壹号半岛",
+"rang": 24
+},
+"Chongqing|李子坝": {
+"classe": "railway",
+"complet": "Liziba, 李子坝正街, 上清寺街道, Yuzhong, Chongqing, 400015, Chine",
+"lat": 29.5556826,
+"lng": 106.5338753,
+"nom": "Liziba",
+"rang": 30
+},
+"Chongqing|江北嘴中央公园": null,
+"Chongqing|洪崖洞": {
+"classe": "tourism",
+"complet": "Hong Ya Dong, 嘉陵江滨江路, 朝天门街道, Yuzhong, Chongqing, 400010, Chine",
+"lat": 29.5650738,
+"lng": 106.5753425,
+"nom": "Hong Ya Dong",
+"rang": 30
+},
+"Chongqing|熹玥盒子": null,
+"Chongqing|老君洞": {
+"classe": "amenity",
+"complet": "老君洞, Laojun Cave Trail, Nanshan, 海棠溪街道, Nan'an, Chongqing, 400066, Chine",
+"lat": 29.5453543,
+"lng": 106.5975755,
+"nom": "老君洞",
+"rang": 30
+},
+"Chongqing|解放碑": {
+"classe": "place",
+"complet": "Jiefangbei, 解放碑街道, Yuzhong, Chongqing, 400010, Chine",
+"lat": 29.5601078,
+"lng": 106.5733671,
+"nom": "Jiefangbei",
+"rang": 20
+},
+"Chongqing|鹅岭公园": {
+"classe": "leisure",
+"complet": "Goose Range Park (E’ling Park), 两路口街道, Yuzhong, Chongqing, Chine",
+"lat": 29.5524602,
+"lng": 106.5320399,
+"nom": "Goose Range Park (E’ling Park)",
+"rang": 24
+},
+"Chongqing|黄玉明烤肉": null,
+"Furong|芙蓉镇": {
+"classe": "place",
+"complet": "Furong, Yongshun County, Xiangxi, Hunan, Chine",
+"lat": 28.762096,
+"lng": 109.9561486,
+"nom": "Furong",
+"rang": 18
+},
+"Guangzhou|Guangzhou": {
+"classe": "boundary",
+"complet": "Canton, Guangdong, Chine",
+"lat": 23.1288429,
+"lng": 113.2589581,
+"nom": "Canton",
+"rang": 10
+},
+"Guangzhou|Xiaobei": {
+"classe": "building",
+"complet": "Xiaobei, Huanshi Middle Road, Hongqiao, District de Yuexiu, Canton, Guangdong, 510060, Chine",
+"lat": 23.142186,
+"lng": 113.2714204,
+"nom": "Xiaobei",
+"rang": 30
+},
+"Hangzhou|Temple Yongfu": {
+"classe": "amenity",
+"complet": "Yongfu Temple, 中法路, 灵隐, Xihu, District de Xihu, Hangzhou, Zhejiang, 310013, Chine",
+"lat": 30.2412104,
+"lng": 120.091847,
+"nom": "Yongfu Temple",
+"rang": 30
+},
+"Karst de Wulong|Wulong": {
+"classe": "boundary",
+"complet": "Wulong, Chongqing, Chine",
+"lat": 29.3284452,
+"lng": 107.7552723,
+"nom": "Wulong",
+"rang": 12
+},
+"Karst de Wulong|Wulong / Huangge": null,
+"Karst de Wulong|天生三桥": {
+"classe": "natural",
+"complet": "Tiansheng Three Natural Bridges, 银杏大道, Xiannüshan, Wulong, Chongqing, Chine",
+"lat": 29.4399342,
+"lng": 107.7863287,
+"nom": "Tiansheng Three Natural Bridges",
+"rang": 30
+},
+"Pékin|Pékin": {
+"classe": "boundary",
+"complet": "Pékin, Chine",
+"lat": 39.9057136,
+"lng": 116.3912972,
+"nom": "Pékin",
+"rang": 8
+},
+"Shanghai|1686 Nanjing West Rd": {
+"classe": "amenity",
+"complet": "Jing'an Temple, 1686, West Nanjing Road, Yongyuanbang, Jing'ansi, District de Jing'an, Shanghaï, 200040, Chine",
+"lat": 31.225215,
+"lng": 121.4407923,
+"nom": "Jing'an Temple",
+"rang": 30
+},
+"Shanghai|AKALCHA": null,
+"Shanghai|Adresses de nourriture à Shanghai": null,
+"Shanghai|Afternoon tea au Peninsula Café": null,
+"Shanghai|Ah Ma Handmade": null,
+"Shanghai|Amazing Song": null,
+"Shanghai|Anfu Road": {
+"classe": "highway",
+"complet": "Anfu Road, Hunanlu, District de Xuhui, Shanghaï, 200000, Chine",
+"lat": 31.2166493,
+"lng": 121.442273,
+"nom": "Anfu Road",
+"rang": 26
+},
+"Shanghai|Apoli Ita Bakery": null,
+"Shanghai|Apoli Itabakery": null,
+"Shanghai|Army Logic": null,
+"Shanghai|Atelier Over Bakery": null,
+"Shanghai|Attractions à Shanghai": {
+"classe": "highway",
+"complet": "People's Square, Jiangyin, Nanjingdonglu Subdistrict, Shanghaï, District de Huangpu, Shanghaï, 200001, Chine",
+"lat": 31.2314784,
+"lng": 121.470047,
+"nom": "People's Square",
+"rang": 26
+},
+"Shanghai|Auntea Jenny": {
+"classe": "amenity",
+"complet": "Auntea Jenny, 动力南四路, Caohejing, District de Xuhui, Shanghaï, 200237, Chine",
+"lat": 31.1538803,
+"lng": 121.4267813,
+"nom": "Auntea Jenny",
+"rang": 30
+},
+"Shanghai|Balades à Shanghai": null,
+"Shanghai|Banquet impérial à l'ancienne": null,
+"Shanghai|Bas d Ban": {
+"classe": "amenity",
+"complet": "BAs d BAN, Yuyuan Road, Meijiaqiao, Yongyuanbang, Jing'ansi, District de Jing'an, Shanghaï, 200042, Chine",
+"lat": 31.2235508,
+"lng": 121.4338604,
+"nom": "BAs d BAN",
+"rang": 30
+},
+"Shanghai|Big Elephant": null,
+"Shanghai|Bird Hut": null,
+"Shanghai|Blueglass Yogurt": null,
+"Shanghai|Boissons à tester": null,
+"Shanghai|Brasserie française de Paul Pairet": null,
+"Shanghai|Bubble tea à tester": null,
+"Shanghai|Butterful & Creamorous": null,
+"Shanghai|Cafés et boulangeries": null,
+"Shanghai|Cafés et pâtisseries à Shanghai": null,
+"Shanghai|Chagee": {
+"classe": "amenity",
+"complet": "Chagee, Zhijiang Feeder Road, Guangzhonglu, District de Hongkou, Shanghaï, 200071, Chine",
+"lat": 31.2651864,
+"lng": 121.4711384,
+"nom": "Chagee",
+"rang": 30
+},
+"Shanghai|Charletown Tea Company": null,
+"Shanghai|Cicada Steakhouse": null,
+"Shanghai|Da Dong": null,
+"Shanghai|Da Huchun": null,
+"Shanghai|Dao Shuan": {
+"classe": "amenity",
+"complet": "周家嘴路涮羊肉, 38, Tianhong Road, 虹镇, Jiaxinglu, District de Hongkou, Shanghaï, 200026, Chine",
+"lat": 31.262746,
+"lng": 121.4974688,
+"nom": "周家嘴路涮羊肉",
+"rang": 30
+},
+"Shanghai|Dehome Coffee": null,
+"Shanghai|Dingxing Road": {
+"classe": "highway",
+"complet": "Dingxing Road, Dingxing, Nanjingdonglu Subdistrict, Shanghaï, District de Huangpu, Shanghaï, 200001, Chine",
+"lat": 31.2370568,
+"lng": 121.466658,
+"nom": "Dingxing Road",
+"rang": 26
+},
+"Shanghai|Disneyland Shanghai": {
+"classe": "tourism",
+"complet": "Shanghai Disneyland, 753, North Shendi Road, Huanglou, Chuanshaxin, District de Pudong, Shanghaï, 201205, Chine",
+"lat": 31.1462523,
+"lng": 121.6562825,
+"nom": "Shanghai Disneyland",
+"rang": 30
+},
+"Shanghai|Dongdaming Rd": null,
+"Shanghai|Entrepôt ZZ2R": null,
+"Shanghai|Fei Da Chu": {
+"classe": "highway",
+"complet": "飞沪大道中市路站, East ZhongShi Road, 陆渡, Loudong, Taicang, Suzhou, Jiangsu, Chine",
+"lat": 31.4734377,
+"lng": 121.1886916,
+"nom": "飞沪大道中市路站",
+"rang": 30
+},
+"Shanghai|Florentia Village": {
+"classe": "shop",
+"complet": "Shanghai Florentia Village (Shanghai Luxury Outlets), 鸣斐路, Zhuqiao, District de Pudong, Shanghaï, Chine",
+"lat": 31.1979236,
+"lng": 121.7601372,
+"nom": "Shanghai Florentia Village (Shanghai Luxury Outlets)",
+"rang": 30
+},
+"Shanghai|GENZ-I": null,
+"Shanghai|Gaga Coast": null,
+"Shanghai|Gan Zheng Yuan Zi Dian": null,
+"Shanghai|Glory Butter": null,
+"Shanghai|Goodman Burgers": null,
+"Shanghai|Goodman Burgers et highballs": null,
+"Shanghai|Green & Safe": {
+"classe": "shop",
+"complet": "Green & Safe, 6-1临, Dongping Road, 枫林桥, Tianpinglu, District de Xuhui, Shanghaï, 200031, Chine",
+"lat": 31.2105316,
+"lng": 121.4455968,
+"nom": "Green & Safe",
+"rang": 30
+},
+"Shanghai|Guan Sheng Yuan": {
+"classe": "leisure",
+"complet": "Kunshan Agricultural Expo, Qiandeng, Kunshan, Suzhou, Jiangsu, Chine",
+"lat": 31.24672,
+"lng": 120.992427,
+"nom": "Kunshan Agricultural Expo",
+"rang": 24
+},
+"Shanghai|HARMAY": {
+"classe": "shop",
+"complet": "Harmay, South Huangpi Road, Xintiandi, Huaihaizhonglu Subdistrict, Shanghaï, District de Huangpu, Shanghaï, 200020, Chine",
+"lat": 31.2217741,
+"lng": 121.4709932,
+"nom": "Harmay",
+"rang": 30
+},
+"Shanghai|HKRI Taikoo Hui": {
+"classe": "shop",
+"complet": "Hkri Taikoo Hui, Wujiang Road, 兴业太古汇, Nanjing Xilu, District de Jing'an, Shanghaï, 200041, Chine",
+"lat": 31.2325269,
+"lng": 121.4580581,
+"nom": "Hkri Taikoo Hui",
+"rang": 30
+},
+"Shanghai|Haimen Road": {
+"classe": "highway",
+"complet": "Haimen Road, Tilanqiao, Beiwaitan, District de Hongkou, Shanghaï, 200082, Chine",
+"lat": 31.2550964,
+"lng": 121.5041893,
+"nom": "Haimen Road",
+"rang": 26
+},
+"Shanghai|Hardware Coffee": null,
+"Shanghai|Hey Tea": {
+"classe": "amenity",
+"complet": "Hey Tea Go, 时光长廊, 品尊国际公寓, Zhujiawan, Shiquanlu, District de Putuo, Shanghaï, 200063, Chine",
+"lat": 31.2580535,
+"lng": 121.4155617,
+"nom": "Hey Tea Go",
+"rang": 30
+},
+"Shanghai|HeyTea": {
+"classe": "amenity",
+"complet": "Heytea, Nengjiang Road, Changhailu, District de Yangpu, Shanghaï, 200433, Chine",
+"lat": 31.3175278,
+"lng": 121.5176489,
+"nom": "Heytea",
+"rang": 30
+},
+"Shanghai|Hilton City Center": {
+"classe": "tourism",
+"complet": "Hilton Shanghai City Center, West Yan'an Road, Meijiaqiao, Yongyuanbang, Jiangsulu, District de Changning, Shanghaï, 200000, Chine",
+"lat": 31.2194569,
+"lng": 121.4325064,
+"nom": "Hilton Shanghai City Center",
+"rang": 30
+},
+"Shanghai|Hu Gong Guan": {
+"classe": "tourism",
+"complet": "Musée d'Art et d'Artisanat de Shanghai, 79, Fenyang Road, Tianpinglu, District de Xuhui, Shanghaï, 200031, Chine",
+"lat": 31.212213,
+"lng": 121.4498928,
+"nom": "Musée d'Art et d'Artisanat de Shanghai",
+"rang": 30
+},
+"Shanghai|Huaihai Middle Road": {
+"classe": "highway",
+"complet": "Middle Jiasong Road, Huaxin, District de Qingpu, Shanghaï, 201804, Chine",
+"lat": 31.2426555,
+"lng": 121.2102712,
+"nom": "Middle Jiasong Road",
+"rang": 26
+},
+"Shanghai|Hyatt on the Bund": null,
+"Shanghai|Hôtels de luxe à Shanghai": null,
+"Shanghai|Hôtels à Shanghai": {
+"classe": "tourism",
+"complet": "Hi Inn, Middle Xizang Road, Nichengqiao, Nanjingdonglu Subdistrict, Shanghaï, District de Huangpu, Shanghaï, 200001, Chine",
+"lat": 31.2316222,
+"lng": 121.4734951,
+"nom": "Hi Inn",
+"rang": 30
+},
+"Shanghai|IFC Mall": {
+"classe": "shop",
+"complet": "Shanghai IFC Mall, 8, Century Avenue, Lujiazui, Lujiazui Subdistrict, District de Pudong, Shanghaï, 200121, Chine",
+"lat": 31.2382015,
+"lng": 121.4979511,
+"nom": "Shanghai IFC Mall",
+"rang": 30
+},
+"Shanghai|INS New Paradise": null,
+"Shanghai|Idées de visites à Shanghai": null,
+"Shanghai|Il Teatro": {
+"classe": "amenity",
+"complet": "IL TEATRO Italian Restaueant, 181-19, Taicang Road, Xintiandi, Huaihaizhonglu Subdistrict, Shanghaï, District de Huangpu, Shanghaï, 200020, Chine",
+"lat": 31.2226525,
+"lng": 121.4702181,
+"nom": "IL TEATRO Italian Restaueant",
+"rang": 30
+},
+"Shanghai|Incontournables de Shanghai": null,
+"Shanghai|Jardin Yu": {
+"classe": "leisure",
+"complet": "Jardin Yuyuan, Xiaobeimen, Yuyuan Subdistrict, Shanghaï, District de Huangpu, Shanghaï, Chine",
+"lat": 31.2289274,
+"lng": 121.4879752,
+"nom": "Jardin Yuyuan",
+"rang": 25
+},
+"Shanghai|Jellycat chez LOOKNOW": null,
+"Shanghai|Jing'an Night Market": null,
+"Shanghai|Lai Lai Xiao Long": {
+"classe": "amenity",
+"complet": "Lai Lai Xiao Long, 506, Tianjin Road, 德仁里, Yunnanzhonglu, Nanjingdonglu Subdistrict, Shanghaï, District de Huangpu, Shanghaï, 200085, Chine",
+"lat": 31.2381093,
+"lng": 121.4726404,
+"nom": "Lai Lai Xiao Long",
+"rang": 30
+},
+"Shanghai|Laohan Fried Chicken": null,
+"Shanghai|Li Bai Xie": {
+"classe": "amenity",
+"complet": "Shanghai United International School - Pudong Campus, 48, Xueye Road, Zhoujiadu, District de Pudong, Shanghaï, 200126, Chine",
+"lat": 31.1846379,
+"lng": 121.4939609,
+"nom": "Shanghai United International School - Pudong Campus",
+"rang": 30
+},
+"Shanghai|Lieux à voir": null,
+"Shanghai|Lieux à voir à Shanghai": null,
+"Shanghai|Ling Long": {
+"classe": "leisure",
+"complet": "Longhua Martyrs Cementary, Longhua, District de Xuhui, Shanghaï, Chine",
+"lat": 31.1776591,
+"lng": 121.4442664,
+"nom": "Longhua Martyrs Cementary",
+"rang": 24
+},
+"Shanghai|Linlee": {
+"classe": "amenity",
+"complet": "LINLEE, Caobao Road, Tianlin, 田林街道, District de Xuhui, Shanghaï, 200235, Chine",
+"lat": 31.1707574,
+"lng": 121.4279786,
+"nom": "LINLEE",
+"rang": 30
+},
+"Shanghai|Long Time Ago": {
+"classe": "amenity",
+"complet": "Long Time Ago, Feihong Road, 虹镇, Jiaxinglu, District de Hongkou, Shanghaï, 200026, Chine",
+"lat": 31.2629807,
+"lng": 121.4952684,
+"nom": "Long Time Ago",
+"rang": 30
+},
+"Shanghai|Long Time Ago Mutton Chuan": null,
+"Shanghai|Long Time Ago Skewer": null,
+"Shanghai|Lou Xia Suan Nai": null,
+"Shanghai|Loushang hotpot": null,
+"Shanghai|Lujiazui": {
+"classe": "railway",
+"complet": "Lujiazui, Century Avenue, Lujiazui, Lujiazui Subdistrict, District de Pudong, Shanghaï, 200121, Chine",
+"lat": 31.2401683,
+"lng": 121.4979446,
+"nom": "Lujiazui",
+"rang": 30
+},
+"Shanghai|Lujiazui Ring Rd": {
+"classe": "highway",
+"complet": "Lujiazui Ring Road, Lujiazui, Lujiazui Subdistrict, District de Pudong, Shanghaï, 200121, Chine",
+"lat": 31.2382667,
+"lng": 121.4962477,
+"nom": "Lujiazui Ring Road",
+"rang": 26
+},
+"Shanghai|Lunette by Amanda": null,
+"Shanghai|MUJI Diner": null,
+"Shanghai|Madina Xinjiang Restaurant": null,
+"Shanghai|Manner Coffee": {
+"classe": "amenity",
+"complet": "Manner Coffee, Youcheng Road, Shanggang Xincun, District de Pudong, Shanghaï, 200232, Chine",
+"lat": 31.171512,
+"lng": 121.4676722,
+"nom": "Manner Coffee",
+"rang": 30
+},
+"Shanghai|Manner Coffee au Bund": null,
+"Shanghai|Maquillage chinois": null,
+"Shanghai|Marché de souvenirs de Yuyuan": null,
+"Shanghai|Marché food de Nanjing Road": null,
+"Shanghai|Marques de vêtements à Shanghai": null,
+"Shanghai|Meilleurs sushis": null,
+"Shanghai|Middle Huaihai Road": {
+"classe": "railway",
+"complet": "Middle Huaihai Road, Ruijin No. 1 Road, Ruijinerlu Subdistrict, Shanghaï, District de Huangpu, Shanghaï, 200003, Chine",
+"lat": 31.2218467,
+"lng": 121.4598334,
+"nom": "Middle Huaihai Road",
+"rang": 30
+},
+"Shanghai|Ministry of Crab": {
+"classe": "amenity",
+"complet": "Ministry of Crab, West Nanjing Road, Jiangyin, Nanjingdonglu Subdistrict, Shanghaï, District de Huangpu, Shanghaï, 200001, Chine",
+"lat": 31.2336092,
+"lng": 121.4676432,
+"nom": "Ministry of Crab",
+"rang": 30
+},
+"Shanghai|Museevie": null,
+"Shanghai|Nanjing Road": {
+"classe": "railway",
+"complet": "West Nanjing Road, Shimen Road Number One, Nanjing Xilu, District de Jing'an, Shanghaï, 200041, Chine",
+"lat": 31.2304667,
+"lng": 121.4579532,
+"nom": "West Nanjing Road",
+"rang": 30
+},
+"Shanghai|No. 100 Jiming Road": {
+"classe": "highway",
+"complet": "Jiming Road, Houtan, Shanggang Xincun, District de Pudong, Shanghaï, 200232, Chine",
+"lat": 31.1774627,
+"lng": 121.4688852,
+"nom": "Jiming Road",
+"rang": 26
+},
+"Shanghai|No. 2200 Shibo Avenue": {
+"classe": "railway",
+"complet": "Shibo Avenue, North Changqing Road, Xichen, Houtan, Shanggang Xincun, District de Pudong, Shanghaï, 200126, Chine",
+"lat": 31.1849172,
+"lng": 121.4797049,
+"nom": "Shibo Avenue",
+"rang": 30
+},
+"Shanghai|No. 3 Warehouse": {
+"classe": "amenity",
+"complet": "No. 3 Warehouse Restaurant, 2-68, West Nanjing Road, Jiangyin, Nanjingdonglu Subdistrict, Shanghaï, District de Huangpu, Shanghaï, 200001, Chine",
+"lat": 31.2368234,
+"lng": 121.4688816,
+"nom": "No. 3 Warehouse Restaurant",
+"rang": 30
+},
+"Shanghai|No. 380 Lingang Avenue": null,
+"Shanghai|North Bund": {
+"classe": "tourism",
+"complet": "North China Daily News Building, East Zhongshan No. 1 Road, Waitanyuan, Waitan Subdistrict, Shanghaï, District de Huangpu, Shanghaï, 200002, Chine",
+"lat": 31.2401622,
+"lng": 121.4854137,
+"nom": "North China Daily News Building",
+"rang": 30
+},
+"Shanghai|North Bund Bay": null,
+"Shanghai|North Bund Riverside Park": {
+"classe": "tourism",
+"complet": "Temple of light, 358, East Daming Road, Sanjiaodi, Beiwaitan, District de Hongkou, Shanghaï, 200080, Chine",
+"lat": 31.2497097,
+"lng": 121.4964079,
+"nom": "Temple of light",
+"rang": 30
+},
+"Shanghai|Nudake": null,
+"Shanghai|Nudake café": null,
+"Shanghai|Observatoires de Lujiazui": null,
+"Shanghai|Ongles à Shanghai": null,
+"Shanghai|Pane": {
+"classe": "amenity",
+"complet": "Pane e Vino, Sinan Road, Ruijinerlu Subdistrict, Shanghaï, District de Huangpu, Shanghaï, 200020, Chine",
+"lat": 31.2167854,
+"lng": 121.4635208,
+"nom": "Pane e Vino",
+"rang": 30
+},
+"Shanghai|Parfums chinois": null,
+"Shanghai|Petits objets et bijoux": null,
+"Shanghai|Plaza 66": {
+"classe": "landuse",
+"complet": "Plaza 66, Nanjing Xilu, District de Jing'an, Shanghaï, Chine",
+"lat": 31.2298098,
+"lng": 121.4488454,
+"nom": "Plaza 66",
+"rang": 24
+},
+"Shanghai|Polux": {
+"classe": "amenity",
+"complet": "Polux by Paul Pairet, 5, South Huangpi Road, Xintiandi, Huaihaizhonglu Subdistrict, Shanghaï, District de Huangpu, Shanghaï, 200021, Chine",
+"lat": 31.223215,
+"lng": 121.4706557,
+"nom": "Polux by Paul Pairet",
+"rang": 30
+},
+"Shanghai|Qibao Ancient Town": {
+"classe": "tourism",
+"complet": "Ancient Town of Qibao, 漕宝路快速路, 海上新村, Jiuxing, Qibao, District de Minhang, Shanghaï, 201101, Chine",
+"lat": 31.1561762,
+"lng": 121.3533058,
+"nom": "Ancient Town of Qibao",
+"rang": 30
+},
+"Shanghai|Qipu Road Clothing": {
+"classe": "amenity",
+"complet": "Clothing Market, 168, Qipu Road, Sanjiaodi, Beiwaitan, District de Hongkou, Shanghaï, 200085, Chine",
+"lat": 31.2461596,
+"lng": 121.478201,
+"nom": "Clothing Market",
+"rang": 30
+},
+"Shanghai|Ren He Guan": {
+"classe": "amenity",
+"complet": "Ren He Guan, 407, Zhaojiabang Road, Xietulu, District de Xuhui, Shanghaï, 200025, Chine",
+"lat": 31.2036624,
+"lng": 121.4537364,
+"nom": "Ren He Guan",
+"rang": 30
+},
+"Shanghai|Restaurants et street-food": null,
+"Shanghai|Restaurants à tester à Shanghai": null,
+"Shanghai|Rourou Dami": null,
+"Shanghai|SPACELAB": null,
+"Shanghai|SPACELAB 失重餐厅": null,
+"Shanghai|San Dian Golden Black": null,
+"Shanghai|Sandwichs au lait Big Elephant": null,
+"Shanghai|Shanghai": {
+"classe": "boundary",
+"complet": "Shanghaï, Chine",
+"lat": 31.2312707,
+"lng": 121.4700152,
+"nom": "Shanghaï",
+"rang": 8
+},
+"Shanghai|Shanghai Astronomy Museum": {
+"classe": "amenity",
+"complet": "Shanghai Astronomy Museum, 380, Lin'gang Avenue, Nanhuixincheng, District de Pudong, Shanghaï, 201306, Chine",
+"lat": 30.9151303,
+"lng": 121.9225852,
+"nom": "Shanghai Astronomy Museum",
+"rang": 30
+},
+"Shanghai|Shanghai Cat Island": null,
+"Shanghai|Shanghai Disney": {
+"classe": "place",
+"complet": "Shanghai Disney Resort, Chuanshaxin, District de Pudong, Shanghaï, 201205, Chine",
+"lat": 31.1433612,
+"lng": 121.6619839,
+"nom": "Shanghai Disney Resort",
+"rang": 25
+},
+"Shanghai|Shanghai Disneyland": {
+"classe": "tourism",
+"complet": "Shanghai Disneyland, 753, North Shendi Road, Huanglou, Chuanshaxin, District de Pudong, Shanghaï, 201205, Chine",
+"lat": 31.1462523,
+"lng": 121.6562825,
+"nom": "Shanghai Disneyland",
+"rang": 30
+},
+"Shanghai|Shanghai Eternal Love": null,
+"Shanghai|Shanghai Greenhouse Garden": {
+"classe": "tourism",
+"complet": "Shanghai Greenhouse Garden, Jiming Road, Houtan, Shanggang Xincun, District de Pudong, Shanghaï, 200232, Chine",
+"lat": 31.18026,
+"lng": 121.4704027,
+"nom": "Shanghai Greenhouse Garden",
+"rang": 30
+},
+"Shanghai|Shanghai Harbin Food Factory": null,
+"Shanghai|Shao Wansheng": null,
+"Shanghai|Shen Fengji": null,
+"Shanghai|Shonen Jump Café": null,
+"Shanghai|Shopping à Shanghai": null,
+"Shanghai|Shuangxi Dessert House": null,
+"Shanghai|So Acai": null,
+"Shanghai|Songmont": null,
+"Shanghai|Spectacle": null,
+"Shanghai|Starbucks Reserve Roastery": null,
+"Shanghai|Station Lujiazui": {
+"classe": "railway",
+"complet": "Lujiazui, 世纪大道, Lujiazui, Lujiazui Subdistrict, District de Pudong, Shanghaï, 200121, Chine",
+"lat": 31.2401683,
+"lng": 121.4979446,
+"nom": "Lujiazui",
+"rang": 30
+},
+"Shanghai|Sunny Teppanyaki": null,
+"Shanghai|Taikoo Hui et Pop Mart": null,
+"Shanghai|Taikoo Li Qiantan": {
+"classe": "landuse",
+"complet": "Taikoo Li Qiantan, 500, Qiantan, Yangsi, Sanlin, District de Pudong, Shanghaï, Chine",
+"lat": 31.1550301,
+"lng": 121.4769898,
+"nom": "Taikoo Li Qiantan",
+"rang": 24
+},
+"Shanghai|Tao Xiang Bao Zai Fan": null,
+"Shanghai|Teddy bear café": null,
+"Shanghai|Temple Jing'an": {
+"classe": "amenity",
+"complet": "Jing'an Temple, 1686, West Nanjing Road, Yongyuanbang, Jing'ansi, District de Jing'an, Shanghaï, 200040, Chine",
+"lat": 31.225215,
+"lng": 121.4407923,
+"nom": "Jing'an Temple",
+"rang": 30
+},
+"Shanghai|Temple Jing'an illuminé de nuit": null,
+"Shanghai|Terrasse de Yuyuan": null,
+"Shanghai|The Castle Restaurant": null,
+"Shanghai|The Nest": {
+"classe": "amenity",
+"complet": "The Nest, 130, East Beijing Road, 洛克·外滩源, Waitanyuan, Waitan Subdistrict, Shanghaï, District de Huangpu, Shanghaï, 200002, Chine",
+"lat": 31.2427843,
+"lng": 121.4832481,
+"nom": "The Nest",
+"rang": 30
+},
+"Shanghai|The Peninsula Café": null,
+"Shanghai|The Peninsula Shanghai": {
+"classe": "tourism",
+"complet": "The Peninsula Shanghai, 32, East Zhongshan No. 1 Road, Waitanyuan, Waitan Subdistrict, Shanghaï, District de Huangpu, Shanghaï, 200002, Chine",
+"lat": 31.2432569,
+"lng": 121.4847583,
+"nom": "The Peninsula Shanghai",
+"rang": 30
+},
+"Shanghai|The Vue Bar": null,
+"Shanghai|Tianping Road": {
+"classe": "highway",
+"complet": "Tianping Road, Tianpinglu, District de Xuhui, Shanghaï, 200030, Chine",
+"lat": 31.2040158,
+"lng": 121.433137,
+"nom": "Tianping Road",
+"rang": 26
+},
+"Shanghai|Tianzifang": {
+"classe": "tourism",
+"complet": "Tianzifang, West Jianguo Road, Ruijinerlu Subdistrict, Shanghaï, District de Huangpu, Shanghaï, 200025, Chine",
+"lat": 31.21034,
+"lng": 121.4641036,
+"nom": "Tianzifang",
+"rang": 30
+},
+"Shanghai|Toits de Yuyuan": null,
+"Shanghai|Tomacado Flower Kitchen": null,
+"Shanghai|Tron à Shanghai Disneyland": null,
+"Shanghai|Vieille ville de Qibao": null,
+"Shanghai|Vieux Shanghai": null,
+"Shanghai|Vinism+ Steakhouse & Bar": null,
+"Shanghai|Wei Xiang Zhai": {
+"classe": "amenity",
+"complet": "Wei Xiang Zhai, Taikang Road, 卢家湾, Dapuqiao Subdistrict, Shanghaï, District de Huangpu, Shanghaï, 200025, Chine",
+"lat": 31.2096937,
+"lng": 121.4646277,
+"nom": "Wei Xiang Zhai",
+"rang": 30
+},
+"Shanghai|Weixiangzhai": null,
+"Shanghai|Weizhanglai": null,
+"Shanghai|White Magnolia Observation Deck": null,
+"Shanghai|Wukang Road": {
+"classe": "highway",
+"complet": "Wukang Road, Hunanlu, District de Xuhui, Shanghaï, 200000, Chine",
+"lat": 31.2138866,
+"lng": 121.4361757,
+"nom": "Wukang Road",
+"rang": 26
+},
+"Shanghai|Xiaolongbao géant au jardin Yu": null,
+"Shanghai|Xie Huoji": null,
+"Shanghai|Xie San Bao": {
+"classe": "amenity",
+"complet": "Xie San Bao, 513, Tianjin Road, 德仁里, Yunnanzhonglu, Nanjingdonglu Subdistrict, Shanghaï, District de Huangpu, Shanghaï, 200085, Chine",
+"lat": 31.2380506,
+"lng": 121.4729126,
+"nom": "Xie San Bao",
+"rang": 30
+},
+"Shanghai|Xie Shang Huang": {
+"classe": "landuse",
+"complet": "上海蕲康机械设备, Huangdu, Anting, District de Jiading, Shanghaï, Chine",
+"lat": 31.2783202,
+"lng": 121.2196943,
+"nom": "上海蕲康机械设备",
+"rang": 24
+},
+"Shanghai|Yi Dian Dian": {
+"classe": "amenity",
+"complet": "淀山湖人民医院, 新乐路, 淀东, Dianshanhu, Kunshan, Suzhou, Jiangsu, Chine",
+"lat": 31.1841791,
+"lng": 121.0075679,
+"nom": "淀山湖人民医院",
+"rang": 30
+},
+"Shanghai|Yi Lou Yi Fan Dian": {
+"classe": "building",
+"complet": "曾为黄浦区人民政府大楼, 219, Jiujiang Road, Waitanyuan, Waitan Subdistrict, Shanghaï, District de Huangpu, Shanghaï, 200002, Chine",
+"lat": 31.2386708,
+"lng": 121.4814289,
+"nom": "曾为黄浦区人民政府大楼",
+"rang": 30
+},
+"Shanghai|Yu Garden": {
+"classe": "leisure",
+"complet": "Jardin Yuyuan, Xiaobeimen, Yuyuan Subdistrict, Shanghaï, District de Huangpu, Shanghaï, Chine",
+"lat": 31.2289274,
+"lng": 121.4879752,
+"nom": "Jardin Yuyuan",
+"rang": 25
+},
+"Shanghai|Yuxin Bookstore": null,
+"Shanghai|Yuyuan Old Street": {
+"classe": "highway",
+"complet": "Yuyuan Old Street, Xiaobeimen, Yuyuan Subdistrict, Shanghaï, District de Huangpu, Shanghaï, 200010, Chine",
+"lat": 31.2293228,
+"lng": 121.487021,
+"nom": "Yuyuan Old Street",
+"rang": 26
+},
+"Shanghai|ZZER": null,
+"Shanghai|Zhongshan Rd": {
+"classe": "highway",
+"complet": "Zhongshan Road, 凤家宅, Huinan, District de Pudong, Shanghaï, 201399, Chine",
+"lat": 31.0469284,
+"lng": 121.7488569,
+"nom": "Zhongshan Road",
+"rang": 26
+},
+"Shanghai|Zhuang Longxing": null,
+"Shanghai|Zhujiajiao Ancient Town": {
+"classe": "tourism",
+"complet": "Zhujiajiao Ancient Town, Xiangningbang Road, Zhujiajiao, District de Qingpu, Shanghaï, 201713, Chine",
+"lat": 31.1163458,
+"lng": 121.049214,
+"nom": "Zhujiajiao Ancient Town",
+"rang": 30
+},
+"Shanghai|Á Table": null,
+"Shanghai|一楼一饭店": null,
+"Shanghai|上海千古情": null,
+"Shanghai|上海半岛酒店": {
+"classe": "tourism",
+"complet": "海友酒店, South Xizang Road, Bansongyuanlu Subdistrict, Shanghaï, District de Huangpu, Shanghaï, 200023, Chine",
+"lat": 31.2127555,
+"lng": 121.4817621,
+"nom": "海友酒店",
+"rang": 30
+},
+"Shanghai|上海哈尔滨食品厂": null,
+"Shanghai|上海市宝山区泰和西路3388号": null,
+"Shanghai|上海市普陀区铜川路699弄1号": null,
+"Shanghai|亘子": {
+"classe": "amenity",
+"complet": "膻根记·羊棒骨·羊架子·羊拐筋, Nanliu Highway, Liuzao, Chuanshaxin, District de Pudong, Shanghaï, 201205, Chine",
+"lat": 31.1215168,
+"lng": 121.6937199,
+"nom": "膻根记·羊棒骨·羊架子·羊拐筋",
+"rang": 30
+},
+"Shanghai|佳家汤包": {
+"classe": "amenity",
+"complet": "佳家汤包, Huanghe Road, Dingxing, Nanjingdonglu Subdistrict, Shanghaï, District de Huangpu, Shanghaï, 200001, Chine",
+"lat": 31.2362775,
+"lng": 121.4664748,
+"nom": "佳家汤包",
+"rang": 30
+},
+"Shanghai|冠生园": {
+"classe": "landuse",
+"complet": "冠生苑, Caohejing, District de Xuhui, Shanghaï, Chine",
+"lat": 31.1637356,
+"lng": 121.4218555,
+"nom": "冠生苑",
+"rang": 24
+},
+"Shanghai|北外滩": {
+"classe": "highway",
+"complet": "Bund, Xinbeimen, Waitan Subdistrict, Shanghaï, District de Huangpu, Shanghaï, 200002, Chine",
+"lat": 31.2353356,
+"lng": 121.487632,
+"nom": "Bund",
+"rang": 26
+},
+"Shanghai|双喜水牛奶甜品专家": null,
+"Shanghai|只二": null,
+"Shanghai|味香斋": {
+"classe": "amenity",
+"complet": "Wèixiang Zhai, 14, Yandang Road, Ruijinerlu Subdistrict, Shanghaï, District de Huangpu, Shanghaï, 200020, Chine",
+"lat": 31.2229246,
+"lng": 121.4653806,
+"nom": "Wèixiang Zhai",
+"rang": 30
+},
+"Shanghai|喜茶": {
+"classe": "amenity",
+"complet": "Heytea, Dongmen Road, Xiaodongmen, Xiaodongmen District, Shanghaï, District de Huangpu, Shanghaï, 200010, Chine",
+"lat": 31.2274017,
+"lng": 121.4935687,
+"nom": "Heytea",
+"rang": 30
+},
+"Shanghai|四川中路136号": null,
+"Shanghai|外滩": {
+"classe": "highway",
+"complet": "Bund, Xinbeimen, Waitan Subdistrict, Shanghaï, District de Huangpu, Shanghaï, 200002, Chine",
+"lat": 31.2353356,
+"lng": 121.487632,
+"nom": "Bund",
+"rang": 26
+},
+"Shanghai|外滩茂悦大酒店": null,
+"Shanghai|大壶春": {
+"classe": "amenity",
+"complet": "大壶春, Zunyi Road, Green Jade Garden, Tianshanlu, Fahua, District de Changning, Shanghaï, 200051, Chine",
+"lat": 31.2089825,
+"lng": 121.402929,
+"nom": "大壶春",
+"rang": 30
+},
+"Shanghai|大象三明治": null,
+"Shanghai|太仓路181弄": null,
+"Shanghai|失重餐厅": {
+"classe": "amenity",
+"complet": "中餐厅, East Huanbei Road, Jiaxing, Zhejiang, 314199, Chine",
+"lat": 30.8502618,
+"lng": 120.9333962,
+"nom": "中餐厅",
+"rang": 30
+},
+"Shanghai|富民路148号": null,
+"Shanghai|富民路173号": null,
+"Shanghai|小杨生煎": {
+"classe": "amenity",
+"complet": "小杨生煎, Huajing Road, Huajing, District de Xuhui, Shanghaï, 200231, Chine",
+"lat": 31.1212579,
+"lng": 121.4510326,
+"nom": "小杨生煎",
+"rang": 30
+},
+"Shanghai|干蒸圆子店": null,
+"Shanghai|愚园路439号": null,
+"Shanghai|星巴克臻选": {
+"classe": "amenity",
+"complet": "星巴克臻选(上海松江金地方邻泗泾店), Qingkai Road, Jindi'ercun, Jindisancun, Sijing, District de Songjiang, Shanghaï, 201601, Chine",
+"lat": 31.1166813,
+"lng": 121.2481466,
+"nom": "星巴克臻选(上海松江金地方邻泗泾店)",
+"rang": 30
+},
+"Shanghai|李百蟹": {
+"classe": "amenity",
+"complet": "Shanghai United International School - Pudong Campus, 48, Xueye Road, Zhoujiadu, District de Pudong, Shanghaï, 200126, Chine",
+"lat": 31.1846379,
+"lng": 121.4939609,
+"nom": "Shanghai United International School - Pudong Campus",
+"rang": 30
+},
+"Shanghai|東泰祥": {
+"classe": "amenity",
+"complet": "東泰祥, Hami Road, Xinjing, District de Changning, Shanghaï, 200335, Chine",
+"lat": 31.2107934,
+"lng": 121.3669272,
+"nom": "東泰祥",
+"rang": 30
+},
+"Shanghai|林里": {
+"classe": "landuse",
+"complet": "保利林语溪, Kangqiao, District de Pudong, Shanghaï, Chine",
+"lat": 31.1337394,
+"lng": 121.5329806,
+"nom": "保利林语溪",
+"rang": 24
+},
+"Shanghai|楼下酸奶": null,
+"Shanghai|武夷路168号": null,
+"Shanghai|毛头老爹饭店": null,
+"Shanghai|永源路店": {
+"classe": "amenity",
+"complet": "我家餐厅(华山路店), 7, Huashan Road, Yongyuanbang, Jing'ansi, District de Jing'an, Shanghaï, 200031, Chine",
+"lat": 31.2219465,
+"lng": 121.4417732,
+"nom": "我家餐厅(华山路店)",
+"rang": 30
+},
+"Shanghai|沈丰记": {
+"classe": "landuse",
+"complet": "机场联络线 3#风井, Xinzhuang, District de Minhang, Shanghaï, Chine",
+"lat": 31.0992156,
+"lng": 121.3898766,
+"nom": "机场联络线 3#风井",
+"rang": 24
+},
+"Shanghai|沈大成": {
+"classe": "amenity",
+"complet": "沈大成, Nanjing Pedestrian Street, Longquanyuanlu, Nanjingdonglu Subdistrict, Shanghaï, District de Huangpu, Shanghaï, 200085, Chine",
+"lat": 31.2376356,
+"lng": 121.473851,
+"nom": "沈大成",
+"rang": 30
+},
+"Shanghai|沪上阿姨": {
+"classe": "amenity",
+"complet": "Auntea Jenny, 动力南四路, Caohejing, District de Xuhui, Shanghaï, 200237, Chine",
+"lat": 31.1538803,
+"lng": 121.4267813,
+"nom": "Auntea Jenny",
+"rang": 30
+},
+"Shanghai|沪公馆": {
+"classe": "tourism",
+"complet": "Musée d'Art et d'Artisanat de Shanghai, 79, Fenyang Road, Tianpinglu, District de Xuhui, Shanghaï, 200031, Chine",
+"lat": 31.212213,
+"lng": 121.4498928,
+"nom": "Musée d'Art et d'Artisanat de Shanghai",
+"rang": 30
+},
+"Shanghai|浙江中路136号": null,
+"Shanghai|海门路店": {
+"classe": "building",
+"complet": "上海市中华路电话局-办公楼/机房, 734, Zhonghua Road, Xiaonanmen, Xiaodongmen District, Shanghaï, District de Huangpu, Shanghaï, 200011, Chine",
+"lat": 31.2168,
+"lng": 121.491687,
+"nom": "上海市中华路电话局-办公楼/机房",
+"rang": 30
+},
+"Shanghai|溪山驿文化会馆": null,
+"Shanghai|白玉兰广场": {
+"classe": "landuse",
+"complet": "白玉兰广场, Sanjiaodi, Beiwaitan, District de Hongkou, Shanghaï, Chine",
+"lat": 31.2510436,
+"lng": 121.4933498,
+"nom": "白玉兰广场",
+"rang": 24
+},
+"Shanghai|老韩煸鸡": null,
+"Shanghai|肇嘉浜路1111号": null,
+"Shanghai|肉肉大米": null,
+"Shanghai|胶州路133号": null,
+"Shanghai|莱莱小笼": {
+"classe": "amenity",
+"complet": "莱莱小笼, West Beijing Road, Yongyuanbang, Jing'ansi, District de Jing'an, Shanghaï, 200040, Chine",
+"lat": 31.2271249,
+"lng": 121.4386511,
+"nom": "莱莱小笼",
+"rang": 30
+},
+"Shanghai|蟹叁寶": {
+"classe": "amenity",
+"complet": "Xie San Bao, 513, Tianjin Road, 德仁里, Yunnanzhonglu, Nanjingdonglu Subdistrict, Shanghaï, District de Huangpu, Shanghaï, 200085, Chine",
+"lat": 31.2380506,
+"lng": 121.4729126,
+"nom": "Xie San Bao",
+"rang": 30
+},
+"Shanghai|襄阳北路4号": null,
+"Shanghai|豫园": {
+"classe": "leisure",
+"complet": "Jardin Yuyuan, Xiaobeimen, Yuyuan Subdistrict, Shanghaï, District de Huangpu, Shanghaï, Chine",
+"lat": 31.2289274,
+"lng": 121.4879752,
+"nom": "Jardin Yuyuan",
+"rang": 25
+},
+"Shanghai|邵万生": {
+"classe": "amenity",
+"complet": "烧鸡公时尚干锅, 万泰路, Yaozhuang, Xian de Jiashan, Jiaxing, Zhejiang, Chine",
+"lat": 30.9141036,
+"lng": 120.9753446,
+"nom": "烧鸡公时尚干锅",
+"rang": 30
+},
+"Shanghai|野人先生": {
+"classe": "amenity",
+"complet": "野人先生 丰盛里限定, North Maoming Road, Nanjing Xilu, District de Jing'an, Shanghaï, 200041, Chine",
+"lat": 31.2303663,
+"lng": 121.4544549,
+"nom": "野人先生 丰盛里限定",
+"rang": 30
+},
+"Shanghai|长乐路605号": null,
+"Shanghai|阿嬤手作": null,
+"Shanghai|阿嬷手作": null,
+"Shanghai|陆家嘴": {
+"classe": "railway",
+"complet": "Lujiazui, Century Avenue, Lujiazui, Lujiazui Subdistrict, District de Pudong, Shanghaï, 200121, Chine",
+"lat": 31.2401683,
+"lng": 121.4979446,
+"nom": "Lujiazui",
+"rang": 30
+},
+"Shanghai|陶香煲仔饭": null,
+"Shanghai|霸王茶姬": {
+"classe": "amenity",
+"complet": "Chagee, Gumei Road, Hongmeilu, District de Xuhui, Shanghaï, 200233, Chine",
+"lat": 31.1661579,
+"lng": 121.3940718,
+"nom": "Chagee",
+"rang": 30
+},
+"Shanghai|鲍师傅": {
+"classe": "shop",
+"complet": "Bao's Pastry, Middle Huaihai Road, Ruijinerlu Subdistrict, Shanghaï, District de Huangpu, Shanghaï, 200003, Chine",
+"lat": 31.2225971,
+"lng": 121.4633948,
+"nom": "Bao's Pastry",
+"rang": 30
+},
+"Shanghai|鲜得来": {
+"classe": "amenity",
+"complet": "鲜得来, South Yunnan Road, Dashijie, Waitan Subdistrict, Shanghaï, District de Huangpu, Shanghaï, 200021, Chine",
+"lat": 31.2306351,
+"lng": 121.4751676,
+"nom": "鲜得来",
+"rang": 30
+},
+"Shanghai|麦迪娜烧烤馕饼": null,
+"Suzhou|Humble Garden": {
+"classe": "leisure",
+"complet": "Jardin du Modeste administrateur, Dongbei Street, 拙政园社区, Pingjiang, District de Gusu, Suzhou, Jiangsu, 215005, Chine",
+"lat": 31.3263526,
+"lng": 120.6247123,
+"nom": "Jardin du Modeste administrateur",
+"rang": 30
+},
+"Suzhou|Temple Xiyuan": {
+"classe": "amenity",
+"complet": "Xiyuan Temple, 福德桥, 西园社区, Huqiu, District de Gusu, Suzhou, Jiangsu, 215004, Chine",
+"lat": 31.316905,
+"lng": 120.5831008,
+"nom": "Xiyuan Temple",
+"rang": 30
+},
+"Suzhou|Village caché de Suzhou": null,
+"Zhangjiajie|Grand Canyon de Zhangjiajie": {
+"classe": "highway",
+"complet": "Zhangjiajie Grand Canyon Skywalk, Xian de Cili, Zhangjiajie, Hunan, Chine",
+"lat": 29.3990486,
+"lng": 110.6979883,
+"nom": "Zhangjiajie Grand Canyon Skywalk",
+"rang": 27
+},
+"Zhangjiajie|Tianmen Mountain": {
+"classe": "natural",
+"complet": "Tianmen Mountain, District de Yongding, Zhangjiajie, Hunan, Chine",
+"lat": 29.0498814,
+"lng": 110.4788895,
+"nom": "Tianmen Mountain",
+"rang": 18
+},
+"Zhangjiajie|Wulingyuan": {
+"classe": "boundary",
+"complet": "Wulingyuan, Jundiping, District de Wulingyuan, Zhangjiajie, Hunan, 427400, Chine",
+"lat": 29.3387031,
+"lng": 110.5283093,
+"nom": "Wulingyuan",
+"rang": 30
+},
+"Zhangjiajie|Zhangjiajie": {
+"classe": "boundary",
+"complet": "Zhangjiajie, Hunan, Chine",
+"lat": 29.373828,
+"lng": 110.530142,
+"nom": "Zhangjiajie",
+"rang": 10
+},
+"Zhangjiajie|金鞭溪": {
+"classe": "tourism",
+"complet": "金鞭溪, Chemin panoramique du Ruisseau du Fouet d'Or, Huangshizai, 袁家界社区, Luoguta, District de Wulingyuan, Zhangjiajie, Hunan, Chine",
+"lat": 29.3338673,
+"lng": 110.4389038,
+"nom": "金鞭溪",
+"rang": 30
+}
+}
