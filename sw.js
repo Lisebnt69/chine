@@ -1,16 +1,8 @@
-const CACHE_NAME = 'chine-app-v3-cache-v1';
-const ASSETS = [
-  './',
-  './index.html',
-  './manifest.webmanifest',
-  './assets/css/base.css',
-  './assets/css/features.css',
-  './assets/js/app-core.js',
-  './assets/js/map.js',
-  './assets/js/chat.js',
-  './assets/js/analytics.js',
-  './assets/js/features.js'
-];
+// Cache offline. Réseau d'abord pour la page et les scripts (pour recevoir les mises à jour),
+// cache en secours quand il n'y a pas de réseau.
+const CACHE_NAME = 'chine-app-v4';
+const ASSETS = ['./', './index.html', './ia.js', './manifest.webmanifest'];
+
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS)).then(() => self.skipWaiting()));
 });
@@ -20,12 +12,15 @@ self.addEventListener('activate', event => {
   );
 });
 self.addEventListener('fetch', event => {
-  if (event.request.method !== 'GET') return;
+  const req = event.request;
+  if (req.method !== 'GET') return;
+  const url = new URL(req.url);
+  // Supabase / OSM / API : jamais de cache
+  if (url.origin !== self.location.origin && !/unpkg|jsdelivr|fonts\.g/.test(url.host)) return;
   event.respondWith(
-    caches.match(event.request).then(cached => cached || fetch(event.request).then(response => {
-      const copy = response.clone();
-      caches.open(CACHE_NAME).then(cache => cache.put(event.request, copy)).catch(() => {});
+    fetch(req).then(response => {
+      if (response.ok) { const copy = response.clone(); caches.open(CACHE_NAME).then(c => c.put(req, copy)).catch(() => {}); }
       return response;
-    }).catch(() => caches.match('./index.html')))
+    }).catch(() => caches.match(req).then(c => c || caches.match('./index.html')))
   );
 });
