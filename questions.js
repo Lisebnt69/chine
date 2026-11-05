@@ -342,23 +342,9 @@ async function qvSupprimerDisc(id) {
   QV.ouverte = ''; qvMajBadge(); qvRendre();
 }
 
-/* ───────────── Branchement sur l'app ───────────── */
-qvEnsureTab();
-qvCharger();
-{
-  const _goTab = goTab;
-  goTab = function (n, el) {
-    _goTab(n, el);
-    if (n !== 'questions') return;
-    qvEl('nb-more')?.classList.add('on');
-    qvEl('nd-questions')?.classList.add('active');
-    if (isEditorMode()) { QV.ouverte = ''; qvDemarrer(); qvChargerBase(false); } else qvCharger();
-    qvRendre();
-  };
-  // Dès que les données sont chargées et que le compte est connu, Matis et Lise sont prévenus des nouvelles questions.
-  const _renderAll = renderAll;
-  renderAll = function () { _renderAll(); qvDemarrer(); qvMajBadge(); };
-}
+/* ───────────── Branchement sur l'app : DÉBRANCHÉ ─────────────
+   L'IA est réservée à Matis et Lise : plus d'onglet Questions, pour personne. Le code reste en place,
+   sans bouton ni onglet. Pour le rétablir, voir le commit 8a8fc68. */
 
 /* ───────────── Styles ───────────── */
 document.head.insertAdjacentHTML('beforeend', `<style>

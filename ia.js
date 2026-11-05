@@ -25,9 +25,64 @@ const MARCHE_KM = 0.6;
 function travelMin(km) {
   if (km == null) return 20;
   if (km <= MARCHE_KM) return Math.max(2, Math.round(km * 1.3 * 13) + 1);
+  // Au-delà de 15 km à vol d'oiseau on est hors ville : route (×1,5 en relief) à ~55 km/h + 10 min d'attente.
+  // Ex. Wulingyuan → Tianmen : 33 km à vol d'oiseau = ~51 km de route = ~1 h (au lieu de 2 h à 18 km/h).
+  if (km > 15) return Math.round(km * 1.5 / 55 * 60 + 10);
   return Math.max(10, Math.round(km / 18 * 60 + 8));
 }
 const travelMode = km => km == null ? 'trajet' : km <= MARCHE_KM ? 'à pied' : 'métro / DiDi';
+
+/* Métro ou DiDi : durée et prix estimés pour chaque trajet. Tarifs publics relevés en novembre 2026 ; ils varient
+   (heure, demande), l'appli DiDi donne le prix exact. taxi : [prise en charge ¥, km inclus, ¥ par km en plus].
+   metro : [prix de base ¥, km inclus, km par ¥ en plus, plafond ¥]. Pas de métro à Zhangjiajie, Furong ou Wulong. */
+const TARIFS_VILLES = [
+  { c: [31.23, 121.47], rayon: 70, taxi: [14, 3, 2.7], metro: [3, 6, 10, 15] },  // Shanghai, Pudong et Disney compris
+  { c: [29.56, 106.55], rayon: 40, taxi: [10, 3, 2], metro: [2, 6, 6, 11] },     // Chongqing
+  { c: [30.66, 104.06], rayon: 40, taxi: [9, 2, 2.2], metro: [2, 4, 6, 10] },    // Chengdu
+];
+const TAXI_AILLEURS = [10, 3, 2.3];  // calé sur Wulingyuan → Tianmen, ~50 km pour 100 à 150 ¥
+const METRO_OUVERT = [6 * 60, 22 * 60 + 30], MAJORATION_NUIT = 1.2;
+const estNuit = t => t != null && (t >= 23 * 60 || t < 5 * 60);
+const villeTarif = p => p ? TARIFS_VILLES.find(v => kmBetween(p, v.c) <= v.rayon) : null;
+function prixDidi(km, taxi, t) {
+  const route = km * (km > 15 ? 1.5 : 1.3), [base, inclus, parKm] = taxi;
+  return (base + Math.max(0, route - inclus) * parKm) * (estNuit(t) ? MAJORATION_NUIT : 1);
+}
+function prixMetro(km, [base, inclus, parYuan, plafond]) {
+  return Math.min(plafond, base + Math.ceil(Math.max(0, km * 1.3 - inclus) / parYuan));
+}
+/* Navettes gratuites des hôtels, proposées sur tout trajet entre l'hôtel et une destination desservie, quel que soit
+   le jour : elles suivent les activités du planning. Source : page Trip.com de l'hôtel, novembre 2026. */
+const NAVETTES = [{
+  hotel: [31.134184, 121.759277],  // Vienna, 1226 Chuannanfeng Rd (pas le Vienna du Free Trade Zone)
+  vers: [
+    { pos: [31.142736, 121.804113], min: 15, note: 'à réserver' },                       // aéroport de Pudong
+    { pos: [31.1462, 121.6563], min: 30, note: 'à réserver, départ 7h20 à confirmer', retour: 'place du soir à réserver' },  // Shanghai Disney Resort
+  ],
+}];
+function navetteHotel(o) {
+  if (!o.de || !o.vers) return null;
+  for (const n of NAVETTES) for (const [a, b] of [[o.de, o.vers], [o.vers, o.de]]) {
+    if (kmBetween(a, n.hotel) > 0.3) continue;
+    const v = n.vers.find(x => kmBetween(b, x.pos) <= 3);
+    if (v) return { mode: 'Navette hôtel', min: v.min, yuan: 0, note: a === o.vers ? v.retour || v.note : v.note };
+  }
+  return null;
+}
+// Options du trajet, la conseillée d'abord. o : { de, vers, t (minutes), bagages }.
+function optionsTrajet(km, o = {}) {
+  const r = optionsRoute(km, o), navette = navetteHotel(o);
+  if (navette) r.options.unshift(navette);
+  return r;
+}
+function optionsRoute(km, o) {
+  const v = villeTarif(o.de || o.vers), memeVille = v && (!o.de || !o.vers || villeTarif(o.vers) === v);
+  const didi = { mode: 'DiDi', min: travelMin(km), yuan: prixDidi(km, v ? v.taxi : TAXI_AILLEURS, o.t) };
+  const ferme = o.t != null && (o.t < METRO_OUVERT[0] || o.t >= METRO_OUVERT[1]);
+  if (!memeVille || ferme || km < 1.5) return { options: [didi], ferme: !!(memeVille && ferme) };
+  const metro = { mode: 'Métro', min: Math.max(15, Math.round(km * 1.3 / 30 * 60 + 12)), yuan: prixMetro(km, v.metro) };
+  return { options: o.bagages || km > 15 || km < 2.5 ? [didi, metro] : [metro, didi], ferme: false };
+}
 function itemPos(it) { return (it && it.lat && it.lng) ? [parseFloat(it.lat), parseFloat(it.lng)] : null; }
 function sortedDays() { return [...D.planning].sort((a, b) => String(a.date_voyage).localeCompare(String(b.date_voyage))); }
 function hotelForDay(day) {
@@ -65,8 +120,11 @@ function buildDayPlan(day) {
   slots.forEach(x => { const p = x.slot.periode || ''; (groups[p] = groups[p] || []).push(x); });
   let cursor = null, pos = start;
   // Si on arrive par transport ce jour-là, on ne commence pas avant l'arrivée + 1h
-  const arrivals = out.filter(o => o.kind === 'transport' && o.end != null).map(o => o.end);
-  const firstFree = arrivals.length ? Math.max(...arrivals) + 60 : null;
+  // Plusieurs trajets dans la journée (aller-retour Chengdu) : on part de l'arrivée qui ouvre le plus long moment libre.
+  const trajets = out.filter(o => o.kind === 'transport' && o.end != null);
+  const prochainDepart = a => Math.min(24 * 60, ...trajets.map(o => o.min).filter(d => d > a));
+  const arrivals = trajets.map(o => o.end).sort((a, b) => (prochainDepart(b) - b) - (prochainDepart(a) - a));
+  const firstFree = arrivals.length ? arrivals[0] + 60 : null;
 
   Object.keys(groups).sort((a, b) => (PERIODE_ORDER[a] || 4) - (PERIODE_ORDER[b] || 4)).forEach(p => {
     const fixed = groups[p].filter(x => toMin(x.slot.heure) != null).sort((a, b) => toMin(a.slot.heure) - toMin(b.slot.heure));
@@ -92,7 +150,7 @@ function buildDayPlan(day) {
       const tr = travelMin(km);
       let t = Math.max(cursor + (out.some(o => o.kind === 'stop') ? tr : 0), x.fixedMin ?? 0);
       if (x.fixedMin != null) t = x.fixedMin;
-      const dur = DUREE_MIN[x.item.duree || ''] || (x.item.type === 'restaurant' ? 75 : 60);
+      const dur = p === 'Journée' ? 600 : DUREE_MIN[x.item.duree || ''] || (x.item.type === 'restaurant' ? 75 : 60); // « Journée » : 10 h sur place, pas d'idées en plein milieu
       out.push({ kind: 'stop', min: t, end: t + dur, item: x.item, slot: x.slot, periode: p, fixed: x.fixedMin != null,
         km, travel: tr, pos: itemPos(x.item), label: x.item.nom });
       cursor = t + dur; prevPos = itemPos(x.item) || prevPos;
@@ -615,7 +673,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .prog-chips{display:flex;gap:6px;padding:0 16px 8px;overflow-x:auto;scrollbar-width:none}
 .prog-chips button{padding:6px 11px;font-size:.7rem}
 .prog-chips.flush{padding:0 0 8px}
-.reader-mode #nb-budget,.reader-mode #nd-stats,.reader-mode .qa-chip[onclick*="openBudgetSheet"],.reader-mode .qa-chip[onclick*="'stats'"],.reader-mode .gc-price,.reader-mode .ic-quick,.reader-mode .ic-prix,.reader-mode .tr-price,.reader-mode .tl-day-total,.reader-mode .form-group:has(.prix-masque){display:none!important}
+.reader-mode .prog-switch button[data-v="claude"],.reader-mode [data-act="ask"],.reader-mode .qa-chip[onclick^="askIA"],.reader-mode #nb-budget,.reader-mode #nd-stats,.reader-mode .qa-chip[onclick*="openBudgetSheet"],.reader-mode .qa-chip[onclick*="'stats'"],.reader-mode .gc-price,.reader-mode .ic-quick,.reader-mode .ic-prix,.reader-mode .tr-price,.reader-mode .tl-day-total,.reader-mode .form-group:has(.prix-masque){display:none!important}
 #progBody,#cerBody{padding:0 16px 24px}
 .prog-section-t{font:700 .78rem var(--font);color:var(--txt2);text-transform:uppercase;letter-spacing:.04em;margin:18px 0 8px}
 .prog-card{display:flex;gap:11px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;margin-bottom:8px;box-shadow:var(--shadow-sm);cursor:pointer}
