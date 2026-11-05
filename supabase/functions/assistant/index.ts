@@ -9,7 +9,7 @@
 // puis range la réponse dans une CONVERSATION de Roomy (tables roomy_conversations et roomy_messages,
 // fermées à la clé publique : seuls Matis et Lise, avec APP_SECRET, y accèdent par le mode "roomy").
 //
-// L'IA est réservée à Matis et Lise (code APP_SECRET, tous les outils, Opus 5.5). Le mode "visiteur"
+// L'IA est réservée à Matis et Lise (code APP_SECRET, tous les outils, Sonnet 5.5 effort high). Le mode "visiteur"
 // (sans code, sans outil, Sonnet 5.5) est débranché : voir « Mode visiteur » plus bas.
 //
 // Secrets à définir (Supabase → Edge Functions → Secrets) :
@@ -21,7 +21,7 @@
 import Anthropic from "npm:@anthropic-ai/sdk@1";
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-const MODEL = "claude-opus-5-5";
+const MODEL = "claude-sonnet-5-5";   // Sonnet 5.5 depuis le 2026-11-05 (avant : Opus 5.5)
 const MAX_TURNS = 10;
 
 const CORS = {
@@ -993,7 +993,7 @@ class TropLong extends Error {}
 async function boucleIA(
   messages: Anthropic.Beta.BetaMessageParam[], prog: boolean, changes: string[], signal?: AbortSignal,
   fin?: number,   // heure limite (ms epoch) : passé ce moment la boucle s'arrête avec TropLong au lieu de se faire couper par la passerelle
-  effort: "medium" | "high" | "xhigh" = "xhigh",
+  effort: "medium" | "high" | "xhigh" = "high",
 ): Promise<Anthropic.Beta.BetaMessage | null> {
   let final: Anthropic.Beta.BetaMessage | null = null;
   for (let turn = 0; turn < MAX_TURNS; turn++) {
@@ -1300,7 +1300,7 @@ async function roomyEnvoyer(
 
 // Temps accordé à l'IA pour l'onglet Programme. La fonction est coupée par la plateforme à ~150 s (offre gratuite) : on
 // s'arrête avant, avec un vrai message, au lieu de laisser le navigateur conclure « injoignable ».
-const PROG_LIMITE_MS = 125_000;
+const PROG_LIMITE_MS = 140_000;   // relevé de 125 s le 2026-11-05 à la demande de Matis ; plafond réel de la plateforme ~150 s
 
 // Répond tout de suite (200, JSON) puis envoie un espace toutes les 10 s tant que `travail` n'a pas fini ; le JSON
 // final suit. Les espaces avant le JSON sont ignorés par `response.json()`.
