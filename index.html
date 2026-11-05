@@ -10,7 +10,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#fbf6ec">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="icons.js?v=3"></script>
+<script src="icons.js?v=5"></script>
 <style>
 :root{
   --white:#ffffff;--bg:#fbf6ec;--surface:#ffffff;--surface2:#f3ead9;
@@ -1257,6 +1257,23 @@ select.form-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://
 .sos-act{display:flex;flex-direction:column;gap:5px;flex:none;}
 .sos-btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;border-radius:999px;padding:6px 11px;font-size:.68rem;font-weight:700;text-decoration:none;white-space:nowrap;border:1px solid var(--border2);background:var(--bg);color:var(--accent-ink,var(--accent));}
 .sos-btn.tel{background:var(--accent);border-color:var(--accent);color:#fff;}
+.tr-quand{font-size:.66rem;color:var(--or,#b8893a);font-weight:700;margin-top:2px;}
+.tr-list{margin:6px 0 0;padding:0;list-style:none;}
+.tr-list li{font-size:.7rem;line-height:1.5;padding-left:12px;position:relative;margin-top:3px;}
+.tr-list li::before{content:'';position:absolute;left:2px;top:.62em;width:4px;height:4px;border-radius:50%;background:var(--or,#b8893a);}
+.tr-piege{font-size:.68rem;line-height:1.45;margin-top:6px;padding:6px 8px;border-left:3px solid var(--rouge,#b3202a);background:var(--bg);border-radius:0 8px 8px 0;}
+.tr-trajet{display:flex;gap:10px;align-items:flex-start;padding:8px 0;}
+.tr-bout{font-size:.72rem;line-height:1.5;margin-top:2px;}
+.tr-bout span{font-size:.6rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--txt3);margin-right:4px;}
+.tr-edit{color:var(--accent-ink,var(--accent));font-weight:700;}
+.tr-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:3px;}
+.tr-tag{font-size:.6rem;font-weight:800;border-radius:999px;padding:2px 8px;background:var(--accent);color:#fff;}
+.tr-tag.maybe{background:var(--bg);color:var(--accent-ink,var(--accent));border:1px solid var(--border2);}
+.sos-row.tr-moi{background:rgba(184,137,58,.10);border-radius:12px;padding:8px;margin:2px -8px;}
+.tr-mots{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;}
+.tr-mot{background:var(--bg);border:1px solid var(--border2);border-radius:10px;padding:6px 8px;}
+.tr-mot b{display:block;font-size:1rem;line-height:1.3;}
+.tr-mot span{font-size:.62rem;color:var(--txt2);}
 .sos-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
 .sos-chips .sos-btn{flex:1 1 30%;padding:8px 6px;}
 .vpn-item{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);}
@@ -4743,7 +4760,7 @@ function exportStatsPDF(){
   ];
   const w = window.open('', '_blank');
   if (!w) { showToast('Autorise les pop-up pour exporter le PDF'); return; }
-  w.document.write('<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Chine 2026 — Statistiques</title><style>' + css + '</style></head><body>' + parts.join('') + '</body></html>');
+  w.document.write('<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Chine 2026 — Statistiques</title><style>' + css + '</style></head><body>' + parts.join('') + '<\/body></html>');
   w.document.close();
   setTimeout(() => w.print(), 400);
 }
@@ -6355,6 +6372,249 @@ function renderSosVilles(){
   return d;
 }
 
+// ══ GARES ET AÉROPORTS : ne pas se perdre ══
+// Rédigé à partir de guides de voyage, pas d'une visite : horaires, lignes de métro et sorties peuvent bouger.
+// Le nom chinois sert à le montrer au chauffeur ; « Chercher » ouvre Amap sur la gare ou l'aéroport (pas de coordonnées stockées).
+const TRANSIT_COMMUN=[
+  'Passeport sur soi, jamais dans la valise : il sert à acheter le billet, à passer le portillon de la gare et à l\'enregistrement. Un billet de train est lié au passeport, pas de papier à imprimer.',
+  'Gare : être là 45 à 60 minutes avant. Il y a un contrôle des bagages à l\'entrée, puis la salle d\'attente, puis le portillon de votre train, qui ferme quelques minutes avant le départ. Pas de rattrapage possible.',
+  'Aéroport : 3 heures avant pour un vol international, 2 heures pour un vol intérieur. Batterie externe : modèle avec marque 3C seulement, dans le bagage cabine, jamais en soute.',
+  'Vol intérieur (Shanghai → Chongqing, Zhangjiajie → Shanghai) : pas d\'immigration, juste enregistrement avec le passeport (borne ou comptoir) puis sécurité. La porte d\'embarquement (登机口) change souvent : regarder les écrans et l\'appli de la compagnie jusqu\'au dernier moment. Elle ferme environ 20 minutes avant le décollage.',
+  'Vol intérieur, bagages : en économie, la cabine est souvent limitée à 5 kg et la soute à 20 kg (lire le billet). Briquets et allumettes sont interdits, en cabine comme en soute. Liquides de plus de 100 ml interdits en cabine.',
+  'Les retards sont fréquents en Chine et les annonces sont rarement en anglais : garder l\'appli de la compagnie ou Trip.com ouverte, et ne pas s\'éloigner de la porte sans avoir vérifié l\'heure.',
+  'Taxi et VTC : uniquement à la file officielle ou au point « VTC » signalé dans la gare. Refuser tout inconnu qui propose une voiture dans le hall. Dans DiDi, vérifier la plaque avant de monter.',
+  'Sans internet à l\'arrivée : l\'eSIM ou la SIM doit être active avant de sortir, sinon ni Amap ni DiDi. Faire une capture d\'écran de l\'adresse chinoise de l\'hôtel avant le départ.',
+];
+const TRANSIT_MOTS=[
+  ['检票口','Portillon d\'embarquement'],['候车室','Salle d\'attente (gare)'],
+  ['出站口','Sortie de la gare'],['出租车','Taxi'],
+  ['网约车上车点','Point de prise en charge VTC'],['行李寄存','Consigne à bagages'],
+];
+const TRANSIT_LIEUX=[
+  {ville:'Shanghai',zh:'上海',lieux:[
+    {t:'plane',nom:'Aéroport de Pudong (PVG)',zh:'浦东国际机场',kw:'浦东国际机场',
+     quand:'Arrivée du 9 novembre au matin, retour de Zhangjiajie dans la nuit du 19 au 20 (hôtel Vienna, 19 au 22 nov.) et départ le 22',
+     tips:[
+      'Navette gratuite de l\'hôtel Vienna (notes de votre réservation) : 24 h/24 mais à réserver à l\'avance. Les numéros du chauffeur et de l'hôtel sont dans l'onglet À réserver. Rendez-vous au T1 au 3e étage porte 3, ou au T2 au 3e étage porte 29. Donner au chauffeur le numéro du vol et l\'heure d\'arrivée (00h30 le 20) et demander une confirmation écrite. Si ça ne répond pas : DiDi, environ 15 minutes.',
+      'Deux terminaux, T1 et T2, à environ 600 m l\'un de l\'autre : 15 minutes à pied par un couloir couvert, ou navette gratuite. Le terminal est écrit sur la carte d\'embarquement : le noter avant l\'atterrissage.',
+      'À l\'arrivée : immigration d\'abord (passeport, formulaire d\'arrivée en ligne rempli avant, empreintes), puis les bagages, puis la douane. Compter 45 minutes à 1 h 30.',
+      'Vers la ville : métro ligne 2 (station entre T1 et T2, niveau B1, environ 1 heure jusqu\'au centre, 6 ¥), ou Maglev jusqu\'à Longyang Road (8 minutes, de 7 h à 21 h 40 environ) puis correspondance. Taxi ou DiDi : le plus simple avec les valises.',
+      'Le dernier métro part vers 22 h 30 : après, c\'est taxi ou DiDi.',
+     ],
+     piege:'Pudong et Hongqiao sont à plus d\'une heure l\'un de l\'autre. Vérifier sur le billet de l\'avion intérieur lequel des deux est le bon.'},
+    {t:'plane',nom:'Aéroport de Hongqiao (SHA)',zh:'虹桥国际机场',kw:'虹桥国际机场',
+     quand:'Seulement si votre vol Shanghai → Chongqing ou Zhangjiajie → Shanghai y passe (à vérifier sur le billet)',
+     tips:[
+      'Le terminal 2 est collé à la gare Hongqiao (虹桥站) : tout se fait à pied, en suivant les panneaux « Metro ».',
+      'Métro ligne 2 ou 10 (la ligne 10 mène à East Nanjing Road, par la rue piétonne), et ligne 17. Compter 30 à 40 minutes jusqu\'au centre.',
+      'Plus proche du centre que Pudong : la course en taxi est nettement moins chère.',
+     ],
+     piege:'Ne pas confondre la gare de Hongqiao (虹桥站, trains) avec l\'aéroport (虹桥机场) : ils sont voisins mais ce sont deux bâtiments.'},
+    {t:'train',nom:'Gare de Shanghai Hongqiao',zh:'上海虹桥站',kw:'上海虹桥站',
+     quand:'Si vous prenez un train depuis ou vers Shanghai',
+     tips:[
+      'Immense gare de trains rapides, collée au terminal 2 de l\'aéroport de Hongqiao. Prévoir 15 à 20 minutes de marche entre l\'entrée et le quai, en comptant les escalators.',
+      'Métro ligne 2, 10 et 17. Les écrans indiquent la salle d\'attente (候车室) et le portillon (检票口) de votre train.',
+     ],
+     piege:'Pour le métro, bien chercher la station « Hongqiao Railway Station », pas « Hongqiao Airport Terminal 2 » : elles sont voisines mais pas au même endroit.'},
+  ]},
+  {ville:'Chongqing',zh:'重庆',lieux:[
+    {t:'plane',nom:'Aéroport de Jiangbei (CKG)',zh:'江北国际机场',kw:'江北国际机场',
+     quand:'Arrivée du vol depuis Shanghai (environ le 12 novembre)',
+     tips:[
+      'Deux terminaux principaux, T2 et T3 (le terminal est écrit sur la carte d\'embarquement), tous deux reliés au métro.',
+      'Vers le centre (Jiefangbei) : métro ligne 3 ou ligne 10 selon le terminal (les guides ne sont pas d\'accord entre eux : suivre les panneaux « Metro » puis vérifier sur Amap), 40 à 60 minutes. Taxi ou DiDi : 20 à 25 km, un peu plus de 30 minutes hors embouteillage.',
+      'Chongqing est une ville de collines : le point GPS peut être au niveau de la rue d\'en haut alors que l\'entrée de l\'hôtel est 5 étages plus bas. Avant de partir, regarder l\'entrée de l\'hôtel sur la photo, et demander au chauffeur de vous déposer à l\'adresse chinoise.',
+     ],
+     piege:'Pour l\'hôtel de Hongya Cave (洪崖洞), le chauffeur peut vous laisser tout en haut de la falaise : demander « 洪崖洞 » et garder l\'adresse en chinois à l\'écran.'},
+    {t:'train',nom:'Gare de Chongqing Nord (Chongqingbei)',zh:'重庆北站',kw:'重庆北站',
+     quand:'Train vers Chengdu et vers Zhangjiajie',
+     tips:[
+      'C\'est la gare principale des trains rapides G et D. Elle a deux côtés, le parvis nord et le parvis sud, éloignés l\'un de l\'autre. Regarder le parvis conseillé par Amap pour votre train, et arriver 20 minutes plus tôt si on est au mauvais.',
+      'Métro ligne 3 et ligne 10 directement dans la gare. Depuis l\'aéroport, la ligne 10 est la plus simple (environ 35 minutes).',
+      'Le billet indique le portillon (检票口) et la salle d\'attente : l\'affichage se fait par numéro de train sur les écrans de la salle.',
+     ],
+     piege:'Chongqing a aussi une gare Ouest (重庆西站) et une gare Est (重庆东站). Lire le nom de la gare de départ sur le billet avant de commander le taxi.'},
+    {t:'train',nom:'Gare de Chongqing Ouest (Chongqingxi)',zh:'重庆西站',kw:'重庆西站',
+     quand:'Si votre billet pour Chengdu ou Zhangjiajie part d\'ici',
+     tips:[
+      'Côté Shapingba, loin du centre et de l\'aéroport. Depuis l\'aéroport, il faut passer par la gare Nord : compter environ 80 minutes en métro.',
+      'Seuls certains trains G pour Chengdu partent d\'ici : c\'est facile de se tromper de gare au moment de réserver.',
+     ],
+     piege:'Si le billet dit 重庆西 et que vous êtes allé à Chongqing Nord, il n\'y a pas de correspondance rapide : prévoir un taxi ou du métro, et une demi-heure de marge.'},
+    {t:'train',nom:'Gare de Chongqing Est (Chongqingdong)',zh:'重庆东站',kw:'重庆东站',
+     quand:'Si votre billet pour Zhangjiajie part d\'ici',
+     tips:[
+      'Grande gare récente, côté Nan\'an, sur la rive sud. Elle dessert surtout des trains rapides, dont Zhangjiajie (environ 2 à 2 h 30).',
+      'Elle est loin du centre de Chongqing : prévoir plus de temps de trajet que pour la gare Nord. Les infos sur cette gare sont les moins sûres, vérifier l\'accès sur Amap.',
+     ],
+     piege:'Ne pas supposer que tous les trains de Chongqing partent de la gare Nord : lire le nom de la gare de départ sur le billet.'},
+  ]},
+  {ville:'Chengdu',zh:'成都',lieux:[
+    {t:'train',nom:'Gare de Chengdu Est (Chengdudong)',zh:'成都东站',kw:'成都东站',
+     quand:'Arrivée du train depuis Chongqing (1 h 15 environ en G)',
+     tips:[
+      'La plupart des trains de Chongqing arrivent ici. Métro ligne 2 et ligne 7 dans la gare.',
+      'Quelques trains arrivent à Chengdu Sud (成都南站), plus au sud-ouest : métro ligne 1, 7 ou 18. Environ 20 minutes jusqu\'à Tianfu Square par la ligne 1.',
+      'Suivre le panneau « 出站口 » (sortie), puis celui du métro. Les taxis sont à la file officielle, jamais dans le hall.',
+     ],
+     piege:'Regarder si le billet dit 成都东 ou 成都南 avant de réserver l\'hôtel : le quartier change tout pour le trajet.'},
+    {t:'train',nom:'Gare de Chengdu Sud (Chengdunan)',zh:'成都南站',kw:'成都南站',
+     quand:'Si votre train de Chongqing arrive ici (minorité de trains)',
+     tips:[
+      'Plus au sud-ouest que la gare Est. Métro ligne 1, 7 ou 18, ou taxi.',
+      'Par la ligne 1 : environ 20 minutes jusqu\'à Tianfu Square.',
+     ],
+     piege:'Lire 成都南 ou 成都东 sur le billet : les deux gares ne sont pas du même côté de la ville.'},
+  ]},
+  {ville:'Zhangjiajie',zh:'张家界',lieux:[
+    {t:'train',nom:'Gare de Zhangjiajie Ouest',zh:'张家界西站',kw:'张家界西站',
+     quand:'Arrivée du train de Chongqing, et départ vers Furong (environ 30 minutes de train)',
+     tips:[
+      'C\'est la gare des trains rapides, y compris vers Furong (plus de dix par jour). Elle est à l\'écart de la ville.',
+      'Vers le parc de Wulingyuan : un centre de bus touristiques se trouve à environ 50 m à droite en sortant de la gare. Sinon taxi.',
+      'Les grands sites de Zhangjiajie sont éloignés les uns des autres : un chauffeur à la journée est plus simple que les VTC.',
+     ],
+     piege:'Ne pas se faire déposer à la gare de Zhangjiajie centre (张家界站) : c\'est une autre gare, pour les trains lents, et elle est loin de Zhangjiajie Ouest.'},
+    {t:'train',nom:'Gare de Zhangjiajie centre',zh:'张家界站',kw:'张家界站',rare:true,
+     quand:'Seulement si votre billet indique 张家界 sans « 西 »',
+     tips:[
+      'Ancienne gare du centre-ville, proche de la gare routière centrale (bus vers le parc forestier).',
+      'Elle ne sert pas aux trains rapides vers Furong : ceux-ci partent de Zhangjiajie Ouest.',
+     ],
+     piege:'Si le billet dit 张家界西, c\'est l\'autre gare, à l\'écart de la ville. Se faire déposer au bon endroit.'},
+    {t:'plane',nom:'Aéroport de Hehua (DYG)',zh:'张家界荷花国际机场',kw:'张家界荷花国际机场',
+     quand:'Vol Zhangjiajie → Shanghai',
+     tips:[
+      'Petit aéroport, proche du centre de Zhangjiajie. Vers Wulingyuan (le Grand Canyon, par exemple) : environ 55 km, compter 120 à 150 ¥ en taxi.',
+      'Demander à l\'hôtel de commander la voiture la veille pour le départ : il n\'y a pas toujours de VTC disponible, surtout tôt le matin.',
+      'Arriver 2 heures avant pour un vol intérieur. L\'aéroport de destination (Pudong ou Hongqiao) est écrit sur le billet.',
+     ],
+     piege:'Prévoir une marge de 1 h 30 à 2 h entre l\'hôtel et l\'aéroport depuis Wulingyuan : les routes de montagne sont lentes et il y a souvent des bouchons.'},
+  ]},
+  {ville:'Furong',zh:'芙蓉镇',lieux:[
+    {t:'train',nom:'Gare de Furongzhen',zh:'芙蓉镇站',kw:'芙蓉镇站',
+     quand:'Aller-retour depuis Zhangjiajie Ouest (environ 30 minutes)',
+     tips:[
+      'La gare est à l\'écart du village : prendre un taxi ou la navette locale jusqu\'à l\'entrée de la vieille ville.',
+      'Avant d\'y aller, regarder l\'heure du dernier train du retour sur Trip.com et la noter. Les taxis du village sont rares la nuit.',
+      'Le village est escarpé et le sol est glissant : chaussures qui accrochent.',
+     ],
+     piege:'Si vous dormez sur place (Baihe Wharf Inn), prévenir l\'hôtel de l\'heure du train : ils peuvent commander le taxi pour la gare.'},
+  ]},
+];
+// Comment reconnaître chaque lieu dans le champ « Gares / Aéroports » d'un transport (DEP_ADDR / ARR_ADDR), en français, anglais ou chinois.
+const TRANSIT_RE={
+  '浦东国际机场':/pudong|浦东|\bPVG\b/i,
+  '虹桥国际机场':/(hongqiao|虹桥).*(a[ée]ro|airport|机场|terminal|\bT[12]\b)|(a[ée]ro|airport|机场).*(hongqiao|虹桥)|\bSHA\b/i,
+  '上海虹桥站':/(hongqiao|虹桥).*(gare|station|railway|站)|(gare|station|railway).*(hongqiao|虹桥)/i,
+  '江北国际机场':/jiangbei|江北|\bCKG\b/i,
+  '重庆北站':/(chongqing|重庆).*(nord|north|北)|chongqingbei/i,
+  '重庆西站':/(chongqing|重庆).*(ouest|west|西)|chongqingxi/i,
+  '重庆东站':/(chongqing|重庆).*(\best\b|east|东)|chongqingdong/i,
+  '成都东站':/(chengdu|成都).*(\best\b|east|东)|chengdudong/i,
+  '成都南站':/(chengdu|成都).*(sud|south|南)|chengdunan/i,
+  '张家界西站':/(zhangjiajie|张家界).*(ouest|west|西)/i,
+  '张家界站':/(zhangjiajie|张家界)\s*(gare|station|railway|centre|center|站)\s*$|张家界站/i,
+  '张家界荷花国际机场':/hehua|荷花|\bDYG\b/i,
+  '芙蓉镇站':/furong|芙蓉/i,
+};
+// Les deux bouts de chaque transport : ville du nom « A → B », gare ou aéroport écrit dans la fiche, ou à défaut les lieux possibles.
+function transitTrajets(){
+  const out=[];
+  (D.items||[]).filter(t=>t.type==='transport').forEach(t=>{
+    const px=String(t.prix_type||'');
+    const kind=/✈|vol|avion/i.test(px)?'plane':/🚄|🚅|🚆|🚂|train/i.test(px)?'train':null;
+    if(!kind)return;
+    const noms=transportNoms(t), notes=String(t.notes||'');
+    const ends=[['DEP','Départ',noms.dep],['ARR','Arrivée',noms.arr]].map(([k,lbl,nom])=>{
+      const v=TRANSIT_LIEUX.find(x=>nom.toLowerCase().includes(x.ville.toLowerCase()));
+      if(!v)return null;
+      const addr=(notes.match(new RegExp(k+'_ADDR:([^|]+)'))||['',''])[1].trim();
+      const same=v.lieux.filter(l=>l.t===kind);
+      const exact=addr?same.filter(l=>TRANSIT_RE[l.zh]&&TRANSIT_RE[l.zh].test(v.ville+' '+v.zh+' '+addr)):[];
+      if(exact.length)return {lbl,v,addr,etat:'exact',lieux:[exact[0]]};
+      if(addr)return {lbl,v,addr,etat:'inconnu',lieux:[]};
+      // Vol international : à Shanghai, c'est Pudong (Hongqiao n'a presque que des vols intérieurs)
+      const autreBout=k==='DEP'?noms.arr:noms.dep;
+      if(kind==='plane'&&v.ville==='Shanghai'&&!TRANSIT_LIEUX.some(x=>autreBout.toLowerCase().includes(x.ville.toLowerCase()))){
+        const pvg=same.find(l=>l.zh==='浦东国际机场');
+        if(pvg)return {lbl,v,addr:'',etat:'exact',lieux:[pvg]};
+      }
+      const cand=same.filter(l=>!l.rare);
+      return {lbl,v,addr:'',etat:cand.length===1?'exact':'candidats',lieux:cand};
+    });
+    if(!ends.some(Boolean))return;
+    out.push({t,kind,ends});
+  });
+  return out.sort((a,b)=>String(a.t.adresse||'9').localeCompare(String(b.t.adresse||'9')));
+}
+function renderTransitLieux(){
+  const d=document.createElement('div');
+  const draw=()=>{
+    const trajets=transitTrajets();
+    // Quel lieu est concerné par quel trajet : zh du lieu -> étiquettes
+    const marques=new Map();
+    trajets.forEach(tr=>tr.ends.forEach(e=>{
+      if(!e)return;
+      const jour=/^\d{4}-\d\d-\d\d$/.test(tr.t.adresse||'')?' · '+fmtDate(tr.t.adresse):'';
+      e.lieux.forEach(l=>{
+        const arr=marques.get(l.zh)||[];
+        arr.push({txt:(e.etat==='exact'?'Votre ':'Possible · ')+e.lbl.toLowerCase()+jour,sur:e.etat==='exact'});
+        marques.set(l.zh,arr);
+      });
+    }));
+    const ligne=e=>{
+      const lieu=e.lieux[0];
+      const quoi=e.etat==='exact'?'<b>'+esc(lieu.nom)+'</b>'
+        :e.etat==='inconnu'?'<b>'+esc(e.addr)+'</b> : lieu pas encore décrit ici, voir Amap'
+        :'<em>pas renseigné</em> : '+e.lieux.map(l=>esc(l.nom)).join(' ou ');
+      return '<div class="tr-bout"><span>'+e.lbl+' · '+esc(e.v.ville)+'</span> '+quoi+'</div>';
+    };
+    const mesTrajets=trajets.length?'<div class="sos-city"><div class="sos-city-h"><span class="sos-city-n">Vos trajets</span><span class="sos-city-zh" lang="zh">行程</span></div>'
+      +trajets.map(tr=>{
+        const t=tr.t, horaire=[/^\d{4}-\d\d-\d\d$/.test(t.adresse||'')?fmtDate(t.adresse):'date à fixer',t.quartier&&t.description?t.quartier+' → '+t.description:''].filter(Boolean).join(' · ');
+        const manque=tr.ends.some(e=>e&&e.etat!=='exact');
+        return '<div class="tr-trajet"><div class="sos-ic">'+ic(tr.kind)+'</div><div class="sos-info"><div class="sos-name">'+esc(t.nom)+'</div>'
+          +'<div class="tr-quand">'+esc(horaire)+'</div>'+tr.ends.filter(Boolean).map(ligne).join('')
+          +(manque?'<div class="sos-desc">Pour que cette page affiche le bon lieu : ouvrir ce transport et remplir « Gares / Aéroports (pour la carte) » (par exemple « Aéroport Pudong » ou « Gare Nord »).'
+            +(isEditorMode()?' <a href="#" class="tr-edit" data-id="'+esc(t.id)+'">Ouvrir la fiche</a>':'')+'</div>':'')
+          +'</div></div>';
+      }).join('')+'</div>':'';
+    d.innerHTML='<div class="sos-note">Rédigé à partir de guides de voyage, pas d\'une visite : horaires, lignes de métro et sorties peuvent changer, et la gare ou l\'aéroport réel est celui écrit sur votre billet. Le texte chinois se montre au chauffeur ; « Chercher » ouvre Amap sur la gare.</div>'
+      +mesTrajets
+      +'<div class="sos-city"><div class="sos-city-h"><span class="sos-city-n">Partout en Chine</span><span class="sos-city-zh" lang="zh">通用</span></div>'
+      +'<ul class="tr-list">'+TRANSIT_COMMUN.map(t=>'<li>'+esc(t)+'</li>').join('')+'</ul>'
+      +'<div class="tr-mots">'+TRANSIT_MOTS.map(([zh,fr])=>'<div class="tr-mot"><b lang="zh">'+zh+'</b><span>'+esc(fr)+'</span></div>').join('')+'</div></div>'
+      +TRANSIT_LIEUX.map(v=>{
+        // Les lieux de votre trajet d'abord, puis les autres
+        const lieux=[...v.lieux].sort((a,b)=>(marques.has(b.zh)?1:0)-(marques.has(a.zh)?1:0));
+        const rows=lieux.map(l=>{
+          const m=marques.get(l.zh)||[];
+          const tags=m.map(x=>'<span class="tr-tag'+(x.sur?'':' maybe')+'">'+esc(x.txt)+'</span>').join('');
+          return '<div class="sos-row'+(m.length?' tr-moi':'')+'"><div class="sos-ic">'+ic(l.t)+'</div>'
+            +'<div class="sos-info"><div class="sos-kind">'+(l.t==='plane'?'Aéroport':'Gare')+'</div><div class="sos-name">'+esc(l.nom)+'</div>'
+            +(tags?'<div class="tr-tags">'+tags+'</div>':'')
+            +'<div class="sos-zh" lang="zh">'+esc(l.zh)+'</div>'
+            +'<div class="tr-quand">'+esc(l.quand)+'</div>'
+            +'<ul class="tr-list">'+l.tips.map(t=>'<li>'+esc(t)+'</li>').join('')+'</ul>'
+            +'<div class="tr-piege"><b>À éviter :</b> '+esc(l.piege)+'</div></div>'
+            +'<div class="sos-act"><a class="sos-btn" target="_blank" rel="noopener" href="'+sosAmapUrl(v,l.kw)+'">'+ic('search')+'Chercher</a></div></div>';
+        }).join('');
+        return '<div class="sos-city"><div class="sos-city-h"><span class="sos-city-n">'+esc(v.ville)+'</span><span class="sos-city-zh" lang="zh">'+esc(v.zh)+'</span></div>'+rows+'</div>';
+      }).join('');
+    d.querySelectorAll('.tr-edit').forEach(a=>a.onclick=ev=>{
+      ev.preventDefault();
+      const it=D.items.find(x=>x.id===a.dataset.id);
+      if(it)openItemSheet('transport',it);
+    });
+  };
+  draw();
+  // Les transports arrivent de la base après le premier rendu, et peuvent être modifiés : on redessine à chaque ouverture.
+  d.redraw=draw;
+  return d;
+}
+
 // ══ PRATIQUE CHINE ══
 function renderPratique(){
   const cont=document.getElementById('pratiqueCont');
@@ -6393,6 +6653,7 @@ function renderPratique(){
       });
       return d;
     }},
+    {icon:'🚄',title:'Gares et aéroports : ne pas se perdre',content:()=>renderTransitLieux()},
     {icon:'🏥',title:'Hôpitaux, police et tourisme par ville',content:()=>renderSosVilles()},
     {icon:'💸',title:'WeChat Pay & Alipay',content:()=>{
       const d=document.createElement('div');
@@ -6796,5 +7057,9 @@ if(loginPasswordEl){
 <script src="prog.js?v=3"></script>
 <script src="souhaits.js?v=4"></script>
 <script src="questions.js?v=1"></script>
+<script src="roomy.js?v=1"></script>
+<script src="resa.js?v=1"></script>
+<script src="plats.js?v=1"></script>
+<script src="accueil.js?v=1"></script>
 </body>
 </html>

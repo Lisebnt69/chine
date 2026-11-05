@@ -6,7 +6,7 @@
 
 const IA_URL = SB_URL + '/functions/v1/assistant';
 const IA_TRIGGER = /^(@ia|@roomy|@claude|\/ia)\b/i;
-const PERIODE_START = { 'Matin': '09:30', 'Après-midi': '14:00', 'Soir': '19:00', 'Journée': '09:30', '': '10:00' };
+const PERIODE_START = { 'Matin': '09:00', 'Après-midi': '14:00', 'Soir': '19:00', 'Journée': '09:00', '': '10:00' };  // 9h : sortie de l'hôtel, sauf obligation
 const PERIODE_ORDER = { 'Matin': 1, 'Journée': 1, 'Après-midi': 2, 'Soir': 3, '': 4 };
 const CHINA_TZ = 'Asia/Shanghai';
 D.cerveau = D.cerveau || [];
@@ -148,11 +148,11 @@ function buildDayPlan(day) {
     merged.forEach(x => {
       const km = kmBetween(prevPos, itemPos(x.item));
       const tr = travelMin(km);
-      let t = Math.max(cursor + (out.some(o => o.kind === 'stop') ? tr : 0), x.fixedMin ?? 0);
+      let t = Math.max(cursor + tr, x.fixedMin ?? 0);
       if (x.fixedMin != null) t = x.fixedMin;
-      const dur = p === 'Journée' ? 600 : DUREE_MIN[x.item.duree || ''] || (x.item.type === 'restaurant' ? 75 : 60); // « Journée » : 10 h sur place, pas d'idées en plein milieu
+      const dur = x.slot.etape?.duree_min ?? (p === 'Journée' ? 600 : DUREE_MIN[x.item.duree || ''] || (x.item.type === 'restaurant' ? 75 : 60)); // « Journée » : 10 h sur place, pas d'idées en plein milieu
       out.push({ kind: 'stop', min: t, end: t + dur, item: x.item, slot: x.slot, periode: p, fixed: x.fixedMin != null,
-        km, travel: tr, pos: itemPos(x.item), label: x.item.nom });
+        km, travel: tr, pos: itemPos(x.item), label: x.slot.etape?.titre || x.item.nom });
       cursor = t + dur; prevPos = itemPos(x.item) || prevPos;
     });
   });
@@ -161,7 +161,9 @@ function buildDayPlan(day) {
   // conflits : chevauchements avec un transport
   out.forEach(o => {
     if (o.kind !== 'stop') return;
-    const clash = out.find(t => t.kind === 'transport' && t.end != null && o.min < t.end + 30 && o.end > t.min - 90 && t.min > 0);
+    // Une étape de la feuille de route a ses marges : seul un vrai chevauchement avec le transport compte.
+    const avant = o.slot?.etape ? 0 : 90, apres = o.slot?.etape ? 0 : 30;
+    const clash = out.find(t => t.kind === 'transport' && t.end != null && t.end > t.min && o.min < t.end + apres && o.end > t.min - avant && t.min > 0);
     if (clash) o.warn = `⚠️ Serré avec ${clash.label}`;
   });
   return { day, hotel, entries: out };

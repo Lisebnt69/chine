@@ -114,6 +114,24 @@ const hm = m => { const h = Math.floor(m / 60), mm = m % 60; return mm ? `${h}h$
 const dureeTxt = m => m >= 60 ? `${Math.floor(m / 60)}h${m % 60 ? String(m % 60).padStart(2, '0') : ''}` : `${m} min`;
 function legInfo(km, o) { return { min: travelMin(km), mode: travelMode(km), km, o }; }
 const nbFr = n => String(n).replace('.', ',');
+const MODES = { marche: ['walk', 'À pied'], metro: ['metro', 'Métro'], didi: ['car', 'DiDi'], taxi: ['car', 'Taxi'], navette: ['bus', 'Navette'], bus: ['bus', 'Bus'],
+  train: ['train', 'Train'], avion: ['plane', 'Avion'], telepherique: ['cable', 'Téléphérique'], ascenseur: ['cable', 'Ascenseur'], bateau: ['ship', 'Bateau'] };
+const ETAPE_IC = { repas: 'utensils', boutique: 'bag', activite: 'star', logistique: 'clipboard' };
+const pourVisiteur = t => isEditorMode() ? t : sansPrix(t);
+function modeDe(l) {
+  if (l.km == null) return 'didi';
+  if (l.km <= MARCHE_KM) return 'marche';
+  const m = optionsTrajet(l.km, l.o).options[0].mode;
+  return m === 'Métro' ? 'metro' : m === 'DiDi' ? 'didi' : 'navette';
+}
+// Le trajet saisi dans l'étape n'est valable que si on vient bien de l'étape prévue : sinon on le recalcule,
+// pour que les trajets suivent les activités ajoutées, déplacées ou retirées.
+function etapeLeg(et, loc) {
+  const y = et?.y_aller;
+  if (!y || !MODES[y.mode] || !y.depuis || y.depuis !== loc.id) return null;
+  const sub = [y.detail, isEditorMode() && y.prix_yuan ? prixTrajet(y.prix_yuan) : ''].filter(Boolean).join(' · ');
+  return { min: y.duree_min || 0, mode: y.mode, titre: `${MODES[y.mode][1]} · ${dureeTxt(y.duree_min || 0)}`, sub: pourVisiteur(sub) };
+}
 const TROP_LOIN_KM = 120;  // Tianmen est à ~34 km de Banpoli ; au-delà de 120 km, c'est une étape mal placée, pas un DiDi
 function prixTrajet(yuan) {
   const y = yuan >= 20 ? Math.round(yuan / 5) * 5 : Math.round(yuan), e = y * TAUX_EUR.yuan;
@@ -123,7 +141,7 @@ function prixTrajet(yuan) {
 function legTxt(l) {
   const dist = l.km != null ? ' · ' + nbFr(Math.round(l.km * 10) / 10) + ' km' : '';
   if (l.km == null || l.km <= MARCHE_KM) return `${l.min} min ${l.mode}${dist}`;
-  if (l.km > TROP_LOIN_KM) return `⚠️ ${Math.round(l.km)} km : pas un trajet en DiDi, ces deux étapes ne sont pas dans la même ville. Vérifie ce jour`;
+  if (l.km > TROP_LOIN_KM) return `${Math.round(l.km)} km : pas un trajet en DiDi, ces deux étapes ne sont pas dans la même ville. Vérifie ce jour`;
   const { options, ferme } = optionsTrajet(l.km, l.o);
   const prix = x => isEditorMode() ? (x.yuan ? prixTrajet(x.yuan) : 'gratuite') : '';
   const txt = options.map(x => [`${x.mode} ${dureeTxt(x.min)}`, [prix(x), x.note].filter(Boolean).join(', ')].filter(Boolean).join(' · ')).join(', ou ');
@@ -448,9 +466,20 @@ const AVANCE_GARE = it => /✈|vol|avion|flight/i.test(`${it.prix_type || ''} ${
 function detailRows(day) {
   const plan = buildDayPlan(day), hotel = plan.hotel, rows = [];
   const depart = departHotel(day) || hotel;
-  let loc = { pos: posOf(depart), nom: depart ? depart.nom : 'votre point de départ' }, free = null; // free = heure à laquelle on est dispo
+  let loc = { pos: posOf(depart), nom: depart ? depart.nom : 'votre point de départ', id: depart?.id }, free = null; // free = heure à laquelle on est dispo
   const entries = plan.entries.filter(e => e.kind !== 'hotel').sort((a, b) => a.min - b.min);
   const push = r => rows.push(r);
+  if (depart?.type === 'hotel' && entries[0] && entries[0].min >= 10 * 60) free = DAY_START;
+  const reveil = toMin(day.route?.reveil);
+  if (reveil != null) push({ t: reveil, k: 'step', title: 'Réveil', sub: day.route.pourquoi_horaire || '' });
+  // Moment libre : jamais vide, on y met ce qu'il y a de mieux autour de nous.
+  const used = new Set();
+  const idees = (s, en) => {
+    if (en - s < GAP_MIN) return '';
+    const g = { s, en }, ville = depart?.ville || '';
+    const liste = [...suggestions(loc.pos, ville, g, ['restaurant'], 2, used), ...suggestions(loc.pos, ville, g, ['activite', 'cafe'], 3, used)];
+    return liste.map(x => suggCard(x, g, day.id)).join('');
+  };
   entries.forEach((e, i) => {
     if (e.kind === 'transport') {
       const it = e.item, arrJ1 = it.adresse !== day.date_voyage;
@@ -459,63 +488,83 @@ function detailRows(day) {
       const lieuArr = `${avion ? 'l\'aéroport' : 'la gare'}${L?.arrNom ? ' de ' + L.arrNom : ''}`;
       if (arrJ1) {
         push({ t: e.min, k: 'step', title: `Arrivée : ${e.label}`, sub: e.sub });
-        loc = { pos: transportPos(it, 'ARR') || loc.pos, nom: lieuArr }; free = e.min;
+        loc = { pos: transportPos(it, 'ARR') || loc.pos, nom: lieuArr, id: it.id }; free = e.min;
         const hp = posOf(hotel);
         if (hp && e.min < 6 * 60) {
           const versHotel = legInfo(loc.pos ? kmBetween(loc.pos, hp) : null, { de: loc.pos, vers: hp, t: e.min, bagages: true });
-          push({ t: e.min + 1, k: 'go', title: `Rejoindre ${hotel.nom}`, sub: legTxt(versHotel) });
-          loc = { pos: hp, nom: hotel.nom }; free = e.min + versHotel.min;
+          push({ t: e.min + 1, k: 'go', mode: modeDe(versHotel), title: `Rejoindre ${hotel.nom}`, sub: legTxt(versHotel) });
+          loc = { pos: hp, nom: hotel.nom, id: hotel.id }; free = Math.max(e.min + versHotel.min, DAY_START);  // on dort, la journée repart à 9h
         }
         return;
       }
       const avance = AVANCE_GARE(it), depPos = transportPos(it, 'DEP');
       const leg = legInfo(depPos && loc.pos ? kmBetween(loc.pos, depPos) : null, { de: loc.pos, vers: depPos, t: e.min - avance, bagages: true });
       const quitter = e.min - avance - leg.min;
-      if (L && !L.depCN) {
+      // La feuille de route nous met déjà à la gare : ni trajet ni « être à la gare » en double.
+      const dejaLa = loc.fin != null && e.min - loc.fin <= 10;
+      if (dejaLa) { /* rien à ajouter */ }
+      else if (L && !L.depCN) {
         // On part d'une escale (pas de trajet en ville à calculer) : on montre l'attente, c'est tout.
         if (free != null && e.min - avance - free >= 60) push({ t: free, k: 'free', title: `Escale à ${loc.nom.replace(/^l'aéroport de /, '')}`, sub: `${dureeTxt(e.min - free)} avant le vol de ${fmtMin(e.min)} · hors de Chine` });
-      } else if (leg.km == null || leg.km >= 0.1) push({ t: quitter, k: 'go', title: `Quitter ${loc.nom}`, sub: `${legTxt(leg)} jusqu'à la gare ou l'aéroport` });
-      push({ t: e.min - avance, k: 'step', title: avance >= 120 ? "Être à l'aéroport" : avance >= 60 ? 'Être à la gare' : "Être au point d'embarquement", sub: `${avance} min avant le départ · ${avance >= 120 ? 'enregistrement et sécurité' : avance >= 60 ? 'contrôle des billets et sécurité' : 'embarquement'}` });
-      push({ t: e.min, k: 'key', ic: transportIcon(it), title: e.label, sub: e.sub, cn: it.adresse_cn, pos: depPos });
+      } else if (leg.km == null || leg.km >= 0.1) push({ t: quitter, k: 'go', mode: modeDe(leg), title: `Quitter ${loc.nom}`, sub: `${legTxt(leg)} jusqu'à la gare ou l'aéroport` });
+      if (!dejaLa) push({ t: e.min - avance, k: 'step', title: avance >= 120 ? "Être à l'aéroport" : avance >= 60 ? 'Être à la gare' : "Être au point d'embarquement", sub: `${avance} min avant le départ · ${avance >= 120 ? 'enregistrement et sécurité' : avance >= 60 ? 'contrôle des billets et sécurité' : 'embarquement'}` });
+      push({ t: e.min, k: 'key', icone: avion ? 'plane' : 'train', ic: transportIcon(it), title: e.label, sub: e.sub, cn: it.adresse_cn, pos: depPos });
       const memeJour = e.end != null && e.end > e.min;
       if (memeJour) push({ t: e.end, k: 'step', title: `Arrivée${L?.arrNom ? ' à ' + L.arrNom : ''}`, sub: '' });
       else if (e.end != null) push({ t: e.min + 1, hl: 'J+1', k: 'step', title: `Arrivée demain à ${fmtMin(e.end)}${L?.arrNom ? ' · ' + L.arrNom : ''}`, sub: 'Nuit en vol' });
-      loc = { pos: transportPos(it, 'ARR') || null, nom: lieuArr }; free = memeJour ? e.end : null;
+      loc = { pos: transportPos(it, 'ARR') || null, nom: lieuArr, id: it.id }; free = memeJour ? e.end : null;
       return;
     }
     // activité / repas
     const it = e.item, pos = itemPos(it);
+    const et = e.slot?.etape, prevu = etapeLeg(et, loc);
     const leg = legInfo(pos && loc.pos ? kmBetween(loc.pos, pos) : null, { de: loc.pos, vers: pos, t: e.min });
-    const quitter = e.min - leg.min;
-    if (free != null && quitter - free >= 10) push({ t: free, k: 'free', title: quitter - free >= 90 ? `Temps libre de ${dureeTxt(quitter - free)}` : `Marge de ${dureeTxt(quitter - free)}`, sub: quitter - free >= 90 ? 'Repas, pause ou idées dans la vue Léger' : 'Pause ou imprévus' });
-    push({ t: quitter, k: 'go', title: `Quitter ${loc.nom}`, sub: legTxt(leg) + (pos ? '' : ' (position de l\'étape inconnue : temps estimé)') });
+    const quitter = e.min - (prevu ? prevu.min : leg.min);
+    if (free != null && quitter - free >= 10) push({ t: free, k: 'free', title: quitter - free >= 90 ? `Temps libre de ${dureeTxt(quitter - free)}` : loc.fin == null ? 'Sortie et bagages' : `Marge de ${dureeTxt(quitter - free)}`, sub: quitter - free >= 90 ? 'À faire près de vous :' : loc.fin == null ? '' : 'Pause ou imprévus', html: idees(free, quitter) });
+    if (prevu) { if (prevu.min) push({ t: quitter, k: 'go', mode: prevu.mode, title: prevu.titre, sub: prevu.sub }); }
+    else if (leg.km == null || leg.km >= 0.05) push({ t: quitter, k: 'go', mode: modeDe(leg), title: `Quitter ${loc.nom}`, sub: legTxt(leg) + (pos ? '' : ' (position de l\'étape inconnue : temps estimé)') });
     const dur = (e.end ?? e.min + 60) - e.min;
-    push({ t: e.min, k: 'key', ic: TYPE_IC[it.type] || '📍', title: e.label, sub: `Sur place ${dureeTxt(dur)} · jusqu'à ${fmtMin(e.min + dur)}${e.fixed ? ' · heure fixée' : ''}`,
-      prix: prixBadge(prixDeLieu(it), it.type), cn: it.adresse_cn, pos, warn: e.warn, id: it.id, adr: [it.quartier, it.adresse].filter(Boolean).join(' · ') });
-    loc = { pos: pos || loc.pos, nom: e.label }; free = e.min + dur;
+    push({ t: e.min, k: 'key', icone: et ? ETAPE_IC[et.type] : null, ic: TYPE_IC[it.type] || '📍', title: e.label, sub: dur ? `Sur place ${dureeTxt(dur)} · jusqu'à ${fmtMin(e.min + dur)}${e.fixed && !et ? ' · heure fixée' : ''}` : '',
+      prix: et?.prix_yuan && isEditorMode() ? `<span class="pl-prix"><em>${prixTrajet(et.prix_yuan)}</em></span>` : prixBadge(prixDeLieu(it), it.type), cn: it.adresse_cn, pos, warn: e.warn, id: it.type === 'etape' ? null : it.id, et,
+      adr: et ? [it.nom !== e.label ? it.nom : '', it.quartier].filter(Boolean).join(' · ') : [it.quartier, it.adresse].filter(Boolean).join(' · ') });
+    loc = { pos: pos || loc.pos, nom: e.label, id: it.id, fin: e.min + dur }; free = e.min + dur;
   });
-  if (hotel && entries.length && entries[entries.length - 1].kind !== 'transport') {
+  const finiALHotel = hotel && entries[entries.length - 1]?.item?.id === hotel.id;  // la feuille de route a déjà son retour
+  if (finiALHotel) push({ t: free ?? 22 * 60, k: 'step', title: `Nuit : ${hotel.nom}`, sub: hotel.ville || '' });
+  else if (hotel && entries.length && entries[entries.length - 1].kind !== 'transport') {
     const hp = posOf(hotel), leg = legInfo(hp && loc.pos ? kmBetween(loc.pos, hp) : null, { de: loc.pos, vers: hp, t: Math.max(free ?? 21 * 60, 21 * 60) });
     const finProg = free ?? 21 * 60, retour = Math.max(finProg, 21 * 60);
-    if (retour - finProg >= 60) push({ t: finProg, k: 'free', title: 'Soirée libre', sub: 'Rien de prévu : idées dans la vue Léger' });
-    push({ t: retour, k: 'go', title: retour > finProg ? `Retour à l'hôtel (heure indicative)` : `Retour à l'hôtel`, sub: legTxt(leg) });
+    if (retour - finProg >= 60) push({ t: finProg, k: 'free', title: 'Soirée libre', sub: 'À faire près de vous :', html: idees(finProg, retour) });
+    push({ t: retour, k: 'go', mode: modeDe(leg), title: retour > finProg ? `Retour à l'hôtel (heure indicative)` : `Retour à l'hôtel`, sub: legTxt(leg) });
     push({ t: retour + leg.min, k: 'step', title: `Nuit : ${hotel.nom}`, sub: hotel.ville || '' });
   }
   return rows.sort((a, b) => a.t - b.t);
 }
 
+// Ce qu'on fait à l'étape, le 2e restaurant, le conseil et la source. Tout vient de la base : on échappe tout.
+const lienOk = u => /^https?:\/\//i.test(String(u || ''));
+function etapeHtml(et) {
+  if (!et) return '';
+  const b = et.plan_b, src = (et.sources || []).find(lienOk);
+  const pos = b && b.lat && b.lng ? [parseFloat(b.lat), parseFloat(b.lng)] : null;
+  return `${et.a_faire?.length ? `<ul class="pd-li">${et.a_faire.map(x => `<li>${esc(pourVisiteur(x))}</li>`).join('')}</ul>` : ''}
+    ${b?.nom ? `<div class="pd-b"><b>Plan B :</b> ${esc(b.nom)}${b.nom_cn ? ' · ' + esc(b.nom_cn) : ''}${b.pourquoi ? `<div class="pd-s">${esc(pourVisiteur(b.pourquoi))}</div>` : ''}
+      ${(pos || b.adresse_cn) ? `<div class="pv-a">${navBtns(b.nom, pos, b.adresse_cn, 'sm')}</div>` : ''}</div>` : ''}
+    ${et.conseil ? `<div class="pd-n">${esc(pourVisiteur(et.conseil))}</div>` : ''}
+    ${src ? `<a class="pl-src" href="${esc(src)}" target="_blank" rel="noopener">source</a>` : ''}`;
+}
 function viewDetail() {
   const days = progDaysSelected();
-  let h = `<div class="prog-hint">Minute par minute : à pied sous ~600 m, sinon métro ou DiDi, le conseillé en premier. ${isEditorMode() ? 'Durées et prix estimés : DiDi donne le prix exact. ' : ''}Les durées sur place viennent de la fiche du lieu (1 h par défaut, 1 h 15 pour un repas).</div>`;
+  let h = `<div class="prog-hint">Minute par minute : à pied sous ~600 m, sinon métro ou DiDi, le conseillé en premier. ${isEditorMode() ? 'Durées et prix estimés : DiDi donne le prix exact. ' : ''}Sortie de l'hôtel à 9h, sauf obligation.</div>`;
   days.forEach(day => {
     const rows = detailRows(day);
-    h += `<div class="prog-day">${dayHead(day)}`;
+    h += `<div class="prog-day">${dayHead(day)}${day.route?.resume ? `<div class="pd-resume">${esc(pourVisiteur(day.route.resume))}</div>` : ''}`;
     h += rows.length ? `<div class="pd-tl">${rows.map(r => {
       if (r.k === 'key') return `<div class="pd-r key"><div class="pd-h">${fmtMin(r.t)}</div><div class="pd-dot"></div><div class="pd-c">
-          <div class="pd-t" ${r.id ? `data-act="open" data-id="${esc(r.id)}"` : ''}>${esc(r.ic)} ${esc(r.title)}${r.prix ? ' ' + r.prix : ''}</div>${r.sub ? `<div class="pd-s">${esc(r.sub)}</div>` : ''}
+          <div class="pd-t" ${r.id ? `data-act="open" data-id="${esc(r.id)}"` : ''}>${r.icone ? ic(r.icone) : esc(r.ic)} ${esc(r.title)}${r.prix ? ' ' + r.prix : ''}</div>${r.sub ? `<div class="pd-s">${esc(r.sub)}</div>` : ''}
           ${r.adr ? `<div class="pd-s">${esc(r.adr)}</div>` : ''}${r.warn ? `<div class="prog-tl-w">${esc(r.warn)}</div>` : ''}
-          ${(r.pos || r.cn) ? `<div class="pv-a">${navBtns(r.title, r.pos, r.cn, 'sm')}</div>` : ''}</div></div>`;
-      return `<div class="pd-r ${r.k}"><div class="pd-h">${r.hl || fmtMin(r.t)}</div><div class="pd-dot"></div><div class="pd-c"><div class="pd-t">${esc(r.title)}</div>${r.sub ? `<div class="pd-s">${esc(r.sub)}</div>` : ''}</div></div>`;
+          ${etapeHtml(r.et)}${(r.pos || r.cn) ? `<div class="pv-a">${navBtns(r.title, r.pos, r.cn, 'sm')}</div>` : ''}</div></div>`;
+      return `<div class="pd-r ${r.k}"><div class="pd-h">${r.hl || fmtMin(r.t)}</div><div class="pd-dot"></div><div class="pd-c"><div class="pd-t">${r.mode ? ic(MODES[r.mode]?.[0]) + ' ' : ''}${esc(r.title)}</div>${r.sub ? `<div class="pd-s">${esc(r.sub)}</div>` : ''}${r.html || ''}</div></div>`;
     }).join('')}</div>`
       : `<div class="pv-empty">Journée libre : rien de prévu. ${isEditorMode() ? 'Demande à Roomy ou ouvre' : 'Ouvre'} la vue Léger pour des idées.</div>
          <button class="prog-wide" data-act="ask" data-q="${esc(`Le ${day.date_voyage} on n'a rien de prévu. Propose-nous une journée complète, d'abord depuis ma liste, puis le cerveau, et planifie-la.`)}">Faire proposer une journée par Roomy</button>`;
@@ -656,6 +705,11 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .pl-none{font-size:.72rem;color:var(--txt3);padding:2px 0 4px}
 .pd-tl{padding:2px 0 6px}
 .pd-r{display:grid;grid-template-columns:50px 12px 1fr;gap:8px;padding:5px 0}
+.pd-resume{font-size:.78rem;color:var(--txt2);margin:-2px 0 10px}
+.pd-t .gi{width:16px;height:16px;vertical-align:-3px;color:var(--accent)}
+.pd-li{margin:5px 0 4px;padding-left:16px;font-size:.78rem;line-height:1.4}
+.pd-b{margin:6px 0;padding:6px 9px;border-left:2px solid var(--or,#b8912f);background:rgba(184,145,47,.08);border-radius:0 8px 8px 0;font-size:.78rem}
+.pd-n{margin:5px 0;font-size:.74rem;font-style:italic;color:var(--txt2)}
 .pd-h{font:700 .78rem var(--font);text-align:right;padding-top:1px;color:var(--txt2)}
 .pd-dot{width:8px;height:8px;border-radius:50%;background:var(--border2);margin-top:5px}
 .pd-t{font-size:.82rem;font-weight:600}.pd-s{font-size:.7rem;color:var(--txt2);margin-top:1px;overflow-wrap:anywhere}

@@ -23,6 +23,9 @@
     bowl: '<path d="M3.5 12h17a8.5 8.5 0 0 1-17 0z"/><path d="M9 21h6M8.5 8.5c0-1.3 1-1.4 1-2.7M12 8.5c0-1.3 1-1.4 1-2.7M15.5 8.5c0-1.3 1-1.4 1-2.7"/>',
     train: '<rect x="5" y="3.5" width="14" height="14" rx="4"/><path d="M5 11h14M9 21l2-3.5M15 21l-2-3.5"/><circle cx="9" cy="14.2" r=".9" fill="currentColor" stroke="none"/><circle cx="15" cy="14.2" r=".9" fill="currentColor" stroke="none"/>',
     bus: '<rect x="4.5" y="3.5" width="15" height="14.5" rx="3.5"/><path d="M4.5 10.5h15M7.5 21v-3M16.5 21v-3"/><circle cx="8.5" cy="14.5" r=".9" fill="currentColor" stroke="none"/><circle cx="15.5" cy="14.5" r=".9" fill="currentColor" stroke="none"/>',
+    walk: '<circle cx="13" cy="4.5" r="1.8"/><path d="M12.5 8l-2.5 5 3 2.5 1 5.5M10 13l-1.5 5.5L6 21M12.5 8l3.5 3 3 .8M12.5 8l-4 1.6L7 13"/>',
+    metro: '<rect x="6" y="3.5" width="12" height="14" rx="3"/><path d="M9 14V8l3 3.5L15 8v6M9 21l1.5-3.5M15 21l-1.5-3.5"/>',
+    cable: '<path d="M3 5l18 4M12 7v4"/><rect x="6" y="11" width="12" height="9" rx="2.5"/><path d="M6 15.5h12M12 11v4.5"/>',
     car: '<path d="M4 15.5l1.6-5.2A2.5 2.5 0 0 1 8 8.5h8a2.5 2.5 0 0 1 2.4 1.8l1.6 5.2V19h-3v-2H7v2H4z"/><circle cx="8" cy="13.2" r=".9" fill="currentColor" stroke="none"/><circle cx="16" cy="13.2" r=".9" fill="currentColor" stroke="none"/>',
     ship: '<path d="M3.500 15.500h17L18 20H6zM7 15.500V10h10v5.500M10 10V6h4v4M3 3.500"/>',
     plane: '<path d="M12 2.8c1 0 1.6.8 1.6 1.9v5.4l7.4 4.6v2.4l-7.4-2.3v4.4l2 1.6v1.7L12 21l-3.6 1.1v-1.7l2-1.6v-4.4L3 16.7v-2.4l7.4-4.6V4.7c0-1.1.6-1.9 1.6-1.9z"/>',
@@ -108,7 +111,16 @@
     plus: '<path d="M12 5v14M5 12h14"/>',
     ticket: '<path d="M3.500 7h17v3.200a2.100 2.100 0 0 0 0 4.200V17.500h-17v-3.200a2.100 2.100 0 0 0 0-4.200z"/><path d="M14.500 7v2M14.500 11v2M14.500 15v2.500"/>',
     tile: '<rect x="4.500" y="3" width="15" height="18" rx="3.500"/><rect x="8" y="8" width="8" height="6.500" rx="1"/><path d="M12 6v11"/>',
-    gift: '<rect x="3.500" y="8.500" width="17" height="4" rx="1.500"/><path d="M5 12.500V19a1.500 1.500 0 0 0 1.500 1.500h11A1.500 1.500 0 0 0 19 19v-6.500M12 8.500v12M12 8.500C10 8.500 7.500 7.800 7.500 5.800a2 2 0 0 1 3.600-1.200L12 8.500zM12 8.500c2 0 4.500-.7 4.500-2.700a2 2 0 0 0-3.600-1.200z"/>'
+    gift: '<rect x="3.500" y="8.500" width="17" height="4" rx="1.500"/><path d="M5 12.500V19a1.500 1.500 0 0 0 1.500 1.500h11A1.500 1.500 0 0 0 19 19v-6.500M12 8.500v12M12 8.500C10 8.500 7.500 7.800 7.500 5.800a2 2 0 0 1 3.600-1.200L12 8.500zM12 8.500c2 0 4.500-.7 4.500-2.700a2 2 0 0 0-3.600-1.200z"/>',
+    skewer: '<path d="M4.500 19.500L19.500 4.500"/><circle cx="9" cy="15" r="2.300"/><circle cx="12.500" cy="11.500" r="2.300"/><circle cx="16" cy="8" r="2.300"/>',
+    burger: '<path d="M4.500 11a7.500 6 0 0 1 15 0z"/><path d="M3.500 14.500h2.500l1.500 1.500 2-1.500 2 1.500 2-1.500 2 1.500 1.500-1.500h3"/><path d="M4.500 18h15v.5a2.500 2.500 0 0 1-2.500 2.500H7a2.500 2.500 0 0 1-2.500-2.500z"/>',
+    boba: '<path d="M6 8.500h12l-1.300 11a1.600 1.600 0 0 1-1.600 1.400H8.900a1.600 1.600 0 0 1-1.600-1.400z"/><path d="M5 8.500h14M13.500 8.500L15 3h2.500"/><circle cx="10" cy="18" r=".95" fill="currentColor" stroke="none"/><circle cx="13.800" cy="18.300" r=".95" fill="currentColor" stroke="none"/><circle cx="12" cy="15.300" r=".95" fill="currentColor" stroke="none"/>',
+    icecream: '<path d="M7.500 11.500a4.500 4.500 0 1 1 9 0z"/><path d="M8 11.500l4 9.500 4-9.500"/><path d="M10 14l3 .8M11 17.300l2.400.6"/>',
+    chili: '<path d="M16.500 5c0-1.200 1.500-2 2.800-1M16.500 5C16.500 10.500 13.500 16 4.500 19.500c1.300 1.200 4.500 1.500 7.200-.4 5-3.500 7-8.700 5.700-13.800z"/>',
+    sprout: '<path d="M12 21v-9M12 12c0-4 2.500-6.500 7-6.500 0 4-2.500 6.500-7 6.500zM12 15c0-3-2-5-5.500-5C6.500 13 8.500 15 12 15z"/>',
+    home: '<path d="M2.500 11.500L12 4l9.500 7.500M5.500 10.500V20h13v-9.500M10 20v-5.500h4V20"/>',
+    'arrow-right': '<path d="M4 12h15M13 5.500l6.500 6.500-6.500 6.500"/>',
+    swap: '<path d="M4 8h14M14 4l4 4-4 4M20 16H6M10 12l-4 4 4 4"/>'
   };
 
   /* ── 2. Emoji → icône (clé = premier code point sans sélecteur) ── */
@@ -212,6 +224,7 @@
   reg('plus', '', '➕');
   reg('ticket', '', '🎫');
   reg('gift', '', '🎁');
+  reg('home', '', '🏠 🏡');
   MAP['🔴'] = ['dot', 'gi-red']; MAP['🟡'] = ['dot', 'gi-yellow']; MAP['🟢'] = ['dot', 'gi-green']; MAP['🔵'] = ['dot', 'gi-blue'];
   reg('pin', '', '📍');
 

@@ -6414,6 +6414,43 @@
 "confiance": "moyenne"
 },
 {
+"cle": "pt-797",
+"source": "tiktok",
+"url": "https://www.tiktok.com/@dylan.gnr/video/7703125847032565025",
+"auteur": "dylan.gnr",
+"titre": "华颂千年 : tournoi de mahjong en plein air",
+"resume": "Enseigne 华颂千年 sur un porche à lanternes, scène avec concert et banderole du « World Wellness Mahjong Tournament ». Adresse non donnée.",
+"categorie": "activite",
+"rubrique": "Visites et lieux",
+"ville": "Chongqing",
+"lieu_nom": "华颂千年",
+"adresse_cn": "华颂千年",
+"tags": [
+"mahjong",
+"événement",
+"chongqing"
+],
+"confiance": "basse"
+},
+{
+"cle": "pt-798",
+"source": "tiktok",
+"url": "https://www.tiktok.com/@dylan.gnr/video/7703125847032565025",
+"auteur": "dylan.gnr",
+"titre": "凡境茶室 : salon de thé",
+"resume": "Nom lu à l'écran (OCR) dans la vidéo, sans adresse ni prix.",
+"categorie": "cafe",
+"rubrique": "Bars et cafés",
+"ville": "Chongqing",
+"lieu_nom": "凡境茶室",
+"adresse_cn": "凡境茶室",
+"tags": [
+"thé",
+"chongqing"
+],
+"confiance": "basse"
+},
+{
 "cle": "post-DXe2OeCjPOh",
 "source": "instagram",
 "url": "https://www.instagram.com/reel/DXe2OeCjPOh/",

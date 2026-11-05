@@ -6,10 +6,11 @@
 //   • le "cerveau" (reels Insta/TikTok transcrits) via un outil de recherche
 //   • la recherche web
 //   • des outils pour MODIFIER l'app (planning, lieux, dépenses, carte)
-// puis écrit la réponse dans le chat (table chat_messages, auteur 'bot').
+// puis range la réponse dans une CONVERSATION de Roomy (tables roomy_conversations et roomy_messages,
+// fermées à la clé publique : seuls Matis et Lise, avec APP_SECRET, y accèdent par le mode "roomy").
 //
-// Deux publics : Matis et Lise (code APP_SECRET, tous les outils, Opus 5.5) et les visiteurs
-// (mode "visiteur", sans code, sans outil, Sonnet 5.5 : voir « Mode visiteur » plus bas).
+// L'IA est réservée à Matis et Lise (code APP_SECRET, tous les outils, Opus 5.5). Le mode "visiteur"
+// (sans code, sans outil, Sonnet 5.5) est débranché : voir « Mode visiteur » plus bas.
 //
 // Secrets à définir (Supabase → Edge Functions → Secrets) :
 //   ANTHROPIC_API_KEY   clé API Anthropic
@@ -37,7 +38,9 @@ const anthropic = new Anthropic({ apiKey: Deno.env.get("ANTHROPIC_API_KEY") });
 // ───────────────────────── Prompt système (stable → mis en cache) ─────────────────────────
 const SYSTEM = `Tu es Roomy, la chatte mascotte et l'assistante de voyage de Matis et Lise, en Chine
 du 9 au 22 novembre 2026 (Shanghai, Chongqing, Chengdu, Karst de Wulong, Furong, Zhangjiajie).
-Tu vis dans leur app de voyage : c'est à toi qu'ils parlent dans le chat. Ton ton est chaleureux et
+Tu vis dans leur app de voyage : c'est à toi qu'ils parlent, dans des conversations rangées par thème. Une
+conversation est partagée par Matis et Lise : chaque message de la conversation dit qui parle (« Matis : … »
+ou « Lise : … »), réponds à la personne qui vient d'écrire. Ton ton est chaleureux et
 direct, avec un petit mot de chinois de temps en temps (加油, 太好了…) sans en abuser. Tu restes concise.
 Tu dis « je » au féminin pour toi-même. Pour les autres personnes, ne devine jamais le genre.
 
@@ -611,27 +614,6 @@ async function souhaitsBloc(): Promise<string> {
     `et uniquement quand Matis ou Lise te le demandent eux-mêmes dans leur message ; le champ id ne sert qu'à désigner le ticket.`;
 }
 
-async function history(): Promise<Anthropic.Beta.BetaMessageParam[]> {
-  // Derniers échanges avec l'assistant pour la mémoire de conversation (texte seulement).
-  const { data } = await sb.from("chat_messages").select("author,content,created_at")
-    .order("created_at", { ascending: false }).limit(30);
-  const msgs = (data || []).reverse().filter((m: Json) => {
-    const c = String(m.content || "");
-    return m.author === "bot" ? c.startsWith("🧠") : /^(@ia|@claude|\/ia)\b/i.test(c);
-  }).slice(-10);
-  const out: Anthropic.Beta.BetaMessageParam[] = [];
-  for (const m of msgs) {
-    const role = m.author === "bot" ? "assistant" : "user";
-    const text = String(m.content).replace(/\|\|REACT:.*$/, "");
-    if (out.length && out[out.length - 1].role === role) {
-      out[out.length - 1].content += "\n" + text;
-    } else out.push({ role, content: text });
-  }
-  while (out.length && out[0].role !== "user") out.shift();
-  if (out.length && out[out.length - 1].role === "user") out.pop(); // la question courante est ajoutée à part
-  return out;
-}
-
 // Historique du chat de l'onglet Programme : envoyé par l'app (il n'est pas dans la base).
 function progHistory(h: unknown): Anthropic.Beta.BetaMessageParam[] {
   const out: Anthropic.Beta.BetaMessageParam[] = [];
@@ -895,6 +877,83 @@ async function handleSouhaits(body: Json, json: (b: unknown, s?: number) => Resp
   }
 }
 
+// Onglet « À réserver » (code APP_SECRET déjà vérifié). La table contient numéros de commande, noms et téléphones :
+// elle est FERMÉE à la clé publique, tout passe ici avec la clé de service.
+async function handleAReserver(body: Json, json: (b: unknown, s?: number) => Response): Promise<Response> {
+  const echec = (e: { message?: string } | null) => {
+    console.error("a_reserver :", e?.message);
+    return json({ error: e?.message || "Erreur", code: /a_reserver|PGRST205|42P01/.test(e?.message || "") ? "table" : undefined }, 503);
+  };
+  const txt = (v: unknown, max: number): string | null => {
+    const s = String(v ?? "").trim();
+    return s ? s.slice(0, max) : null;
+  };
+  const jour = (v: unknown): string | null | undefined => {
+    if (v == null || v === "") return null;
+    return /^\d{4}-\d{2}-\d{2}$/.test(String(v)) ? String(v) : undefined;
+  };
+  // Valide les champs reçus ; renvoie les champs propres ou le message d'erreur.
+  const propres = (c: Json): Json | string => {
+    const out: Json = {};
+    if ("titre" in c) { const t = txt(c.titre, 160); if (!t) return "Titre : 1 à 160 caractères."; out.titre = t; }
+    if ("mode" in c) { if (!["resa", "surplace", "verifier"].includes(String(c.mode))) return "Type invalide."; out.mode = c.mode; }
+    for (const k of ["jour", "avant"]) {
+      if (k in c) { const d = jour(c[k]); if (d === undefined) return "Date invalide."; out[k] = d; }
+    }
+    if ("heure" in c) out.heure = txt(c.heure, 12);
+    if ("ou" in c) out.ou = txt(c.ou, 200);
+    if ("lien" in c) {
+      const l = txt(c.lien, 500);
+      if (l && !/^(https?:\/\/|tel:\+?[0-9]+$)/i.test(l)) return "Lien : https:// ou tel:+ seulement.";
+      out.lien = l;
+    }
+    if ("note" in c) out.note = txt(c.note, 2000);
+    if ("item_id" in c) {
+      if (c.item_id != null && c.item_id !== "" && !RE_UUID.test(String(c.item_id))) return "Fiche invalide.";
+      out.item_id = c.item_id || null;
+    }
+    if ("fait" in c) out.fait = c.fait === true;
+    if ("fait_par" in c) { if (c.fait_par !== null && c.fait_par !== "Matis" && c.fait_par !== "Lise") return "fait_par invalide."; out.fait_par = c.fait_par ?? null; }
+    if ("fait_le" in c) {
+      if (c.fait_le === null) out.fait_le = null;
+      else { const d = new Date(String(c.fait_le)); if (isNaN(+d)) return "fait_le invalide."; out.fait_le = d.toISOString(); }
+    }
+    return out;
+  };
+  const champs = (body.champs && typeof body.champs === "object" ? body.champs : {}) as Json;
+  switch (body.action) {
+    case "lister": {
+      const { data, error } = await sb.from("a_reserver").select("*").order("ordre", { ascending: true }).limit(1000);
+      return error ? echec(error) : json({ rows: data || [] });
+    }
+    case "ajouter": {
+      const c = propres(champs);
+      if (typeof c === "string") return json({ error: c }, 400);
+      if (!c.titre) return json({ error: "Titre : 1 à 160 caractères." }, 400);
+      const { data, error } = await sb.from("a_reserver").insert({ ...c, ordre: 50 }).select().single();
+      return error ? echec(error) : json({ row: data });
+    }
+    case "modifier": {
+      const id = String(body.id || "");
+      if (!RE_UUID.test(id)) return json({ error: "Ligne invalide" }, 400);
+      const c = propres(champs);
+      if (typeof c === "string") return json({ error: c }, 400);
+      if (!Object.keys(c).length) return json({ error: "Rien à modifier" }, 400);
+      const { data, error } = await sb.from("a_reserver").update(c).eq("id", id).select().maybeSingle();
+      if (error) return echec(error);
+      return data ? json({ row: data }) : json({ error: "Ligne introuvable" }, 404);
+    }
+    case "supprimer": {
+      const id = String(body.id || "");
+      if (!RE_UUID.test(id)) return json({ error: "Ligne invalide" }, 400);
+      const { error } = await sb.from("a_reserver").delete().eq("id", id);
+      return error ? echec(error) : json({ ok: true });
+    }
+    default:
+      return json({ error: "Action inconnue" }, 400);
+  }
+}
+
 // Matis et Lise (code APP_SECRET déjà vérifié) : lire, marquer « lu », supprimer. Jamais client_id ni ip_hash.
 async function handleQuestions(body: Json, json: (b: unknown, s?: number) => Response): Promise<Response> {
   const table = (e: { message: string } | null) => {
@@ -925,6 +984,312 @@ async function handleQuestions(body: Json, json: (b: unknown, s?: number) => Res
   }
 }
 
+// ───────────────────────── Boucle de l'IA (outils) ─────────────────────────
+// Commune à l'onglet Programme et aux conversations. `signal` : « stop » de l'utilisateur. Il coupe l'appel en cours
+// et, avant chaque outil, empêche toute nouvelle modification : ce qui est déjà fait reste fait.
+class Arret extends Error {}
+
+async function boucleIA(
+  messages: Anthropic.Beta.BetaMessageParam[], prog: boolean, changes: string[], signal?: AbortSignal,
+): Promise<Anthropic.Beta.BetaMessage | null> {
+  let final: Anthropic.Beta.BetaMessage | null = null;
+  for (let turn = 0; turn < MAX_TURNS; turn++) {
+    if (signal?.aborted) throw new Arret();
+    // deno-lint-ignore no-explicit-any
+    const params: any = {
+      model: MODEL,
+      max_tokens: 16000,
+      thinking: { type: "adaptive" },
+      output_config: { effort: "xhigh" },
+      system: [{ type: "text", text: prog ? SYSTEM + SYSTEM_PROG : SYSTEM, cache_control: { type: "ephemeral" } }],
+      tools: prog ? tools.filter((t) => PROG_TOOLS.has((t as { name: string }).name)) : tools,
+      messages,
+      betas: ["server-side-fallback-2026-07-01"],
+      fallbacks: "default",
+    };
+    let res: Anthropic.Beta.BetaMessage;
+    try {
+      res = await anthropic.beta.messages.create(params, signal ? { signal } : undefined);
+    } catch (e) {
+      if (signal?.aborted || e instanceof Anthropic.APIUserAbortError) throw new Arret();
+      throw e;
+    }
+    final = res;
+
+    if (res.stop_reason === "refusal") break;
+    if (res.stop_reason === "pause_turn") { messages.push({ role: "assistant", content: res.content }); continue; }
+    if (res.stop_reason !== "tool_use") break;
+
+    messages.push({ role: "assistant", content: res.content });
+    const results: Anthropic.Beta.BetaToolResultBlockParam[] = [];
+    await Promise.all(res.content.filter((b): b is Anthropic.Beta.BetaToolUseBlock => b.type === "tool_use").map(async (b) => {
+      if (signal?.aborted) return;   // arrêt demandé : aucun outil de plus ne s'exécute
+      try {
+        results.push({ type: "tool_result", tool_use_id: b.id, content: await runTool(b.name, b.input as Json, changes, prog ? "programme" : "libre") });
+      } catch (e) {
+        results.push({ type: "tool_result", tool_use_id: b.id, content: `Erreur: ${(e as Error).message}`, is_error: true });
+      }
+    }));
+    if (signal?.aborted) throw new Arret();
+    messages.push({ role: "user", content: results });
+  }
+  return final;
+}
+
+function texteDe(final: Anthropic.Beta.BetaMessage | null): string {
+  return final?.stop_reason === "refusal"
+    ? "Je ne peux pas répondre à ça."
+    : (final?.content || []).filter((b): b is Anthropic.Beta.BetaTextBlock => b.type === "text").map((b) => b.text).join("\n").trim();
+}
+
+// ───────────────────────── Conversations de Roomy ─────────────────────────
+// Tables roomy_conversations / roomy_messages : fermées à la clé publique, lues et écrites ici seulement
+// (clé de service), après la vérification d'APP_SECRET du handler. Matis et Lise partagent toutes les conversations.
+const MODEL_TITRE = "claude-haiku-5-5";
+const RUN_MAX_MS = 4 * 60 * 1000;     // au-delà, une réponse « en cours » est considérée comme perdue (fonction coupée)
+const MAX_TEXTE = 4000;
+const MAX_TITRE = 80;
+// Le message ne contient QUE « stop » (ou presque) : Roomy s'arrête, sans appeler le modèle.
+const RE_STOP = /^\s*(?:@?roomy[\s,]+)?(?:stop(?:pe)?|arr[êe]te(?:[\s-]*toi)?|annule|[çc]a suffit|tais[\s-]*toi)(?:[\s,]+roomy)?\s*[.!]*\s*$/i;
+const QUI = (v: unknown) => (v === "matis" || v === "lise") ? v : null;
+const NOM = (v: unknown) => v === "lise" ? "Lise" : v === "matis" ? "Matis" : "Roomy";
+const COURT = (t: unknown, n: number) => {
+  const s = String(t ?? "").replace(/\s+/g, " ").trim();
+  return s.length > n ? s.slice(0, n - 1).trimEnd() + "…" : s;
+};
+const COLS_MSG = "id,created_at,role,auteur,content,changes,statut";
+const CONV_COLS = "id,titre,titre_auto,cree_par,created_at,updated_at,apercu,run_id,run_debut";
+const actif = (c: Json) => !!c.run_id && Date.now() - Date.parse(String(c.run_debut)) < RUN_MAX_MS;
+// Ce que l'app reçoit d'une conversation : jamais run_id ni titre_auto.
+const publique = (c: Json, enCours: boolean = actif(c)) => ({
+  id: c.id, titre: c.titre, cree_par: c.cree_par, created_at: c.created_at, updated_at: c.updated_at, apercu: c.apercu, en_cours: enCours,
+});
+
+async function handleRoomy(body: Json, json: (b: unknown, s?: number) => Response): Promise<Response> {
+  const echec = (e: { message?: string } | null) => {
+    console.error("roomy :", e?.message);
+    return json({ error: e?.message || "Erreur", code: /roomy_|PGRST205|42P01/.test(e?.message || "") ? "table" : undefined }, 503);
+  };
+  const id = String(body.id || "");
+  const needId = () => RE_UUID.test(id) ? null : json({ error: "Conversation invalide" }, 400);
+
+  switch (body.action) {
+    case "lister": {
+      const { data, error } = await sb.from("roomy_conversations").select(CONV_COLS).order("updated_at", { ascending: false }).limit(300);
+      return error ? echec(error) : json({ rows: (data || []).map((c) => publique(c)) });
+    }
+    case "ouvrir": {
+      const bad = needId(); if (bad) return bad;
+      const { data: conv, error } = await sb.from("roomy_conversations").select(CONV_COLS).eq("id", id).maybeSingle();
+      if (error) return echec(error);
+      if (!conv) return json({ error: "Conversation introuvable", code: "absente" }, 404);
+      // Sans `apres` : les 300 derniers messages. Avec `apres` (le created_at du dernier message déjà reçu) : les nouveaux.
+      const q = sb.from("roomy_messages").select(COLS_MSG).eq("conversation_id", id);
+      const apres = typeof body.apres === "string" && !isNaN(Date.parse(body.apres)) ? body.apres : "";
+      const { data: msgs, error: e2 } = apres
+        ? await q.gt("created_at", apres).order("created_at", { ascending: true }).order("id", { ascending: true }).limit(300)
+        : await q.order("created_at", { ascending: false }).order("id", { ascending: false }).limit(300);
+      if (e2) return echec(e2);
+      return json({ conversation: publique(conv), messages: apres ? msgs : (msgs || []).reverse() });
+    }
+    case "nouvelle": {
+      const qui = QUI(body.qui); if (!qui) return json({ error: "Qui parle ?" }, 400);
+      const titre = COURT(body.texte, 60) || "Nouvelle conversation";
+      const { data, error } = await sb.from("roomy_conversations").insert({ titre, cree_par: qui }).select(CONV_COLS).single();
+      return error ? echec(error) : json({ conversation: publique(data) });
+    }
+    case "renommer": {
+      const bad = needId(); if (bad) return bad;
+      const titre = COURT(body.titre, MAX_TITRE);
+      if (!titre) return json({ error: "Donne un titre à la conversation." }, 400);
+      const { data, error } = await sb.from("roomy_conversations").update({ titre, titre_auto: false }).eq("id", id).select(CONV_COLS).maybeSingle();
+      if (error) return echec(error);
+      return data ? json({ conversation: publique(data) }) : json({ error: "Conversation introuvable", code: "absente" }, 404);
+    }
+    case "supprimer": {
+      const bad = needId(); if (bad) return bad;
+      // Une réponse en cours serait perdue : on la coupe d'abord (la boucle s'arrête, plus rien ne s'écrit).
+      await sb.from("roomy_conversations").update({ run_id: null }).eq("id", id);
+      const { error } = await sb.from("roomy_conversations").delete().eq("id", id);
+      return error ? echec(error) : json({ ok: true });
+    }
+    case "stop": {
+      const bad = needId(); if (bad) return bad;
+      const { data: conv, error } = await sb.from("roomy_conversations").select(CONV_COLS).eq("id", id).maybeSingle();
+      if (error) return echec(error);
+      if (!conv) return json({ error: "Conversation introuvable", code: "absente" }, 404);
+      const etait = actif(conv);
+      // run_id vidé : la boucle le voit dans la seconde, coupe l'appel en cours et note elle-même « arrêtée ».
+      if (conv.run_id) await sb.from("roomy_conversations").update({ run_id: null }).eq("id", id);
+      return json({ ok: true, etait_en_cours: etait });
+    }
+    case "envoyer":
+      return await roomyEnvoyer(body, json, echec);
+    default:
+      return json({ error: "Action inconnue" }, 400);
+  }
+}
+
+// Historique de la conversation, relu en base (jamais envoyé par le navigateur). Les messages arrêtés ou en erreur
+// n'y figurent pas. Un dernier message de l'utilisateur resté sans réponse (arrêt, erreur) est rendu à part.
+async function roomyHistorique(convId: string, sauf: string): Promise<{ hist: Anthropic.Beta.BetaMessageParam[]; orphelin: string }> {
+  const { data } = await sb.from("roomy_messages").select("id,role,auteur,content,statut")
+    .eq("conversation_id", convId).is("statut", null).neq("id", sauf)
+    .order("created_at", { ascending: false }).order("id", { ascending: false }).limit(24);
+  const out: Anthropic.Beta.BetaMessageParam[] = [];
+  for (const m of (data || []).reverse()) {
+    const role = m.role === "assistant" ? "assistant" : "user";
+    const brut = String(m.content || "").slice(0, 3000);
+    const text = role === "user" ? `${NOM(m.auteur)} : ${brut}` : brut;
+    if (out.length && out[out.length - 1].role === role) out[out.length - 1].content += "\n" + text;
+    else out.push({ role, content: text });
+  }
+  while (out.length && out[0].role !== "user") out.shift();
+  let orphelin = "";
+  if (out.length && out[out.length - 1].role === "user") orphelin = String(out.pop()!.content);
+  return { hist: out, orphelin };
+}
+
+// Un titre de 2 à 5 mots au thème de la conversation, comme Claude. Un petit modèle, une fois, après le premier échange.
+async function titrer(question: string, reponse: string): Promise<string | null> {
+  try {
+    const res = await anthropic.messages.create({
+      model: MODEL_TITRE,
+      max_tokens: 40,
+      system: "Tu donnes un titre court (2 à 5 mots, en français, sans guillemets ni point final, sans emoji) au thème d'une conversation. Réponds par le titre seul.",
+      messages: [{ role: "user", content: `Question : ${question.slice(0, 500)}\n\nRéponse : ${reponse.slice(0, 500)}` }],
+    });
+    const t = res.content.filter((b): b is Anthropic.TextBlock => b.type === "text").map((b) => b.text).join(" ")
+      .split("\n")[0].replace(/^["«»'\s#*]+|["«»'\s.*]+$/g, "").trim();
+    return t ? COURT(t, 60) : null;
+  } catch (e) {
+    console.error("titre :", (e as Error).message);
+    return null;
+  }
+}
+
+async function roomyEnvoyer(
+  body: Json, json: (b: unknown, s?: number) => Response, echec: (e: { message?: string } | null) => Response,
+): Promise<Response> {
+  const id = String(body.id || "");
+  const texte = String(body.texte || "").trim();
+  const qui = QUI(body.qui);
+  if (!RE_UUID.test(id)) return json({ error: "Conversation invalide" }, 400);
+  if (!qui) return json({ error: "Qui parle ?" }, 400);
+  if (!texte) return json({ error: "Message vide" }, 400);
+  if (texte.length > MAX_TEXTE) return json({ error: `Message trop long (${MAX_TEXTE} caractères au maximum).` }, 400);
+
+  const { data: conv, error: eConv } = await sb.from("roomy_conversations").select(CONV_COLS).eq("id", id).maybeSingle();
+  if (eConv) return echec(eConv);
+  if (!conv) return json({ error: "Conversation introuvable", code: "absente" }, 404);
+  const ecrire = async (role: "user" | "assistant", auteur: string, content: string, extra: Json = {}) => {
+    const { data, error } = await sb.from("roomy_messages")
+      .insert({ conversation_id: id, role, auteur, content, ...extra }).select(COLS_MSG).single();
+    if (error) throw error;
+    return data as Json;
+  };
+  const toucher = (apercu: string, extra: Json = {}) =>
+    sb.from("roomy_conversations").update({ updated_at: new Date().toISOString(), apercu: COURT(apercu, 120), ...extra }).eq("id", id);
+
+  // ── « stop » ──
+  if (RE_STOP.test(texte)) {
+    const msgU = await ecrire("user", qui, texte);
+    if (actif(conv)) {
+      // Une réponse est en cours : on vide run_id, la boucle s'arrête et écrit elle-même « arrêtée » (avec ce qui était déjà fait).
+      await sb.from("roomy_conversations").update({ run_id: null, updated_at: new Date().toISOString() }).eq("id", id);
+      return json({ conversation: publique(conv, false), messages: [msgU], arrete: true });
+    }
+    const ack = await ecrire("assistant", "roomy", "D'accord, je m'arrête là. Dis-moi quand tu veux que je reprenne.");
+    await toucher(String(ack.content));
+    return json({ conversation: publique(conv, false), messages: [msgU, ack] });
+  }
+
+  // ── Une seule réponse à la fois par conversation ──
+  // Réservation atomique : run_id n'est posé que si personne d'autre n'a déjà une réponse en cours (ou si elle est périmée).
+  const runId = crypto.randomUUID();
+  const perime = new Date(Date.now() - RUN_MAX_MS).toISOString();
+  const { data: pris, error: ePris } = await sb.from("roomy_conversations")
+    .update({ run_id: runId, run_debut: new Date().toISOString() })
+    .eq("id", id).or(`run_id.is.null,run_debut.lt.${perime}`).select("id");
+  if (ePris) return echec(ePris);
+  if (!pris?.length) {
+    return json({ error: "Roomy est encore en train de répondre. Attends sa réponse, ou dis « stop ».", code: "occupee" }, 409);
+  }
+
+  const msgU = await ecrire("user", qui, texte);
+  await toucher(texte);
+
+  const ctrl = new AbortController();
+  const toujoursMoi = async () => {
+    const { data } = await sb.from("roomy_conversations").select("run_id").eq("id", id).maybeSingle();
+    return !!data && data.run_id === runId;
+  };
+  // « stop » = run_id vidé (par un autre appel). On le surveille pendant l'appel au modèle, qui peut durer plusieurs dizaines de secondes.
+  const veille = setInterval(async () => { if (!(await toujoursMoi())) ctrl.abort(); }, 1500);
+  const changes: string[] = [];
+  const liberer = () => sb.from("roomy_conversations").update({ run_id: null }).eq("id", id).eq("run_id", runId);
+
+  try {
+    const nowChina = new Date().toLocaleString("fr-FR", { timeZone: "Asia/Shanghai", dateStyle: "full", timeStyle: "short" });
+    const avecSouhaits = PARLE_SOUHAITS.test(texte);
+    const [snap, historique, souhaits] = await Promise.all([
+      snapshot(), roomyHistorique(id, String(msgU.id)), avecSouhaits ? souhaitsBloc() : Promise.resolve(""),
+    ]);
+    const messages: Anthropic.Beta.BetaMessageParam[] = [
+      ...historique.hist,
+      {
+        role: "user",
+        content: [
+          { type: "text", text: `<etat_voyage>\n${snap}\n</etat_voyage>` },
+          ...(souhaits ? [{ type: "text" as const, text: souhaits }] : []),
+          {
+            type: "text",
+            text: `Maintenant en Chine : ${nowChina}.\n` +
+              (historique.orphelin ? `(Message précédent resté sans réponse : ${historique.orphelin})\n` : "") +
+              `${NOM(qui)} demande : ${texte}`,
+          },
+        ],
+      },
+    ];
+
+    const final = await boucleIA(messages, false, changes, ctrl.signal);
+    if (!(await toujoursMoi())) throw new Arret();   // stop arrivé pendant la dernière étape : on n'écrit pas la réponse
+
+    let reply = texteDe(final);
+    if (!reply) reply = changes.length ? "C'est fait." : "Je n'ai pas réussi à répondre, réessaie.";
+    const msgR = await ecrire("assistant", "roomy", reply, { changes });
+    let maj: Json = {};
+    // Premier échange : Roomy donne un titre au thème, sauf si la conversation a déjà été renommée à la main.
+    if (conv.titre_auto) {
+      const { count } = await sb.from("roomy_messages").select("id", { count: "exact", head: true }).eq("conversation_id", id).is("statut", null);
+      if ((count || 0) <= 2) { const t = await titrer(texte, reply); if (t) maj = { titre: t }; }
+    }
+    await toucher(reply, maj);
+    await liberer();   // seulement si run_id est encore le nôtre : un « stop » suivi d'un nouveau message ne doit pas être effacé
+    const { data: fin } = await sb.from("roomy_conversations").select(CONV_COLS).eq("id", id).maybeSingle();
+    return json({ conversation: publique(fin || conv, false), messages: [msgU, msgR], changes });
+  } catch (e) {
+    if (e instanceof Arret || ctrl.signal.aborted) {
+      const fait = changes.length ? ` Déjà fait avant l'arrêt : ${changes.slice(0, 6).join(" · ")}.` : " Rien n'a été modifié.";
+      try {
+        const msgR = await ecrire("assistant", "roomy", "J'arrête là." + fait, { changes, statut: "arrete" });
+        await toucher(String(msgR.content));   // run_id est déjà vidé par le « stop » ; il peut même appartenir à un nouveau message : on n'y touche pas
+        return json({ conversation: publique(conv, false), messages: [msgU, msgR], changes, arrete: true });
+      } catch (_) {   // conversation supprimée pendant l'arrêt : il n'y a plus où écrire
+        return json({ conversation: null, messages: [], changes, arrete: true });
+      }
+    }
+    const msg = e instanceof Anthropic.APIError ? `API ${e.status}: ${e.message}` : (e as Error).message;
+    console.error(msg);
+    await liberer();
+    let msgR: Json | null = null;
+    try { msgR = await ecrire("assistant", "roomy", "Je n'arrive pas à répondre pour le moment : " + msg.slice(0, 300), { changes, statut: "erreur" }); } catch (_) { /* tant pis */ }
+    return json({ error: msg, conversation: publique(conv, false), messages: msgR ? [msgU, msgR] : [msgU], changes }, 500);
+  } finally {
+    clearInterval(veille);
+  }
+}
+
 // ───────────────────────── Handler ─────────────────────────
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
@@ -943,87 +1308,58 @@ Deno.serve(async (req) => {
   // Boîte à questions des visiteurs : la table est fermée à la clé publique, Matis et Lise y accèdent ici.
   if (body.mode === "questions") return await handleQuestions(body, json);
   if (body.mode === "souhaits") return await handleSouhaits(body, json);
+  if (body.mode === "a_reserver") return await handleAReserver(body, json);
+  // Conversations de Roomy : rangées en base, fermées à la clé publique, lues et écrites seulement ici.
+  if (body.mode === "roomy") return await handleRoomy(body, json);
+
+  // Seul l'onglet Programme passe encore par une simple question. Les autres appels (anciennes versions de l'app, qui
+  // publiaient la réponse dans le chat commun, lisible avec la clé publique) sont refusés : Roomy a ses conversations.
+  if (body.mode !== "programme") {
+    return json({ error: "Roomy a ses propres conversations maintenant : recharge l'app pour les retrouver.", code: "ancienne_version" }, 410);
+  }
 
   const question = String(body.question || "").trim();
   const user = String(body.user || "quelqu'un");
   if (!question) return json({ error: "Question vide" }, 400);
   const changes: string[] = [];
-  const prog = body.mode === "programme";
 
   const nowChina = new Date().toLocaleString("fr-FR", { timeZone: "Asia/Shanghai", dateStyle: "full", timeStyle: "short" });
-  const avecSouhaits = !prog && PARLE_SOUHAITS.test(question);
-  const [snap, hist, souhaits] = await Promise.all([
-    snapshot(), prog ? Promise.resolve(progHistory(body.historique)) : history(),
-    avecSouhaits ? souhaitsBloc() : Promise.resolve(""),
-  ]);
+  const [snap, hist] = await Promise.all([snapshot(), Promise.resolve(progHistory(body.historique))]);
 
   const pos = body.position as { lat?: number; lng?: number; acc?: number } | null;
   const jours = Array.isArray(body.jours) ? (body.jours as unknown[]).map(String).slice(0, 14) : [];
-  const contexte = prog
-    ? `\nJours affichés dans l'app : ${jours.join(", ") || "aucun"}.\n` +
-      (pos?.lat != null && pos?.lng != null
-        ? `Position GPS de ${user} : lat ${pos.lat}, lng ${pos.lng} (± ${Math.round(Number(pos.acc) || 0)} m). Utilise-la avec autour_de_nous.\n`
-        : `Position GPS inconnue.\n`)
-    : "";
+  const contexte = `
+Jours affichés dans l'app : ${jours.join(", ") || "aucun"}.
+` +
+    (pos?.lat != null && pos?.lng != null
+      ? `Position GPS de ${user} : lat ${pos.lat}, lng ${pos.lng} (± ${Math.round(Number(pos.acc) || 0)} m). Utilise-la avec autour_de_nous.
+`
+      : `Position GPS inconnue.
+`);
 
   const messages: Anthropic.Beta.BetaMessageParam[] = [
     ...hist,
     {
       role: "user",
       content: [
-        { type: "text", text: `<etat_voyage>\n${snap}\n</etat_voyage>` },
-        ...(souhaits ? [{ type: "text" as const, text: souhaits }] : []),
-        { type: "text", text: `Maintenant en Chine : ${nowChina}.${contexte}\n${user} demande : ${question}` },
+        { type: "text", text: `<etat_voyage>
+${snap}
+</etat_voyage>` },
+        { type: "text", text: `Maintenant en Chine : ${nowChina}.${contexte}
+${user} demande : ${question}` },
       ],
     },
   ];
 
   try {
-    let final: Anthropic.Beta.BetaMessage | null = null;
-    for (let turn = 0; turn < MAX_TURNS; turn++) {
-      // deno-lint-ignore no-explicit-any
-      const params: any = {
-        model: MODEL,
-        max_tokens: 16000,
-        thinking: { type: "adaptive" },
-        output_config: { effort: "xhigh" },
-        system: [{ type: "text", text: prog ? SYSTEM + SYSTEM_PROG : SYSTEM, cache_control: { type: "ephemeral" } }],
-        tools: prog ? tools.filter((t) => PROG_TOOLS.has((t as { name: string }).name)) : tools,
-        messages,
-        betas: ["server-side-fallback-2026-07-01"],
-        fallbacks: "default",
-      };
-      const res = await anthropic.beta.messages.create(params);
-      final = res;
-
-      if (res.stop_reason === "refusal") break;
-      if (res.stop_reason === "pause_turn") { messages.push({ role: "assistant", content: res.content }); continue; }
-      if (res.stop_reason !== "tool_use") break;
-
-      messages.push({ role: "assistant", content: res.content });
-      const results: Anthropic.Beta.BetaToolResultBlockParam[] = [];
-      await Promise.all(res.content.filter((b): b is Anthropic.Beta.BetaToolUseBlock => b.type === "tool_use").map(async (b) => {
-        try {
-          results.push({ type: "tool_result", tool_use_id: b.id, content: await runTool(b.name, b.input as Json, changes, prog ? "programme" : "libre") });
-        } catch (e) {
-          results.push({ type: "tool_result", tool_use_id: b.id, content: `Erreur: ${(e as Error).message}`, is_error: true });
-        }
-      }));
-      messages.push({ role: "user", content: results });
-    }
-
-    let reply = final?.stop_reason === "refusal"
-      ? "Je ne peux pas répondre à ça."
-      : (final?.content || []).filter((b): b is Anthropic.Beta.BetaTextBlock => b.type === "text").map((b) => b.text).join("\n").trim();
+    const final = await boucleIA(messages, true, changes);
+    let reply = texteDe(final);
     if (!reply) reply = changes.length ? "C'est fait." : "Je n'ai pas réussi à répondre, réessaie.";
-    const content = "🧠 " + reply;
-    // Le chat de l'onglet Programme reste sur le téléphone : on ne le publie pas dans le chat commun.
-    if (!prog) await sb.from("chat_messages").insert({ author: "bot", content });
-    return json({ reply: content, changes });
+    // Le chat de l'onglet Programme reste sur le téléphone : rien n'est publié ailleurs.
+    return json({ reply: "🧠 " + reply, changes });
   } catch (e) {
     const msg = e instanceof Anthropic.APIError ? `API ${e.status}: ${e.message}` : (e as Error).message;
     console.error(msg);
-    if (!prog) await sb.from("chat_messages").insert({ author: "bot", content: "🧠 ⚠️ Assistant indisponible : " + msg });
     return json({ error: msg, changes }, 500);
   }
 });
