@@ -106,7 +106,9 @@
     dot: '<circle cx="12" cy="12" r="6" fill="currentColor" stroke="none"/>',
     refresh: '<path d="M20 11a8 8 0 0 0-14.500-4M4 5v4h4M4 13a8 8 0 0 0 14.500 4M20 19v-4h-4"/>',
     plus: '<path d="M12 5v14M5 12h14"/>',
-    tile: '<rect x="4.500" y="3" width="15" height="18" rx="3.500"/><rect x="8" y="8" width="8" height="6.500" rx="1"/><path d="M12 6v11"/>'
+    ticket: '<path d="M3.500 7h17v3.200a2.100 2.100 0 0 0 0 4.200V17.500h-17v-3.200a2.100 2.100 0 0 0 0-4.200z"/><path d="M14.500 7v2M14.500 11v2M14.500 15v2.500"/>',
+    tile: '<rect x="4.500" y="3" width="15" height="18" rx="3.500"/><rect x="8" y="8" width="8" height="6.500" rx="1"/><path d="M12 6v11"/>',
+    gift: '<rect x="3.500" y="8.500" width="17" height="4" rx="1.500"/><path d="M5 12.500V19a1.500 1.500 0 0 0 1.500 1.500h11A1.500 1.500 0 0 0 19 19v-6.500M12 8.500v12M12 8.500C10 8.500 7.500 7.800 7.500 5.800a2 2 0 0 1 3.600-1.200L12 8.500zM12 8.500c2 0 4.500-.7 4.500-2.700a2 2 0 0 0-3.600-1.200z"/>'
   };
 
   /* ── 2. Emoji → icône (clé = premier code point sans sélecteur) ── */
@@ -208,6 +210,8 @@
   reg('wow', '', '😮 😲');
   reg('refresh', '', '🔃 🔄 ↻');
   reg('plus', '', '➕');
+  reg('ticket', '', '🎫');
+  reg('gift', '', '🎁');
   MAP['🔴'] = ['dot', 'gi-red']; MAP['🟡'] = ['dot', 'gi-yellow']; MAP['🟢'] = ['dot', 'gi-green']; MAP['🔵'] = ['dot', 'gi-blue'];
   reg('pin', '', '📍');
 

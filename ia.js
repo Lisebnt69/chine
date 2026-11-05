@@ -1,11 +1,11 @@
 /* ═══════════════════════════════════════════════════════════════
-   ia.js — Cerveau + Assistant IA + Programme (vital / activités / planning optimisé)
+   ia.js — Cerveau + Assistant IA + moteur de planning (les 4 vues du Programme sont dans prog.js)
    Chargé APRÈS le script principal de index.html : réutilise ses globales
    (sb, D, esc, fmtE, goTab, isEditorMode, showToast, navigateToItem, mapInst…).
    ═══════════════════════════════════════════════════════════════ */
 
 const IA_URL = SB_URL + '/functions/v1/assistant';
-const IA_TRIGGER = /^(@ia|@claude|\/ia)\b/i;
+const IA_TRIGGER = /^(@ia|@roomy|@claude|\/ia)\b/i;
 const PERIODE_START = { 'Matin': '09:30', 'Après-midi': '14:00', 'Soir': '19:00', 'Journée': '09:30', '': '10:00' };
 const PERIODE_ORDER = { 'Matin': 1, 'Journée': 1, 'Après-midi': 2, 'Soir': 3, '': 4 };
 const CHINA_TZ = 'Asia/Shanghai';
@@ -20,7 +20,14 @@ function chinaNow() {
   return { date: `${p.year}-${p.month}-${p.day}`, min: (+p.hour % 24) * 60 + (+p.minute) };
 }
 function kmBetween(a, b) { return (a && b) ? getDistKm(a[0], a[1], b[0], b[1]) : null; }
-function travelMin(km) { return km == null ? 20 : Math.max(10, Math.round(km / 18 * 60 + 8)); } // métro/DiDi en ville ≈ 18 km/h + attente
+// À pied sous ~600 m à vol d'oiseau (≈ 800 m réels, 4,6 km/h) ; au-delà métro/DiDi ≈ 18 km/h + attente.
+const MARCHE_KM = 0.6;
+function travelMin(km) {
+  if (km == null) return 20;
+  if (km <= MARCHE_KM) return Math.max(2, Math.round(km * 1.3 * 13) + 1);
+  return Math.max(10, Math.round(km / 18 * 60 + 8));
+}
+const travelMode = km => km == null ? 'trajet' : km <= MARCHE_KM ? 'à pied' : 'métro / DiDi';
 function itemPos(it) { return (it && it.lat && it.lng) ? [parseFloat(it.lat), parseFloat(it.lng)] : null; }
 function sortedDays() { return [...D.planning].sort((a, b) => String(a.date_voyage).localeCompare(String(b.date_voyage))); }
 function hotelForDay(day) {
@@ -115,9 +122,7 @@ function nextStep() {
 }
 
 /* ═══════════ 2. ONGLET PROGRAMME ═══════════ */
-let progView = localStorage.getItem('prog_view') || 'jour';
-let progVille = '';
-let progMoment = '';
+let progView = localStorage.getItem('prog_view') || 'leger';
 
 function ensureProgrammeTab() {
   if (document.getElementById('tab-programme')) return;
@@ -127,11 +132,12 @@ function ensureProgrammeTab() {
   tab.innerHTML = `
     <div class="ph" style="padding-bottom:8px;"><h1>Programme</h1><p id="progSub"></p></div>
     <div class="prog-switch">
-      <button data-v="jour">🧭 Aujourd'hui</button>
       <button data-v="vital">🏨 Vital</button>
-      <button data-v="activites">🎯 Activités</button>
-      <button data-v="optimise">⚡ Planning</button>
+      <button data-v="leger">🧭 Léger</button>
+      <button data-v="detail">🕐 Détaillé</button>
+      <button data-v="claude"><img class="mimi-mini" src="mascotte/tete.webp" alt="">Roomy</button>
     </div>
+    <div id="progDays"></div>
     <div id="progBody"></div>`;
   main.appendChild(tab);
   tab.querySelectorAll('.prog-switch button').forEach(b => b.onclick = () => { progView = b.dataset.v; localStorage.setItem('prog_view', progView); renderProgramme(); });
@@ -167,7 +173,7 @@ function ensureProgrammeTab() {
   }
   const qa = document.querySelector('.qa-row');
   if (qa) {
-    qa.insertAdjacentHTML('afterbegin', `<button class="qa-chip accent" onclick="goTabByName('programme')">🧭 Programme</button><button class="qa-chip" onclick="askIA()">🧠 Demander à l'IA</button>`);
+    qa.insertAdjacentHTML('afterbegin', `<button class="qa-chip accent" onclick="goTabByName('programme')">🧭 Programme</button><button class="qa-chip" onclick="askIA()">🧠 Demander à Roomy</button>`);
   }
   // Puces de l'assistant dans le chat
   const chips = document.getElementById('chatBotChips');
@@ -176,139 +182,11 @@ function ensureProgrammeTab() {
     <button class="bot-chip ia" onclick="askIA('Optimise le planning de demain (ordre et heures) et applique-le.')">⚡ Optimiser demain</button>
     <button class="bot-chip ia" onclick="askIA('Quels reels du cerveau ne sont pas encore dans le planning ? Classe-les par ville.')">🧠 Pas encore casés</button>`);
   const inp = document.getElementById('chatInp');
-  if (inp) inp.placeholder = 'Message… (@ia pour l\'assistant IA)';
+  if (inp) inp.placeholder = 'Message… (@roomy pour parler à Roomy)';
 }
 
-function renderProgramme() {
-  ensureProgrammeTab();
-  const body = document.getElementById('progBody'); if (!body) return;
-  document.querySelectorAll('#tab-programme .prog-switch button').forEach(b => b.classList.toggle('on', b.dataset.v === progView));
-  const days = sortedDays();
-  const now = chinaNow();
-  const first = days[0]?.date_voyage;
-  const sub = document.getElementById('progSub');
-  if (sub) sub.textContent = first && now.date < first ? `Départ dans ${Math.ceil((new Date(first) - new Date(now.date)) / 86400000)} jours` : (days.length ? `${days.length} jours · heure de Chine ${fmtMin(now.min)}` : '');
-  body.innerHTML = ({ jour: viewJour, vital: viewVital, activites: viewActivites, optimise: viewOptimise })[progView]?.() || '';
-}
-
-/* ── Vue "Aujourd'hui" : feuille de route du jour + prochaine activité ── */
-function viewJour() {
-  const days = sortedDays();
-  if (!days.length) return emptyBox('📅', 'Pas encore de jours dans le planning.');
-  const now = chinaNow();
-  const day = days.find(d => d.date_voyage === now.date) || days.find(d => d.date_voyage > now.date) || days[days.length - 1];
-  const isToday = day.date_voyage === now.date;
-  const ns = nextStep();
-  let h = '';
-  if (ns) {
-    const e = ns.e, it = e.item;
-    const delta = ns.day.date_voyage === now.date ? e.min - now.min : null;
-    const when = delta == null ? `${fmtDate(ns.day.date_voyage)} · ${fmtMin(e.min)}` : delta <= 0 ? 'Maintenant' : `Dans ${delta >= 60 ? Math.floor(delta / 60) + 'h' + String(delta % 60).padStart(2, '0') : delta + ' min'} · ${fmtMin(e.min)}`;
-    const pos = itemPos(it);
-    h += `<div class="prog-next">
-      <div class="prog-next-k">⏭ Prochaine étape</div>
-      <div class="prog-next-name">${esc(e.label)}</div>
-      <div class="prog-next-when">${when}${it?.ville ? ' · ' + esc(it.ville) : ''}</div>
-      <div class="prog-next-actions">
-        ${pos ? `<button class="prog-btn light" data-nav="${esc(JSON.stringify({ nom: it.nom, lat: pos[0], lng: pos[1], adresse_cn: it.adresse_cn || '' }))}" onclick="navigateToItem(JSON.parse(this.dataset.nav))">🧭 Y aller</button>` : ''}
-        ${it?.adresse_cn ? `<button class="prog-btn light" data-cn="${esc(it.adresse_cn)}" onclick="copyPhrase(this.dataset.cn)">📋 Adresse chinoise</button>` : ''}
-      </div></div>`;
-  }
-  h += `<div class="prog-section-t">${isToday ? 'Feuille de route du jour' : 'Prochaine journée'} — ${fmtDate(day.date_voyage)}</div>`;
-  h += dayTimeline(buildDayPlan(day), isToday ? now.min : null);
-  h += `<button class="prog-wide" onclick="askIA('Fais-moi la feuille de route détaillée du ${day.date_voyage} : horaires, trajets, où manger, astuces. Utilise le cerveau.')">🧠 Feuille de route détaillée par l'IA</button>`;
-  return h;
-}
-
-/* ── Vue "Vital" : hôtels + transports, dans l'ordre ── */
-function viewVital() {
-  const hotels = D.items.filter(x => x.type === 'hotel').sort((a, b) => String(a.adresse || '9').localeCompare(String(b.adresse || '9')));
-  const trans = D.items.filter(x => x.type === 'transport').sort((a, b) => (String(a.adresse || '9') + (a.quartier || '')).localeCompare(String(b.adresse || '9') + (b.quartier || '')));
-  const rows = [
-    ...hotels.map(h => ({ date: h.adresse || '', t: toMin('15:00'), html: vitalCard('🏨', h.nom, `${esc(h.ville || '')}${h.quartier ? ' · ' + esc(h.quartier) : ''}`, `Check-in ${h.adresse ? fmtDate(h.adresse) : '?'} · ${parseInt(h.prix_type) || 1} nuit(s)`, h) })),
-    ...trans.map(t => ({ date: t.adresse || '', t: toMin(t.quartier) ?? 0, html: vitalCard((t.prix_type || '🚄').split(' ')[0], t.nom, `${esc(t.quartier || '?')} → ${esc(t.description || '?')}`, `${t.adresse ? fmtDate(t.adresse) : 'Date ?'}${(String(t.notes || '').match(/DEP_ADDR:([^|]+)/) || [])[1] ? ' · ' + esc(String(t.notes).match(/DEP_ADDR:([^|]+)/)[1].trim()) : ''}`, t) })),
-  ].sort((a, b) => (a.date + String(a.t).padStart(4, '0')).localeCompare(b.date + String(b.t).padStart(4, '0')));
-  const total = [...hotels, ...trans].reduce((s, x) => s + (parseFloat(x.prix) || 0), 0);
-  const nights = hotels.reduce((s, h) => s + (parseInt(h.prix_type) || 1), 0);
-  const missing = sortedDays().filter(d => !hotelForDay(d)).map(d => fmtDate(d.date_voyage));
-  let h = `<div class="prog-kpis"><div><b>${hotels.length}</b><span>hôtels</span></div><div><b>${nights}</b><span>nuits</span></div><div><b>${trans.length}</b><span>trajets</span></div><div><b>${fmtE(total)}</b><span>vital</span></div></div>`;
-  if (missing.length) h += `<div class="prog-warn">⚠️ Pas d'hôtel pour : ${missing.join(', ')}</div>`;
-  h += rows.length ? rows.map(r => r.html).join('') : emptyBox('🏨', 'Aucun hôtel ni transport.');
-  return h;
-}
-function vitalCard(ic, nom, line1, line2, it) {
-  const pos = itemPos(it);
-  return `<div class="prog-card" onclick="openItemSheet('${it.type}', D.items.find(x=>x.id=='${it.id}'))">
-    <div class="prog-card-ic">${ic}</div>
-    <div class="prog-card-main"><div class="prog-card-t">${esc(nom)}</div><div class="prog-card-s">${line1}</div><div class="prog-card-s">${line2}</div></div>
-    <div class="prog-card-r">${parseFloat(it.prix) > 0 ? fmtE(parseFloat(it.prix)) : ''}${pos ? '<div class="prog-pin">📍</div>' : '<div class="prog-pin off" title="Pas encore sur la carte">📍?</div>'}</div>
-  </div>`;
-}
-
-/* ── Vue "Activités possibles" : idées non planifiées + cerveau, filtrables ville / moment ── */
-function viewActivites() {
-  const idees = D.items.filter(x => ['activite', 'restaurant', 'cafe'].includes(x.type) && getItemStatut(x) === 'idee');
-  const reels = (D.cerveau || []).filter(c => !c.item_id && CER_IDEES.includes(c.categorie));
-  const villes = [...new Set([...idees.map(x => x.ville), ...reels.map(c => c.ville)].filter(Boolean))];
-  const f = x => (!progVille || x.ville === progVille) && (!progMoment || !(x.prix_type || x.meilleur_moment) || (x.prix_type || x.meilleur_moment) === progMoment);
-  const prio = { coeur: 0, sympa: 1, '': 2, optionnel: 3 };
-  const list = idees.filter(f).sort((a, b) => (prio[a.priorite || ''] ?? 2) - (prio[b.priorite || ''] ?? 2));
-  const rl = reels.filter(f).sort(cerveauTri);
-  let h = `<div class="prog-chips">${['', ...villes].map(v => `<button class="${progVille === v ? 'on' : ''}" data-v="${esc(v)}" onclick="progVille=this.dataset.v;renderProgramme()">${v ? (VILLE_IC[v] || '') + ' ' + esc(v) : 'Toutes'}</button>`).join('')}</div>
-    <div class="prog-chips">${['', 'Matin', 'Après-midi', 'Soir'].map(m => `<button class="${progMoment === m ? 'on' : ''}" onclick="progMoment='${m}';renderProgramme()">${m || 'Tout moment'}</button>`).join('')}</div>`;
-  const questionIA = `Qu'est-ce qu'on peut faire${progMoment ? ' le ' + progMoment.toLowerCase() : ''}${progVille ? ' à ' + progVille : ''} ? Pioche dans le cerveau puis vérifie sur le web.`;
-  h += `<button class="prog-wide" data-q="${esc(questionIA)}" onclick="askIA(this.dataset.q)">🧠 Idées de l'IA pour ce filtre</button>`;
-  h += `<div class="prog-section-t">💡 Idées dans l'app (${list.length})</div>`;
-  h += list.length ? list.map(it => `<div class="prog-card">
-      <div class="prog-card-ic">${TYPE_IC[it.type] || '🎯'}</div>
-      <div class="prog-card-main" onclick="openItemSheet('${it.type}', D.items.find(x=>x.id=='${it.id}'))">
-        <div class="prog-card-t">${it.priorite === 'coeur' ? '⭐ ' : ''}${esc(it.nom)}</div>
-        <div class="prog-card-s">${esc(it.ville || '')}${it.quartier ? ' · ' + esc(it.quartier) : ''}${it.duree ? ' · ⏱ ' + esc(it.duree) : ''}${it.prix_type ? ' · ' + esc(it.prix_type) : ''}</div>
-        ${it.description ? `<div class="prog-card-s">${esc(it.description)}</div>` : ''}
-      </div>
-      <div class="prog-card-r"><button class="prog-btn" onclick="event.stopPropagation();quickPlan('${it.id}')">＋ Caser</button></div>
-    </div>`).join('') : emptyBox('💡', 'Aucune idée pour ce filtre.');
-  h += `<div class="prog-section-t">🧠 Dans le cerveau, pas encore dans l'app (${rl.length})</div>`;
-  h += rl.length ? listeCerveau(rl) : emptyBox('🧠', D.cerveau.length ? 'Rien du cerveau pour ce filtre.' : 'Cerveau vide — importe tes reels (onglet 🧠 Cerveau).');
-  return h;
-}
-
-/* ── Vue "Planning optimisé" ── */
-function viewOptimise() {
-  const days = sortedDays();
-  if (!days.length) return emptyBox('📅', 'Pas encore de jours dans le planning.');
-  let h = `<div class="prog-hint">Ordre recalculé au plus court depuis l'hôtel, heures estimées avec les trajets (métro/DiDi ≈ 18 km/h). Les heures que vous avez fixées sont respectées.</div>`;
-  days.forEach(day => {
-    const plan = buildDayPlan(day);
-    const stops = plan.entries.filter(e => e.kind === 'stop');
-    const km = stops.reduce((s, e) => s + (e.km || 0), 0);
-    h += `<div class="prog-day">
-      <div class="prog-day-h"><div><b>${fmtDate(day.date_voyage)}</b> <span>${esc([day.matin_lieu, day.aprem_lieu, day.soir_lieu].filter(x => x && x !== '—').filter((v, i, a) => a.indexOf(v) === i).join(' → '))}</span></div>
-        <div class="prog-day-a">
-          ${stops.length ? `<button class="prog-btn light" onclick="showDayOnMap('${day.id}')">🗺️</button>` : ''}
-          ${stops.length && isEditorMode() ? `<button class="prog-btn" onclick="applyOptimised('${day.id}')">💾 Fixer les heures</button>` : ''}
-        </div></div>
-      ${dayTimeline(plan, null)}
-      ${stops.length ? `<div class="prog-hint">${stops.length} étape(s) · ~${Math.round(km * 10) / 10} km de trajets</div>` : ''}
-    </div>`;
-  });
-  return h;
-}
-
-function dayTimeline(plan, nowMin) {
-  if (!plan.entries.length) return emptyBox('🌤', 'Journée libre — rien de prévu. Demande des idées à l\'IA 👇');
-  return `<div class="prog-tl">${plan.entries.map((e, i) => {
-    const past = nowMin != null && (e.end ?? e.min) < nowMin;
-    const travel = e.kind === 'stop' && i > 0 && e.km != null ? `<div class="prog-leg">🚕 ~${e.travel} min · ${Math.round(e.km * 10) / 10} km</div>` : '';
-    const ic = e.kind === 'transport' ? (e.item.prix_type || '🚄').split(' ')[0] : e.kind === 'hotel' ? '🏨' : (TYPE_IC[e.item.type] || '📍');
-    const sub = e.sub || [e.item.quartier, e.item.duree && '⏱ ' + e.item.duree, parseFloat(e.item.prix) > 0 && fmtE(parseFloat(e.item.prix))].filter(Boolean).map(esc).join(' · ');
-    return `${travel}<div class="prog-tl-row ${past ? 'past' : ''} k-${e.kind}">
-      <div class="prog-tl-h">${e.kind === 'hotel' ? '🌙' : fmtMin(e.min)}${e.fixed ? '<i>📌</i>' : ''}</div>
-      <div class="prog-tl-dot"></div>
-      <div class="prog-tl-c"><div class="prog-tl-t">${ic} ${esc(e.label)}</div>${sub ? `<div class="prog-tl-s">${sub}</div>` : ''}${e.warn ? `<div class="prog-tl-w">${e.warn}</div>` : ''}${e.kind === 'stop' && !itemPos(e.item) ? '<div class="prog-tl-w">📍 adresse pas encore placée sur la carte</div>' : ''}</div>
-    </div>`;
-  }).join('')}</div>`;
-}
+/* Les 4 vues vivent dans prog.js (chargé après ce fichier) : renderProgramme() y est redéfini. */
+function renderProgramme() { if (typeof renderProgrammeVues === 'function') renderProgrammeVues(); }
 
 async function applyOptimised(dayId) {
   if (!requireEditorSoft()) return;
@@ -316,21 +194,22 @@ async function applyOptimised(dayId) {
   const stops = buildDayPlan(day).entries.filter(e => e.kind === 'stop' && !e.fixed);
   await Promise.all(stops.map(e => sb.from('planning_slots').update({ heure: fmtMin(e.min) }).eq('id', e.slot.id)));
   stops.forEach(e => { e.slot.heure = fmtMin(e.min); });
-  showToast(`✅ ${stops.length} heure(s) fixée(s)`); renderProgramme();
+  showToast(`✅ ${stops.length} heure(s) fixée(s)`); renderProgramme(); renderPlanning();
 }
 
-function quickPlan(itemId) {
+function quickPlan(itemId, pre) {
+  pre = pre || {};
   if (!requireEditorSoft()) return;
   const it = D.items.find(x => x.id == itemId);
   const days = sortedDays().filter(d => !it?.ville || [d.matin_lieu, d.aprem_lieu, d.soir_lieu].some(l => String(l || '').includes(it.ville)));
-  const pool = days.length ? days : sortedDays();
+  const pool = (days.length && !pre.dayId) ? days : sortedDays();
   const sh = document.createElement('div');
   sh.className = 'overlay on'; sh.id = 'qp-sheet';
   sh.onclick = e => { if (e.target === sh) sh.remove(); };
   sh.innerHTML = `<div class="sheet"><div class="sheet-handle"></div><div class="sheet-title">Caser « ${esc(it?.nom || '')} »</div>
-    <div class="form-group"><div class="form-label">Jour</div><select class="form-input" id="qp-day">${pool.map(d => `<option value="${d.id}">${fmtDate(d.date_voyage)} — ${esc(d.aprem_lieu || d.matin_lieu || '')}</option>`).join('')}</select></div>
-    <div class="row-2"><div class="form-group"><div class="form-label">Moment</div><select class="form-input" id="qp-per">${['Matin', 'Après-midi', 'Soir', 'Journée'].map(p => `<option ${p === (it?.prix_type || 'Après-midi') ? 'selected' : ''}>${p}</option>`).join('')}</select></div>
-    <div class="form-group"><div class="form-label">Heure (optionnel)</div><input class="form-input" id="qp-h" type="time"></div></div>
+    <div class="form-group"><div class="form-label">Jour</div><select class="form-input" id="qp-day">${pool.map(d => `<option value="${d.id}" ${pre.dayId == d.id ? 'selected' : ''}>${fmtDate(d.date_voyage)} — ${esc(d.aprem_lieu || d.matin_lieu || '')}</option>`).join('')}</select></div>
+    <div class="row-2"><div class="form-group"><div class="form-label">Moment</div><select class="form-input" id="qp-per">${['Matin', 'Après-midi', 'Soir', 'Journée'].map(p => `<option ${p === (pre.periode || it?.prix_type || 'Après-midi') ? 'selected' : ''}>${p}</option>`).join('')}</select></div>
+    <div class="form-group"><div class="form-label">Heure (optionnel)</div><input class="form-input" id="qp-h" type="time" value="${esc(pre.heure || '')}"></div></div>
     <button class="btn-primary" style="width:100%;" onclick="confirmQuickPlan('${itemId}')">📅 Ajouter au planning</button></div>`;
   document.body.appendChild(sh);
 }
@@ -340,7 +219,7 @@ async function confirmQuickPlan(itemId) {
   const { error } = await sb.from('planning_slots').insert(row);
   if (error) { showToast('❌ ' + error.message); return; }
   await sb.from('items').update({ statut: 'planifie' }).eq('id', itemId);
-  document.getElementById('qp-sheet')?.remove(); showToast('📅 Ajouté au planning');
+  document.getElementById('qp-sheet')?.remove(); showToast('📅 Ajouté au planning'); renderProgramme();
 }
 
 /* ═══════════ 3. CERVEAU ═══════════ */
@@ -427,6 +306,7 @@ async function cerveauToItem(cle) {
   await sb.from('cerveau').update({ item_id: data.id, lat: row.lat, lng: row.lng }).eq('cle', cle);
   c.item_id = data.id; showToast('💡 Ajouté aux idées' + (row.lat ? ' + carte' : ''));
   renderCerveau(); renderProgramme();
+  return data.id;
 }
 
 /* Import : accepte JSON (tableau d'objets) ou CSV avec en-têtes.
@@ -512,7 +392,8 @@ async function loadCerveau() {
     try { const r = await fetch('cerveau.json'); if (r.ok) rows = await r.json(); } catch (e) { /* hors-ligne : on garde le cache */ }
   }
   if (rows) D.cerveau = rows;
-  renderCerveau(); if (progView === 'activites') renderProgramme();
+  masquerPrix();
+  renderCerveau(); if (progView === 'leger') renderProgramme();
 }
 
 /* ═══════════ 4. CARTE : placer toutes les adresses automatiquement ═══════════ */
@@ -653,7 +534,7 @@ function askIA(q) {
   inp.value = '@ia ' + q; sendChat();
 }
 
-// On enrichit sendChat : "@ia …" part vers Claude, le reste ne change pas.
+// On enrichit sendChat : "@ia …" ou "@roomy …" part vers Roomy, le reste ne change pas.
 const _sendChatOrig = sendChat;
 sendChat = async function () {
   const inp = document.getElementById('chatInp');
@@ -671,14 +552,32 @@ function requireEditorSoft() { if (!isEditorMode()) { showToast('🔒 Mode lecte
 function emptyBox(ic, txt) { return `<div class="empty"><div class="empty-ic">${ic}</div>${txt}</div>`; }
 function fmtDate(iso) { if (!iso) return ''; const d = new Date(iso + 'T12:00:00'); return d.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' }); }
 
+// Le visiteur ne voit aucun prix. On retire les montants des données dès le chargement, texte
+// libre compris, pour couvrir d'un coup toutes les vues. Le visiteur n'écrit jamais en base,
+// donc rien de tout ça ne peut y repartir. C'est de l'affichage : la clé publique lit toujours tout.
+const RE_PRIX = /[~≈]?\s*\d[\d\s.,]*(?:\s*(?:à|-|–)\s*\d[\d\s.,]*)?\s*(?:€|euros?\b|¥|yuans?\b|CNY\b|RMB\b|francs?\b)|[€¥]\s*\d[\d.,]*/gi;
+const sansPrix = t => t ? String(t).replace(RE_PRIX, ' …') : t;
+function masquerPrix() {
+  if (currentUser !== 'visiteur') return;
+  D.budget = [];
+  D.items.forEach(x => { x.prix = 0; x.notes = sansPrix(x.notes); x.description = sansPrix(x.description); });
+  D.planning.forEach(x => { x.notes = sansPrix(x.notes); });
+  D.notes.forEach(x => { x.titre = sansPrix(x.titre); x.corps = sansPrix(x.corps); });
+  D.checklist.forEach(x => { x.label = sansPrix(x.label); });
+  (D.cerveau || []).forEach(x => { x.titre = sansPrix(x.titre); x.resume = sansPrix(x.resume); x.prix_texte = null; x.prix_estime = null; });
+}
+
 const _renderAllOrig = renderAll;
 renderAll = function () {
+  masquerPrix();
   _renderAllOrig();
+  if (currentUser === 'visiteur' && document.getElementById('tab-budget')?.classList.contains('on')) goTab('programme');
   if (document.getElementById('tab-programme')?.classList.contains('on')) renderProgramme();
   if (document.getElementById('tab-cerveau')?.classList.contains('on')) renderCerveau();
 };
 const _goTabOrig = goTab;
 goTab = function (n, el) {
+  if (currentUser === 'visiteur' && (n === 'budget' || n === 'stats')) { n = 'programme'; el = document.getElementById('nb-programme'); }
   ensureProgrammeTab();
   _goTabOrig(n, el);
   if (n === 'programme') renderProgramme();
@@ -716,6 +615,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .prog-chips{display:flex;gap:6px;padding:0 16px 8px;overflow-x:auto;scrollbar-width:none}
 .prog-chips button{padding:6px 11px;font-size:.7rem}
 .prog-chips.flush{padding:0 0 8px}
+.reader-mode #nb-budget,.reader-mode #nd-stats,.reader-mode .qa-chip[onclick*="openBudgetSheet"],.reader-mode .qa-chip[onclick*="'stats'"],.reader-mode .gc-price,.reader-mode .ic-quick,.reader-mode .ic-prix,.reader-mode .tr-price,.reader-mode .tl-day-total,.reader-mode .form-group:has(.prix-masque){display:none!important}
 #progBody,#cerBody{padding:0 16px 24px}
 .prog-section-t{font:700 .78rem var(--font);color:var(--txt2);text-transform:uppercase;letter-spacing:.04em;margin:18px 0 8px}
 .prog-card{display:flex;gap:11px;align-items:flex-start;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;margin-bottom:8px;box-shadow:var(--shadow-sm);cursor:pointer}

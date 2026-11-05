@@ -4,11 +4,19 @@ PWA de voyage (`index.html` + `ia.js`), données dans Supabase, temps réel entr
 
 ## Ce qu'il y a dedans
 
-- **🧭 Programme** (barre du bas, « Prog. ») : 4 vues
-  - **Aujourd'hui** : feuille de route du jour avec les heures, plus une carte « prochaine étape » (bouton *Y aller* qui ouvre Amap, et l'adresse en chinois à copier)
-  - **Vital** : hôtels et transports dans l'ordre chronologique, nuits, coût, alerte quand un jour n'a pas d'hôtel
-  - **Activités** : idées pas encore planifiées et points du cerveau pas encore ajoutés, à filtrer par ville et par moment. Le bouton *＋ Caser* les place dans un jour
-  - **Planning** : planning optimisé jour par jour. On part de l'hôtel, on enchaîne les lieux les plus proches et on estime les trajets. Les heures que vous avez fixées (📌) sont respectées. *💾 Fixer les heures* enregistre le planning, *🗺️* trace le trajet du jour sur la carte
+- **🧭 Programme** (barre du bas, « Prog. ») : 4 vues, sur les jours choisis en haut (un jour, plusieurs, ou tout)
+  - **Vital** : transports et trains avec l'heure, check-in des hôtels, activités réservées ou à heure fixée, nuit du jour, alertes (« à réserver », pas d'hôtel)
+  - **Léger** : les grandes heures de la journée et, dans chaque trou libre, des idées proches de l'endroit où vous serez : 3 restos et 4 activités. Ordre des sources : la liste de l'app, puis le cerveau. *Plus d'idées avec Claude* complète avec internet. *＋ Caser* place l'idée dans le planning à l'heure du trou
+  - **Escales** : les vols décident de l'endroit où vous êtes. Avant l'arrivée en Chine (escale à Helsinki, vol de nuit) et après le vol retour, aucune idée de Chine n'est proposée, juste un bloc « Escale à Helsinki de 10h45 à 16h40 ». Il faut que les vols aient une date, une heure de départ et d'arrivée, et un nom « Ville → Ville »
+  - **Prix** : une activité, un resto ou un bar payant porte des billets : 1 pas cher (activité sous 10 €, resto sous 8 €), 2 moyen (10 à 35 €, resto 8 à 25 €), 3 cher, avec le prix en euros quand on le connaît. Il vient du champ prix du lieu, ou du texte du prix du cerveau (¥ converti à 1 € = 7,8 ¥). Gratuit ou inconnu : rien
+  - **Détaillé** : minute par minute. Sortie de l'hôtel, trajet (à pied sous ~600 m, sinon métro/DiDi), arrivée, temps sur place, marges, être à la gare 1 h avant le train (2 h pour un avion), retour à l'hôtel
+  - **Claude** : conversation dédiée qui n'adapte **que le programme** (créneaux, heures, jours, statut d'une activité). Il utilise votre position GPS et propose d'abord la liste, puis le cerveau, puis internet. Il ne touche ni au budget, ni aux hôtels, ni aux transports. La conversation reste sur chaque téléphone ; les changements de programme, eux, se synchronisent
+- **🎁 Souhaits** (menu *Plus*) : la liste de ce que les proches veulent qu'on leur rapporte, en tickets. **Ouvert au mode visiteur** : c'est le seul endroit où il peut écrire. Une personne et un souhait obligatoires, une photo facultative (réduite à ~900 px, stockée dans la ligne). Matis et Lise cochent *trouvé* ; un visiteur ne peut supprimer que ses propres tickets. Un mini tuto, raconté par Roomy, s'affiche à la première visite. Table `souhaits` : lancer `supabase/migrations/20261105010000_souhaits.sql`
+- **❓ Questions** (menu *Plus*) : les **visiteurs posent leurs questions à Roomy**, Matis et Lise les relisent. Rangées **par discussion** : le visiteur garde la même, en rouvre une ancienne (elles restent sur son appareil) ou en lance une nouvelle. Côté Matis et Lise : la liste de toutes les discussions, avec un repère *nouvelle* (pastille sur *Plus* et sur *Questions*), la réponse de Roomy sous chaque question, et un bouton pour supprimer une discussion
+  - Roomy ne parle aux visiteurs que des **hôtels** où vous dormez, de vos **horaires de train et d'avion** et des activités que vous ferez **peut-être**. **Jamais d'argent**, **jamais ce que vous avez déjà fait**. Ce n'est pas qu'une consigne : la fonction ne lui donne ni prix, ni budget, ni activité faite ou déjà passée, ni aucun outil (pas d'internet), et elle remplace toute réponse qui contient un montant par un refus
+  - Modèle des visiteurs : **Sonnet 5.5, effort medium** (le vôtre reste Opus 5.5, effort xhigh). Limites anti-abus (les visiteurs n'ont pas de code) : 8 questions/heure par appareil, 20/heure par IP, 300/jour au total, 500 caractères par question
+  - Table `questions_visiteurs` : lancer `supabase/migrations/20261105020000_questions_visiteurs.sql`, puis redéployer la fonction `assistant`. **La table est fermée à la clé publique** (elle contient ce que des visiteurs ont écrit, contrairement aux autres tables) : Matis et Lise la lisent, la marquent *lu* et suppriment par la fonction, avec le code de l'assistant (le même que `@ia`, demandé à la première ouverture de l'onglet). Les nouvelles questions sont relues toutes les 45 s une fois ce code saisi
+- **🐱 Roomy** : la chatte mascotte (`mascotte/`). Elle est l'assistante IA : le chat, l'onglet Programme et la connexion lui donnent son visage, et `@roomy …` (ou `@ia …`) lui parle. Redéployer la fonction `assistant` pour qu'elle prenne son nom et connaisse la liste des souhaits
 - **🧠 Cerveau** (menu *Plus*) : les points tirés des reels Insta / TikTok, à filtrer par ville et par type. *＋ Idée* ajoute un lieu à l'app. Un lieu sans position a un bouton *🔎 Amap*
 - **🤖 Assistant IA** dans le chat : écris `@ia …`. Il lit le cerveau, l'état du voyage et cherche sur le web. Il **modifie l'app lui-même** : planning, lieux, dépenses, carte. La réponse arrive dans le chat pour vous deux
 - **🗺️ Carte Amap** : labels en anglais par défaut, le bouton 🗺️ passe en chinois (pour montrer au chauffeur), en satellite ou sur OSM
@@ -62,11 +70,15 @@ GitHub Pages sert la branche `main` : l'app ne change sur les téléphones qu'un
 
 ## Fichiers
 - `index.html` : l'app (HTML/CSS/JS)
-- `ia.js` : Programme, Cerveau, assistant, géocodage, correction Amap
+- `souhaits.js` : onglet Souhaits (tickets, tuto, photo) et composants de la mascotte Roomy
+- `questions.js` : onglet Questions (discussions des visiteurs avec Roomy, relecture par Matis et Lise)
+- `mascotte/` : les trois poses de Roomy (calme, explique, joie) et leurs têtes en avatar, en WebP transparent
+- `ia.js` : moteur de planning (trajets, heures), Cerveau, assistant `@ia`, géocodage, correction Amap
+- `prog.js` : les 4 vues du Programme et la conversation Claude
 - `cerveau.json` : la partie voyage du cerveau, générée par le script
 - `tools/export_cerveau.py` : cerveau SQLite vers `cerveau.json` et Supabase
 - `supabase/migrations/…sql` : schéma complet
-- `supabase/functions/assistant/index.ts` : backend de l'assistant (Claude + web search + outils d'écriture)
+- `supabase/functions/assistant/index.ts` : backend de l'assistant (Claude + web search + outils d'écriture ; `mode: "programme"` pour l'onglet Programme, outils limités au planning)
 - `sw.js` : cache hors-ligne (réseau d'abord, pour que les mises à jour arrivent)
 
 Le cerveau complet n'est pas dans ce repo (voir `.gitignore`) : 2,7 Go, avec l'export TikTok.

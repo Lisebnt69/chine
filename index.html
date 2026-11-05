@@ -10,7 +10,7 @@
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#fbf6ec">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="icons.js?v=1"></script>
+<script src="icons.js?v=3"></script>
 <style>
 :root{
   --white:#ffffff;--bg:#fbf6ec;--surface:#ffffff;--surface2:#f3ead9;
@@ -160,6 +160,14 @@ main{padding-top:calc(var(--hdr) + 46px);padding-bottom:calc(var(--nav) + var(--
 .conv-rate-row{text-align:center;margin-top:10px;font-size:.68rem;color:var(--txt2);}
 .conv-rate-inp{width:54px;border:none;border-bottom:1.5px solid var(--border);background:transparent;font-size:.68rem;font-family:var(--font);color:var(--txt2);text-align:center;padding:2px 4px;}
 .conv-rate-inp:focus{outline:none;}
+.b-money-row{display:flex;gap:8px;align-items:stretch;}
+.b-money-row .form-input{flex:1;min-width:0;}
+.b-cur{display:flex;border:1.5px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;flex-shrink:0;}
+.b-cur-btn{border:none;background:var(--white);color:var(--txt2);font-family:var(--font);font-size:1rem;font-weight:700;width:46px;cursor:pointer;transition:background .2s,color .2s;}
+.b-cur-btn+.b-cur-btn{border-left:1.5px solid var(--border);}
+.b-cur-btn.on{background:var(--accent);color:#fff;}
+.b-cur-hint{margin-top:6px;font-size:.72rem;color:var(--txt2);min-height:1em;}
+.b-cur-hint b{color:var(--accent);}
 
 .b-list{margin:0 16px 6px;display:flex;flex-direction:column;gap:6px;}
 .b-item{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.92);border:1px solid var(--border);border-radius:16px;padding:12px 14px;cursor:pointer;transition:var(--transition);box-shadow:var(--shadow-sm);animation:fadeUp .3s ease both;}
@@ -1224,6 +1232,26 @@ select.form-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://
 .urgence-info{flex:1;}
 .urgence-name{font-size:.78rem;font-weight:600;}
 .urgence-desc{font-size:.65rem;color:var(--txt2);}
+/* Urgences par ville : hôpital, police, office de tourisme */
+.sos-note{font-size:.68rem;color:var(--txt2);line-height:1.5;margin:0 0 12px;}
+.sos-city{padding:12px 0;border-top:1px solid var(--border);}
+.sos-city:first-of-type{border-top:none;padding-top:0;}
+.sos-city-h{display:flex;align-items:baseline;gap:8px;margin-bottom:8px;}
+.sos-city-n{font-size:.9rem;font-weight:800;color:var(--accent-ink,var(--accent));}
+.sos-city-zh{font-size:.8rem;color:var(--or,#b8893a);font-weight:700;letter-spacing:.08em;}
+.sos-row{display:flex;gap:10px;align-items:flex-start;padding:8px 0;}
+.sos-ic{width:30px;height:30px;border-radius:50%;background:var(--bg);border:1px solid var(--border2);color:var(--accent);display:flex;align-items:center;justify-content:center;flex:none;}
+.sos-info{flex:1;min-width:0;}
+.sos-kind{font-size:.6rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--txt3);}
+.sos-name{font-size:.78rem;font-weight:700;}
+.sos-zh{font-size:1.05rem;font-weight:700;line-height:1.35;margin-top:2px;}
+.sos-adr{font-size:.74rem;line-height:1.4;color:var(--txt);}
+.sos-desc{font-size:.66rem;color:var(--txt2);line-height:1.45;margin-top:2px;}
+.sos-act{display:flex;flex-direction:column;gap:5px;flex:none;}
+.sos-btn{display:inline-flex;align-items:center;justify-content:center;gap:5px;border-radius:999px;padding:6px 11px;font-size:.68rem;font-weight:700;text-decoration:none;white-space:nowrap;border:1px solid var(--border2);background:var(--bg);color:var(--accent-ink,var(--accent));}
+.sos-btn.tel{background:var(--accent);border-color:var(--accent);color:#fff;}
+.sos-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
+.sos-chips .sos-btn{flex:1 1 30%;padding:8px 6px;}
 .vpn-item{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border);}
 .vpn-item:last-child{border-bottom:none;}
 .vpn-cb{width:18px;height:18px;accent-color:var(--accent);flex-shrink:0;}
@@ -1462,15 +1490,17 @@ main::before{content:'';display:block;height:12px;margin-top:-6px;background:var
 /* connexion et chargement : lune, lanternes, pagode */
 .login-hero,.loader-hero{border-radius:50%;width:92px;height:92px;box-shadow:0 18px 40px rgba(139,29,44,.3),inset 0 0 0 1px rgba(240,217,162,.5),inset 0 0 0 5px transparent,inset 0 0 0 6px rgba(240,217,162,.3),0 0 0 6px var(--bg),0 0 0 7px rgba(184,137,58,.65);}
 .loader::before{content:'';position:absolute;left:0;right:0;top:0;height:140px;background:var(--p-lanterns) no-repeat center top/min(420px,100%) auto;transform-origin:50% 0;animation:balance 5s ease-in-out infinite;pointer-events:none;}
+/* Roomy : tailles minimales avant le chargement de souhaits.js */
+.login-hero img{width:150px;height:auto}.loader-hero img{width:132px;height:auto}.hdr-logo-icon img{width:42px;height:42px}.mimi-av{width:22px;height:22px;border-radius:50%}
 </style>
 </head>
 <body>
 
 <!-- LOGIN SCREEN -->
 <div class="login-screen" id="loginScreen">
-  <div class="login-hero">🏮</div>
+  <div class="login-hero"><img class="mimi-img" src="mascotte/explique.webp" alt="Roomy, la chatte mascotte" draggable="false"></div>
   <div class="login-title">Chine 2026</div>
-  <div class="login-sub">Qui es-tu ?</div>
+  <div class="login-sub">Roomy te demande : qui es-tu ?</div>
   <div class="login-profiles">
     <div class="login-card matis" onclick="loginAs('matis')">
       <div class="login-avatar m">👨</div>
@@ -1495,7 +1525,7 @@ main::before{content:'';display:block;height:12px;margin-top:-6px;background:var
 </div>
 
 <div class="loader" id="loader">
-  <div class="loader-hero">🏮</div>
+  <div class="loader-hero"><img class="mimi-img" src="mascotte/calme.webp" alt="" draggable="false"></div>
   <div class="loader-title">Chine 2026</div>
   <div class="loader-sub">Matis &amp; Lise · 09 → 22 novembre</div>
   <div class="loader-ring"></div>
@@ -1506,7 +1536,7 @@ main::before{content:'';display:block;height:12px;margin-top:-6px;background:var
 
 <header class="hdr">
   <div class="hdr-logo">
-    <div class="hdr-logo-icon">🏮</div>
+    <div class="hdr-logo-icon"><img src="mascotte/tete.webp" alt="Roomy" draggable="false"></div>
     <div class="hdr-logo-text">Chine 2026</div>
   </div>
   <div class="live-pill"><div class="live-dot off" id="ld"></div><span class="live-txt" id="liveTxt">Sync</span></div>
@@ -1571,7 +1601,7 @@ main::before{content:'';display:block;height:12px;margin-top:-6px;background:var
       <div class="conv-swap">⇄</div>
       <div class="conv-field"><label>Yuan ¥</label><input class="conv-input" id="conv-rmb" type="number" placeholder="0" oninput="convRmbToEur()"></div>
     </div>
-    <div class="conv-rate-row">1 € = <input class="conv-rate-inp" id="conv-rate-inp" type="number" value="7.78" step="0.01" onchange="updateRate(this.value)"> ¥ (modifiable)</div>
+    <div class="conv-rate-row">1 € = <input class="conv-rate-inp" id="conv-rate-inp" type="number" value="7.78" step="0.01" onchange="updateRate(this.value)"> ¥ (auto du 9 au 22 nov., modifiable)</div>
   </div>
   <div class="sl">Toutes les dépenses</div>
   <div class="b-list" id="bList"></div>
@@ -1814,7 +1844,16 @@ main::before{content:'';display:block;height:12px;margin-top:-6px;background:var
     <input type="hidden" id="b-id">
     <div class="form-group"><label class="form-label">Catégorie</label><select class="form-input" id="b-cat"><option value="">Choisir…</option><option>✈️ Vol</option><option>🚂 Train</option><option>🚌 Bus</option><option>🚗 Taxi / DiDi</option><option>🏨 Hôtel</option><option>🍽️ Restaurant</option><option>☕ Café / Bar</option><option>🎯 Activité / Entrée</option><option>🛍️ Shopping</option><option>💊 Pharmacie / Santé</option><option>📱 SIM / Internet</option><option>🎭 Spectacle</option><option>💸 Divers</option></select></div>
     <div class="form-group"><label class="form-label">Description</label><input class="form-input" id="b-desc" placeholder="Description…"></div>
-    <div class="form-group"><label class="form-label">Montant total (€)</label><input class="form-input" id="b-total" type="number" step="0.01" placeholder="0.00"></div>
+    <div class="form-group"><label class="form-label">Montant total</label>
+      <div class="b-money-row">
+        <input class="form-input" id="b-total" type="number" step="0.01" inputmode="decimal" placeholder="0.00" oninput="majApercuDevise()">
+        <div class="b-cur" role="group" aria-label="Devise">
+          <button type="button" class="b-cur-btn" id="b-cur-cny" onclick="setDeviseDepense('CNY')">¥</button>
+          <button type="button" class="b-cur-btn" id="b-cur-eur" onclick="setDeviseDepense('EUR')">€</button>
+        </div>
+      </div>
+      <div class="b-cur-hint" id="b-cur-hint"></div>
+    </div>
     <div class="form-group"><label class="form-label">Qui paie ?</label><select class="form-input" id="b-who"><option value="les deux">👥 Les deux (÷ 2)</option><option value="matis">👤 Matis seulement</option><option value="lise">👤 Lise seulement</option></select></div>
     <button class="btn-primary" onclick="saveBudget()">Enregistrer</button>
     <button class="btn-danger" id="b-del-btn" onclick="deleteBudget()" style="display:none;">Supprimer</button>
@@ -2131,6 +2170,7 @@ async function init(){
   const loader = document.getElementById('loader');
   const loaderMsg = document.getElementById('loader-msg');
   const convRateInp = document.getElementById('conv-rate-inp');
+  majTauxAuto();
 
   function syncOfflineBanner(){
     if(!offlineBanner) return;
@@ -2479,7 +2519,54 @@ function renderAll(){
 // ── CONVERTISSEUR ──
 function convEurToRmb(){const e=parseFloat(document.getElementById('conv-eur').value)||0;document.getElementById('conv-rmb').value=e?Math.round(e*convRate*100)/100:'';}
 function convRmbToEur(){const r=parseFloat(document.getElementById('conv-rmb').value)||0;document.getElementById('conv-eur').value=r?Math.round(r/convRate*100)/100:'';}
-function updateRate(v){convRate=parseFloat(v)||7.78;localStorage.setItem('convRate',convRate);}
+function updateRate(v){
+  convRate=parseFloat(v)||7.78;
+  localStorage.setItem('convRate',convRate);
+  // Une saisie manuelle fige le taux pour la journée : la mise à jour auto ne l'écrase pas
+  localStorage.setItem('convRateManualDay',jourLocalISO());
+}
+
+// ── TAUX EUR→CNY AUTOMATIQUE (du 9 au 22 novembre 2026) ──
+const TAUX_AUTO_DEBUT='2026-11-09', TAUX_AUTO_FIN='2026-11-22';
+const TAUX_AUTO_MIN_MS=3*3600*1000; // pas plus d'un appel toutes les 3 h
+function jourLocalISO(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function appliquerTaux(t){
+  convRate=t;
+  localStorage.setItem('convRate',t);
+  const inp=document.getElementById('conv-rate-inp'); if(inp) inp.value=t;
+  const eur=document.getElementById('conv-eur'), rmb=document.getElementById('conv-rmb');
+  if(eur&&eur.value) convEurToRmb(); else if(rmb&&rmb.value) convRmbToEur();
+  if(document.getElementById('b-cur-hint')) majApercuDevise();
+}
+async function chercherTauxEURCNY(){
+  const sources=[
+    ['https://api.frankfurter.dev/v1/latest?base=EUR&symbols=CNY', j=>j&&j.rates&&j.rates.CNY],
+    ['https://open.er-api.com/v6/latest/EUR', j=>j&&j.rates&&j.rates.CNY]
+  ];
+  for(const [url,lire] of sources){
+    try{
+      const ctrl=new AbortController(); const to=setTimeout(()=>ctrl.abort(),8000);
+      const r=await fetch(url,{signal:ctrl.signal,cache:'no-store'}); clearTimeout(to);
+      if(!r.ok) continue;
+      const t=parseFloat(lire(await r.json()));
+      if(t>5&&t<10) return Math.round(t*10000)/10000; // garde-fou contre une valeur aberrante
+    }catch(e){}
+  }
+  return null;
+}
+async function majTauxAuto(){
+  const jour=jourLocalISO();
+  if(jour<TAUX_AUTO_DEBUT||jour>TAUX_AUTO_FIN||!navigator.onLine) return;
+  if(localStorage.getItem('convRateManualDay')===jour) return;
+  const dernier=parseInt(localStorage.getItem('convRateAutoTs')||'0',10);
+  if(Date.now()-dernier<TAUX_AUTO_MIN_MS) return;
+  const t=await chercherTauxEURCNY();
+  if(t===null) return; // hors-ligne ou API HS : on garde le dernier taux connu
+  localStorage.setItem('convRateAutoTs',String(Date.now()));
+  appliquerTaux(t);
+}
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden) majTauxAuto(); });
+window.addEventListener('online',majTauxAuto);
 
 // ── BUDGET ──
 function renderBudget(){
@@ -2557,6 +2644,28 @@ function renderBudget(){
 function closeSheet(id){var el=document.getElementById(id);if(el)el.remove();}
 function openOverlay(id){document.getElementById(id).classList.add('on');}
 function closeOverlay(id){document.getElementById(id).classList.remove('on');}
+// Devise de saisie d'une dépense : en voyage on tape en yuans, la base garde toujours des euros
+let deviseDepense='EUR';
+function setDeviseDepense(d){
+  deviseDepense=d;
+  document.getElementById('b-cur-cny').classList.toggle('on',d==='CNY');
+  document.getElementById('b-cur-eur').classList.toggle('on',d==='EUR');
+  document.getElementById('b-total').placeholder=d==='CNY'?'0 ¥':'0.00';
+  majApercuDevise();
+}
+function montantEnEuros(){
+  const v=parseFloat(document.getElementById('b-total').value)||0;
+  return deviseDepense==='CNY'?Math.round(v/convRate*100)/100:v;
+}
+function majApercuDevise(){
+  const hint=document.getElementById('b-cur-hint');
+  const v=parseFloat(document.getElementById('b-total').value)||0;
+  if(deviseDepense==='CNY'){
+    hint.innerHTML=v?'= <b>'+fmtE(montantEnEuros())+'</b> · taux 1 € = '+convRate+' ¥':'Saisie en yuans · taux 1 € = '+convRate+' ¥';
+  }else{
+    hint.textContent='';
+  }
+}
 function openBudgetSheet(){
   if(!isEditorMode()){
     showToast('🔒 Mode lecteur');
@@ -2568,7 +2677,10 @@ function openBudgetSheet(){
   document.getElementById('b-desc').value='';
   document.getElementById('b-total').value='';
   document.getElementById('b-del-btn').style.display='none';
+  const jour=jourLocalISO();
+  setDeviseDepense(jour>=TAUX_AUTO_DEBUT&&jour<=TAUX_AUTO_FIN?'CNY':'EUR');
   openOverlay('budget-overlay');
+  majTauxAuto(); // taux frais avant la saisie
 }
 function openBudgetEdit(r){
   if(!isEditorMode()){
@@ -2579,6 +2691,7 @@ function openBudgetEdit(r){
   document.getElementById('b-id').value=r.id;document.getElementById('b-cat').value=r.categorie||'';
   document.getElementById('b-desc').value=r.description||'';document.getElementById('b-total').value=r.total||'';
   document.getElementById('b-who').value=r.personne||'les deux';
+  setDeviseDepense('EUR'); // les montants enregistrés sont en euros
   document.getElementById('b-del-btn').style.display='block';openOverlay('budget-overlay');
 }
 async function saveBudget(){
@@ -2587,7 +2700,7 @@ async function saveBudget(){
   return;
 }
   const id=document.getElementById('b-id').value;
-  const p={categorie:document.getElementById('b-cat').value,description:document.getElementById('b-desc').value,total:parseFloat(document.getElementById('b-total').value)||0,source:'manuel',personne:document.getElementById('b-who').value||'les deux'};
+  const p={categorie:document.getElementById('b-cat').value,description:document.getElementById('b-desc').value,total:montantEnEuros(),source:'manuel',personne:document.getElementById('b-who').value||'les deux'};
   if(id)await sb.from('budget').update(p).eq('id',id);else await sb.from('budget').insert(p);
   closeOverlay('budget-overlay');
 }
@@ -3499,6 +3612,10 @@ function renderPlanning(){
       <div class="tl-body">
         <div id="tl-timebar-${day.id}"></div>
         <div class="tl-entries" id="tl-entries-${day.id}"></div>
+        ${slotItems.length?`<div style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0;">
+          <button class="slot-add-btn" style="width:auto;padding:4px 9px;" onclick="showDayOnMap('${day.id}')">🗺️ Voir sur la carte</button>
+          ${isEditorMode()?`<button class="slot-add-btn" style="width:auto;padding:4px 9px;" onclick="applyOptimised('${day.id}')">⚡ Optimiser les heures</button>`:''}
+        </div>`:''}
         <div class="tl-edit-panel">
           <div class="edit-sec-label" style="margin-bottom:7px;">🏨 Hôtel</div>
           <select class="hotel-select" style="margin-bottom:9px;" onchange="updDay('${day.id}','hotel_id',this.value||null)">
@@ -4960,7 +5077,7 @@ function appendChatMsg(msg,animate=true){
 
   const time=msg.created_at?new Date(msg.created_at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):'';
   const senderHtml=(!isMe&&!isBot&&u)?`<div class="chat-sender"><div class="chat-sender-av ${u.av}">${u.emoji}</div><span class="chat-sender-name">${u.name}</span></div>`:'';
-  const botHtml=isBot?`<div class="chat-sender"><div class="chat-sender-av" style="background:#3b1219;color:#fff;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.6rem;">🤖</div><span class="chat-sender-name" style="color:#64748b;">Assistant</span></div>`:'';
+  const botHtml=isBot?`<div class="chat-sender"><img class="mimi-av" src="mascotte/tete.webp" alt=""><span class="chat-sender-name" style="color:var(--accent-ink);">Roomy</span></div>`:'';
 
   let bubbleInner='';
   if(displayContent.startsWith('SNAP:')){
@@ -5627,7 +5744,7 @@ function addBotMessage(text){
   const msgs=document.getElementById('chatMessages');
   if(!msgs)return;
   const d=document.createElement('div');d.className='chat-msg bot';
-  d.innerHTML=`<div class="chat-sender"><div class="chat-sender-av" style="background:#3b1219;color:#fff;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.6rem;">🤖</div><span class="chat-sender-name" style="color:#64748b;">Assistant</span></div><div class="chat-bubble">${esc(text)}</div>`;
+  d.innerHTML=`<div class="chat-sender"><img class="mimi-av" src="mascotte/tete.webp" alt=""><span class="chat-sender-name" style="color:var(--accent-ink);">Roomy</span></div><div class="chat-bubble">${esc(text)}</div>`;
   msgs.appendChild(d);scrollChat();
 }
 
@@ -5943,6 +6060,80 @@ function renderVoyageScore(cont){
     +'</div>');
 }
 
+// ══ URGENCES PAR VILLE : hôpitaux, police, offices de tourisme ══
+// Seuls les lieux dont le nom, l'adresse ou le téléphone sont recoupés par plusieurs sources sont nommés.
+// Pour le reste, la recherche Amap autour de la position (ou du centre-ville) trouve l'adresse à jour :
+// aucune coordonnée n'est stockée, donc pas de piège GCJ-02 (voir wgs84ToGcj02 dans ia.js).
+const SOS_VILLES=[
+  {ville:'Shanghai',zh:'上海',lieux:[
+    {t:'hop',nom:'Huashan Hospital',zh:'华山医院',adr:'静安区乌鲁木齐中路12号',tel:'021-6248-3986',desc:'Centre international (Worldwide Medical Center) : bâtiment 1, 8e étage.'},
+    {t:'pol',nom:'Exit-Entry Administration',zh:'上海市公安局出入境管理局',adr:'浦东新区民生路1500号',tel:'021-2895-1900',desc:'Passeport perdu ou volé, visa. Lundi au samedi 9h-17h.'},
+    {t:'tou',nom:'Yuyuan Tourist Service Center',zh:'豫园旅游服务中心',adr:'黄浦区旧校场路123号',tel:'021-6355-5032'},
+  ]},
+  {ville:'Chongqing',zh:'重庆',lieux:[
+    {t:'hop',nom:'Southwest Hospital',zh:'西南医院',adr:'沙坪坝区高滩岩正街30号',desc:'Grand hôpital universitaire, côté Shapingba. Pas de téléphone fiable trouvé.'},
+    {t:'hop',nom:'Chongqing Emergency Medical Center',zh:'重庆市急救医疗中心',adr:'渝中区健康路1号',tel:'15178771441',desc:'Ligne 24h/24 en anglais (liste officielle de la mairie, déc. 2024 ; ce numéro a déjà changé deux fois). Adresse d\'après un annuaire : à confirmer sur Amap. Urgence vitale : 120.'},
+    {t:'hop',nom:'First Affiliated Hospital of Chongqing Medical University',zh:'重庆医科大学附属第一医院',tel:'18623389261',desc:'Ligne 24h/24 en anglais (même liste officielle).'},
+  ]},
+  {ville:'Karst de Wulong',zh:'武隆',lieux:[
+    {t:'hop',nom:'Wulong District People\'s Hospital',zh:'武隆区人民医院',desc:'Hôpital du district. Adresse à chercher sur Amap.'},
+  ]},
+  {ville:'Chengdu',zh:'成都',lieux:[
+    {t:'hop',nom:'West China Hospital',zh:'华西医院',adr:'武侯区国学巷37号',tel:'028-8542-2408',desc:'Centre médical international (rendez-vous). Urgences : 120.'},
+    {t:'pol',nom:'Exit-Entry Administration',zh:'成都市公安局出入境管理局',desc:'Passeport perdu ou volé, visa. Adresse et téléphone non confirmés (sources contradictoires) : chercher sur Amap, ou appeler le 12367.'},
+  ]},
+  {ville:'Furong',zh:'芙蓉镇',lieux:[
+    {t:'hop',nom:'Yongshun County People\'s Hospital',zh:'永顺县人民医院',desc:'Furong est un bourg du district de Yongshun : pour un vrai hôpital, viser celui du district.'},
+  ]},
+  {ville:'Zhangjiajie',zh:'张家界',lieux:[
+    {t:'hop',nom:'Wulingyuan District People\'s Hospital',zh:'武陵源区人民医院',tel:'0744-5610120',desc:'Le plus proche du parc. Téléphone relevé dans des guides de voyage, non confirmé ; adresse contradictoire : chercher sur Amap.'},
+    {t:'tou',nom:'Ligne plaintes tourisme',zh:'旅游投诉',tel:'12301',desc:'Numéro national, gratuit.',nosearch:true},
+  ]},
+];
+const SOS_TYPES={
+  hop:{lbl:'Hôpital',ico:'cross',kw:'医院'},
+  pol:{lbl:'Police',ico:'siren',kw:'派出所'},
+  tou:{lbl:'Office de tourisme',ico:'flag',kw:'游客服务中心'},
+};
+// Centre de la recherche : le GPS s'il est dans la ville (moins de 60 km), sinon le centre-ville. En GCJ-02 pour Amap.
+function sosAmapUrl(v,kw){
+  const base=VILLE_COORDS[v.ville];
+  let c=base;
+  if(myPos&&base){
+    const dLat=(myPos.lat-base[0])*111, dLng=(myPos.lng-base[1])*111*Math.cos(base[0]*Math.PI/180);
+    if(Math.hypot(dLat,dLng)<60)c=[myPos.lat,myPos.lng];
+  }
+  let url='https://uri.amap.com/search?keyword='+encodeURIComponent(kw)+'&city='+encodeURIComponent(v.zh)+'&src=chine2026';
+  if(c){const [la,ln]=wgs84ToGcj02(c[0],c[1]);url+='&center='+ln.toFixed(6)+','+la.toFixed(6);}
+  return url;
+}
+function renderSosVilles(){
+  const d=document.createElement('div');
+  const draw=()=>{
+    d.innerHTML='<div class="sos-note">Montrer le texte chinois au chauffeur ou à un passant. « Chercher » ouvre Amap sur le lieu ; les trois boutons de chaque ville cherchent le plus proche de toi (GPS) ou du centre-ville. Le téléphone s\'appelle depuis une SIM chinoise ou étrangère. Vérifier les horaires avant de se déplacer : les adresses viennent de pages officielles et de guides, pas d\'une visite.</div>'
+      +SOS_VILLES.map(v=>{
+        const rows=v.lieux.map(l=>{
+          const T=SOS_TYPES[l.t];
+          const tel=l.tel?'<a class="sos-btn tel" href="tel:'+(l.tel.length>6?'+86'+l.tel.replace(/^0/,'').replace(/-/g,''):l.tel)+'" aria-label="Appeler '+esc(l.nom)+'">'+ic('phone-call')+'Appeler</a>':'';
+          return '<div class="sos-row"><div class="sos-ic">'+ic(T.ico)+'</div>'
+            +'<div class="sos-info"><div class="sos-kind">'+T.lbl+'</div><div class="sos-name">'+esc(l.nom)+'</div>'
+            +'<div class="sos-zh" lang="zh">'+esc(l.zh)+'</div>'
+            +(l.adr?'<div class="sos-adr" lang="zh">'+esc(l.adr)+'</div>':'')
+            +(l.tel?'<div class="sos-adr">'+esc(l.tel)+'</div>':'')
+            +(l.desc?'<div class="sos-desc">'+esc(l.desc)+'</div>':'')+'</div>'
+            +'<div class="sos-act">'+tel+(l.nosearch?'':'<a class="sos-btn" target="_blank" rel="noopener" href="'+sosAmapUrl(v,v.zh+' '+l.zh)+'">'+ic('search')+'Chercher</a>')+'</div></div>';
+        }).join('');
+        const chips=Object.values(SOS_TYPES).map(T=>'<a class="sos-btn" target="_blank" rel="noopener" href="'+sosAmapUrl(v,T.kw)+'">'+ic(T.ico)+T.lbl+'</a>').join('');
+        return '<div class="sos-city"><div class="sos-city-h"><span class="sos-city-n">'+esc(v.ville)+'</span><span class="sos-city-zh" lang="zh">'+esc(v.zh)+'</span></div>'
+          +rows+'<div class="sos-chips">'+chips+'</div></div>';
+      }).join('');
+  };
+  draw();
+  // La position GPS peut arriver après le premier rendu : on redessine à chaque ouverture de la section.
+  d.redraw=draw;
+  return d;
+}
+
 // ══ PRATIQUE CHINE ══
 function renderPratique(){
   const cont=document.getElementById('pratiqueCont');
@@ -5967,17 +6158,21 @@ function renderPratique(){
       return d;
     }},
     {icon:'🚨',title:'Numeros urgence',content:()=>{
+      // Numéros nationaux, valables dans toutes les villes de l'itinéraire.
       const nums=[
-        ['110','Police','Equipe SAMU'],['119','Pompiers','Incendie'],['120','SAMU','Urgences médicales'],
-        ['122','Route','Accidents de la route'],['12320','Santé','Infos sanitaires'],['999','Ambulance','Dans certaines villes'],
+        ['110','Police','Toute urgence autre que médicale'],['120','Ambulance','Urgences médicales'],
+        ['119','Pompiers','Incendie, secours'],['122','Route','Accident de la route'],
+        ['12301','Tourisme','Conseil et plaintes (arnaque, guide, hôtel)'],['12367','Immigration','Visa, passeport perdu'],
       ];
       const d=document.createElement('div');
+      d.innerHTML='<div class="sos-note">Gratuits depuis n\'importe quel téléphone, SIM étrangère comprise. Les opérateurs parlent rarement anglais : garder un traducteur ou le texte chinois sous la main.</div>';
       nums.forEach(([num,name,desc])=>{
         d.innerHTML+='<div class="urgence-row"><div class="urgence-num">'+num+'</div><div class="urgence-info"><div class="urgence-name">'+name+'</div><div class="urgence-desc">'+desc+'</div></div>'
-          +'<a href="tel:'+num+'" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:5px 10px;font-size:.72rem;font-weight:600;text-decoration:none;">📞</a></div>';
+          +'<a href="tel:'+num+'" class="sos-btn tel" aria-label="Appeler le '+num+'">'+ic('phone-call')+'</a></div>';
       });
       return d;
     }},
+    {icon:'🏥',title:'Hôpitaux, police et tourisme par ville',content:()=>renderSosVilles()},
     {icon:'💸',title:'WeChat Pay & Alipay',content:()=>{
       const d=document.createElement('div');
       d.innerHTML='<div class="qr-grid">'
@@ -6000,10 +6195,7 @@ function renderPratique(){
     {icon:'💊',title:'Pharmacies & Santé',content:()=>{
       const d=document.createElement('div');
       d.innerHTML='<div style="font-size:.8rem;line-height:1.7;color:var(--txt);">'
-        +'🏥 <b>Hôpitaux internationaux :</b><br>'
-        +'• Shanghai : Huashan Hospital International (021-5288-9999)<br>'
-        +'• Chongqing : Southwest Hospital (023-6875-5000)<br>'
-        +'• Chengdu : West China Hospital (028-8542-2114)<br><br>'
+        +'🏥 <b>Hôpitaux :</b> voir la section « Hôpitaux, police et tourisme par ville ».<br><br>'
         +'💊 <b>Médicaments à emporter :</b> Imodium, Smecta, Doliprane, antihistaminiques, pansements, crème solaire.<br><br>'
         +'🚿 <b>Eau :</b> Ne jamais boire l\'eau du robinet. Acheter de leau en bouteille partout.</div>';
       return d;
@@ -6018,7 +6210,7 @@ function renderPratique(){
     const built=sec.content();
     if(typeof built==='string')body.innerHTML=built;
     else body.appendChild(built);
-    head.onclick=()=>{body.classList.toggle('open');document.getElementById('parr_'+i).style.transform=body.classList.contains('open')?'rotate(180deg)':'';};
+    head.onclick=()=>{body.classList.toggle('open');if(built.redraw&&body.classList.contains('open'))built.redraw();document.getElementById('parr_'+i).style.transform=body.classList.contains('open')?'rotate(180deg)':'';};
     div.appendChild(head);div.appendChild(body);
     cont.appendChild(div);
   });
@@ -6379,6 +6571,9 @@ if(loginPasswordEl){
 
 </script>
 
-<script src="ia.js?v=3"></script>
+<script src="ia.js?v=6"></script>
+<script src="prog.js?v=3"></script>
+<script src="souhaits.js?v=2"></script>
+<script src="questions.js?v=1"></script>
 </body>
 </html>
