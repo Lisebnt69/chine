@@ -6,3 +6,6 @@ supabase/.temp/
 
 # Sauvegardes de la base : messages et mots de passe, à ne pas publier
 sauvegarde/
+
+# Maquettes temporaires de l'assistant de design
+.superpowers/
