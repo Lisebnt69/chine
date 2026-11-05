@@ -56,6 +56,14 @@ function renderDaysBar() {
   box.querySelector('.pd.on:not(.pd-opt)')?.scrollIntoView({ block: 'nearest', inline: 'center' });
 }
 
+/* Une phrase sous le sélecteur : ce que montre la vue active. */
+const PROG_AIDE = {
+  vital: 'Trains, vols, hôtels et activités réservées : ce qu’il ne faut pas rater.',
+  leger: 'Les grandes heures du jour, et des idées proches dans les temps libres.',
+  detail: 'La journée minute par minute, trajets compris.',
+  claude: 'Demande à Roomy de changer le programme. Rien d’autre n’est modifié.'
+};
+
 /* ───────────── Rendu principal ───────────── */
 function renderProgrammeVues() {
   ensureProgrammeTab();
@@ -63,6 +71,8 @@ function renderProgrammeVues() {
   if (!['vital', 'leger', 'detail', 'claude'].includes(progView)) progView = 'leger'; // anciennes valeurs mémorisées
   if (progView === 'claude' && !isEditorMode()) progView = 'leger'; // Roomy : Matis et Lise seulement
   document.querySelectorAll('#tab-programme .prog-switch button').forEach(b => b.classList.toggle('on', b.dataset.v === progView));
+  const hint = document.getElementById('progHint');
+  if (hint) hint.textContent = PROG_AIDE[progView] || '';
   const days = sortedDays(), now = chinaNow(), first = days[0]?.date_voyage;
   const sub = document.getElementById('progSub');
   if (sub) sub.textContent = first && now.date < first ? `Départ dans ${Math.ceil((new Date(first) - new Date(now.date)) / 86400000)} jours` : (days.length ? `${days.length} jours · heure de Chine ${fmtMin(now.min)}` : '');
@@ -91,6 +101,7 @@ function progClick(e) {
     case 'fill': { const i = document.getElementById('pcInp'); if (i) { i.value = d.q; i.focus(); } break; }
     case 'send': sendProg(); break;
     case 'locate': progLocate(true); break;
+    case 'vue': progView = d.v; try { localStorage.setItem('prog_view', progView); } catch (err) { /* ignoré */ } renderProgramme(); break;
     case 'reset': progChat = []; saveChat(); renderClaudeView(); break;
   }
 }
@@ -299,7 +310,8 @@ function vitalRows(day) {
   const plan = buildDayPlan(day), rows = [];
   transportsForDay(day).forEach(t => {
     const arrJ1 = t.adresse !== day.date_voyage;
-    const dep = String(t.notes || '').match(/DEP_ADDR:([^|]+)/)?.[1]?.trim();
+    let dep = String(t.notes || '').match(/DEP_ADDR:([^|]+)/)?.[1]?.trim();
+    if (dep && dep.length < 3) dep = ''; // une saisie d'une lettre n'est pas une adresse
     rows.push({ t: arrJ1 ? (toMin(t.description) ?? 6 * 60) : (toMin(t.quartier) ?? 0), ic: transportIcon(t), item: t,
       title: t.nom, sub: arrJ1 ? `Arrivée à ${t.description || '?'} (départ la veille)` : `${t.quartier || '?'} → ${t.description || '?'}`,
       extra: dep ? 'Départ : ' + dep : '', tag: t.fait ? ['Réservé', 'ok'] : ['À réserver', 'warn'], big: true,
@@ -328,7 +340,7 @@ function viewVital() {
     nR += rows.filter(r => r.item.type !== 'transport' && r.item.type !== 'hotel').length;
     const nuit = nuitHtml(day, plan.hotel);
     return `<div class="prog-day">${dayHead(day)}
-      ${rows.length ? rows.map(vitalRow).join('') : `<div class="pv-empty">Rien de vital ce jour-là : pas de train, pas d'heure fixée.</div>`}
+      ${rows.length ? rows.map(vitalRow).join('') : `<div class="pv-empty">Rien d’important ce jour-là : ni train, ni vol, ni heure fixée. <button type="button" class="prog-btn" data-act="vue" data-v="leger">Voir les idées</button></div>`}
       ${nuit}</div>`;
   }).join('');
   h += `<div class="prog-hint">${nT} trajet(s) · ${nR} activité(s) à heure fixe ou réservée sur ${days.length} jour(s).</div>` + blocks;
@@ -607,7 +619,7 @@ function viewDetail() {
           ${etapeHtml(r.et)}${(r.pos || r.cn) ? `<div class="pv-a">${navBtns(r.title, r.pos, r.cn, 'sm')}</div>` : ''}</div></div>`;
       return `<div class="pd-r ${r.k}"><div class="pd-h">${r.hl || fmtMin(r.t)}</div><div class="pd-dot"></div><div class="pd-c"><div class="pd-t">${r.mode ? ic(MODES[r.mode]?.[0]) + ' ' : ''}${esc(r.title)}</div>${r.sub ? `<div class="pd-s">${esc(r.sub)}</div>` : ''}${r.html || ''}</div></div>`;
     }).join('')}</div>`
-      : `<div class="pv-empty">Journée libre : rien de prévu. ${isEditorMode() ? 'Demande à Roomy ou ouvre' : 'Ouvre'} la vue Léger pour des idées.</div>
+      : `<div class="pv-empty">Journée libre : rien de prévu. <button type="button" class="prog-btn" data-act="vue" data-v="leger">Voir les idées</button>${isEditorMode() ? ' <button type="button" class="prog-btn" data-act="vue" data-v="claude">Demander à Roomy</button>' : ''}</div>
          <button class="prog-wide" data-act="ask" data-q="${esc(`Le ${day.date_voyage} on n'a rien de prévu. Propose-nous une journée complète, d'abord depuis ma liste, puis le cerveau, et planifie-la.`)}">Faire proposer une journée par Roomy</button>`;
     h += `</div>`;
   });

@@ -192,11 +192,12 @@ function ensureProgrammeTab() {
   tab.innerHTML = `
     <div class="ph" style="padding-bottom:8px;"><h1>Programme</h1><p id="progSub"></p></div>
     <div class="prog-switch">
-      <button data-v="vital">🏨 Vital</button>
-      <button data-v="leger">🧭 Léger</button>
-      <button data-v="detail">🕐 Détaillé</button>
+      <button data-v="vital">🏨 Essentiel</button>
+      <button data-v="leger">🧭 Idées</button>
+      <button data-v="detail">🕐 Heure par heure</button>
       <button data-v="claude"><img class="mimi-mini" src="mascotte/tete.webp" alt="">Roomy</button>
     </div>
+    <div id="progHint" style="margin:8px 16px 0;font-size:.78rem;line-height:1.4;color:var(--txt2)"></div>
     <div id="progDays"></div>
     <div id="progBody"></div>`;
   main.appendChild(tab);
@@ -219,7 +220,7 @@ function ensureProgrammeTab() {
     nbAct.id = 'nb-programme';
     nbAct.setAttribute('onclick', "goTab('programme',this);closeNavDrawer()");
     nbAct.querySelector('.nic').textContent = '🧭';
-    nbAct.querySelector('.nlb').textContent = 'Prog.';
+    nbAct.querySelector('.nlb').textContent = 'Programme';
   }
   const drawerAnchor = document.getElementById('nd-restaurants');
   if (drawerAnchor) {
@@ -257,6 +258,12 @@ async function applyOptimised(dayId) {
   showToast(`✅ ${stops.length} heure(s) fixée(s)`); renderProgramme(); renderPlanning();
 }
 
+/* Après une écriture faite depuis le Programme : on recharge tout et on redessine tous les onglets (Planning compris),
+   sans attendre le temps réel, qui peut décrocher en Chine. */
+async function syncEtRendre() {
+  try { await loadAll(); } catch (e) { /* hors ligne : le temps réel rattrapera */ }
+  renderAll();
+}
 function quickPlan(itemId, pre) {
   pre = pre || {};
   if (!requireEditorSoft()) return;
@@ -279,7 +286,7 @@ async function confirmQuickPlan(itemId) {
   const { error } = await sb.from('planning_slots').insert(row);
   if (error) { showToast('❌ ' + error.message); return; }
   await sb.from('items').update({ statut: 'planifie' }).eq('id', itemId);
-  document.getElementById('qp-sheet')?.remove(); showToast('📅 Ajouté au planning'); renderProgramme();
+  document.getElementById('qp-sheet')?.remove(); showToast('📅 Ajouté au planning'); await syncEtRendre();
 }
 
 /* ═══════════ 3. CERVEAU ═══════════ */
@@ -365,7 +372,7 @@ async function cerveauToItem(cle) {
   if (error) { showToast('❌ ' + error.message); return; }
   await sb.from('cerveau').update({ item_id: data.id, lat: row.lat, lng: row.lng }).eq('cle', cle);
   c.item_id = data.id; showToast('💡 Ajouté aux idées' + (row.lat ? ' + carte' : ''));
-  renderCerveau(); renderProgramme();
+  renderCerveau(); await syncEtRendre();
   return data.id;
 }
 
@@ -528,14 +535,49 @@ async function geocodeAllMissing(silent) {
 }
 
 let cerveauLayer = [], routeLayer = null;
-const GEO_AVERT = { nom: '⚠️ Placé d\'après le nom : ça peut être une autre adresse de la même enseigne.', rue: '⚠️ Placé sur la rue, pas à la porte.', quartier: '⚠️ Position approximative : rue ou quartier.' };
+const GEO_AVERT = { nom: 'Placé d\'après le nom : ça peut être une autre adresse de la même enseigne.', rue: 'Placé sur la rue, pas à la porte.', quartier: 'Position approximative : rue ou quartier.' };
+// Même gabarit que la fiche d'un lieu de la liste (index.html, .map-popup). Le bouton « Y aller » prend
+// .mp-go : la classe .nav est celle de la barre du bas, elle le collait en bas de l'écran (position fixe).
+function popupCerveau(c) {
+  const resume = c.resume ? (c.resume.length > 160 ? c.resume.slice(0, 160).replace(/\s+\S*$/, '') + '…' : c.resume) : '';
+  const lien = lienSur(c.url);
+  return `<div class="map-popup">
+    <div class="mp-type">${ic('brain')} Cerveau</div>
+    <div class="mp-name">${esc(c.titre || c.lieu_nom || 'Reel')}</div>
+    <div class="mp-meta">${esc(c.ville || '')}${c.rubrique ? ' · ' + esc(c.rubrique) : ''}</div>
+    ${resume ? `<div class="mp-resume">${esc(resume)}</div>` : ''}
+    ${GEO_AVERT[c.geo] ? `<div class="mp-warn">${ic('warning')}<span>${GEO_AVERT[c.geo]}</span></div>` : ''}
+    <div class="mp-actions">
+      ${lien ? `<a class="mp-btn mp-full" href="${lien}" target="_blank" rel="noopener">Voir le reel</a>` : ''}
+      ${c.categorie !== 'hotel' ? `<button type="button" class="mp-btn" data-cle="${esc(c.cle)}" onclick="cerveauToItem(this.dataset.cle)">${ic('plus')} Idée</button>` : ''}
+      <button type="button" class="mp-btn mp-go" data-nav="${navAttr(c)}" onclick="navigateToItem(JSON.parse(this.dataset.nav))">${ic('compass')} Y aller</button>
+    </div>
+  </div>`;
+}
 function renderCerveauMarkers() {
   if (!mapInst) return;
   cerveauLayer.forEach(m => m.remove()); cerveauLayer = [];
-  if (mapFilter !== 'all' && mapFilter !== 'cerveau') return;
-  D.cerveau.filter(c => c.lat && c.lng && !c.item_id).forEach(c => {
-    const m = L.marker([c.lat, c.lng], { icon: L.divIcon({ className: '', html: `<div class="cer-pin">${TYPE_EMOJI[c.categorie] || '🧠'}</div>`, iconSize: [28, 28], iconAnchor: [14, 14] }) })
-      .bindPopup(`<div class="map-popup"><div class="mp-type">🧠 CERVEAU</div><div class="mp-name">${esc(c.titre || c.lieu_nom || 'Reel')}</div><div class="mp-meta">${esc(c.ville || '')}${c.rubrique ? ' · ' + esc(c.rubrique) : ''}</div>${c.resume ? `<div class="mp-meta">${esc(c.resume.slice(0, 160))}</div>` : ''}${GEO_AVERT[c.geo] ? `<div class="mp-meta" style="color:#b45309;">${GEO_AVERT[c.geo]}</div>` : ''}<div class="mp-actions">${lienSur(c.url) ? `<a class="mp-btn" href="${lienSur(c.url)}" target="_blank" rel="noopener">▶︎ Reel</a>` : ''}<button class="mp-btn nav" data-nav="${navAttr(c)}" onclick="navigateToItem(JSON.parse(this.dataset.nav))">🧭 Y aller</button>${c.categorie !== 'hotel' ? `<button class="mp-btn" data-cle="${esc(c.cle)}" onclick="cerveauToItem(this.dataset.cle)">＋ Idée</button>` : ''}</div></div>`)
+  // Mêmes filtres que les lieux de la liste : un type (Restos, Cafés...) garde les points du cerveau de ce type.
+  // « Planifiés » n'en garde aucun : un point du cerveau n'est pas encore au planning.
+  const seuil = { proche: 2, proche500: 0.5 }[mapFilter];
+  const garde = c => {
+    if (mapFilter === 'all' || mapFilter === 'cerveau') return true;
+    if (mapFilter === 'planifie') return false;
+    if (seuil !== undefined) return !myPos || getDistKm(myPos.lat, myPos.lng, c.lat, c.lng) <= seuil;
+    return c.categorie === mapFilter;
+  };
+  const visibles = D.cerveau.filter(c => c.lat && c.lng && !c.item_id && garde(c));
+  // Plusieurs points au même endroit (un reel qui en cite dix) : on les range en cercle autour de la
+  // vraie position, décalés en pixels pour que ça reste lisible à tous les zooms.
+  const piles = {};
+  visibles.forEach(c => { (piles[c.lat.toFixed(4) + ',' + c.lng.toFixed(4)] ||= []).push(c); });
+  Object.values(piles).forEach(pile => pile.forEach((c, i) => {
+    const n = pile.length, r = n === 1 ? 0 : Math.max(17, 8 * n / Math.PI * 1.6), a = -Math.PI / 2 + 2 * Math.PI * i / n;
+    c._dx = Math.round(r * Math.cos(a)); c._dy = Math.round(r * Math.sin(a));
+  }));
+  visibles.forEach(c => {
+    const m = L.marker([c.lat, c.lng], { icon: L.divIcon({ className: '', html: `<div class="cer-pin">${TYPE_EMOJI[c.categorie] || '🧠'}</div>`, iconSize: [28, 28], iconAnchor: [14 - c._dx, 14 - c._dy] }) })
+      .bindPopup(popupCerveau(c))
       .addTo(mapInst);
     cerveauLayer.push(m);
   });
@@ -716,6 +758,14 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .prog-leg{font-size:.66rem;color:var(--txt3);padding-left:72px}
 .prog-toolbar{display:flex;gap:8px;padding:0 16px 12px}.prog-toolbar input{flex:1}
 .bot-chip.ia{background:linear-gradient(135deg,#1f1411,#4a2c24);color:#fff;border-color:transparent}
+.map-popup .mp-resume{font-size:.7rem;line-height:1.4;color:var(--txt);margin-bottom:8px}
+.map-popup .mp-warn{display:flex;gap:6px;align-items:flex-start;font-size:.64rem;line-height:1.35;color:#8a5a14;background:#fbf1dc;border-radius:8px;padding:5px 8px;margin-bottom:8px}
+.map-popup .mp-warn .gi{width:12px;height:12px;flex-shrink:0;margin-top:1px}
+.map-popup .mp-type .gi,.map-popup .mp-btn .gi{width:13px;height:13px;vertical-align:-2px;margin-right:3px}
+.map-popup .mp-actions{flex-wrap:wrap}
+.map-popup .mp-btn{display:inline-flex;align-items:center;justify-content:center;padding:8px 6px;min-height:34px;text-decoration:none;color:var(--txt)}
+.map-popup .mp-btn.mp-go{color:#fff}
+.map-popup .mp-btn.mp-full{flex:1 1 100%;color:var(--accent)}
 .cer-pin{width:28px;height:28px;border-radius:50%;background:#fff;border:2px solid #3f9480;display:flex;align-items:center;justify-content:center;font-size:.9rem;box-shadow:0 3px 10px rgba(0,0,0,.2)}
 .route-num{width:24px;height:24px;border-radius:50%;background:#8b1d2c;color:#fff;font:700 .75rem var(--font);display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.3)}
 </style>`);

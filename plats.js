@@ -446,9 +446,12 @@ function plFiltrer() {
   });
 }
 
+/* Photo d'une fiche : fichier plats/<id>.webp, seulement si plats-img.js en déclare une. */
+const plPhoto = id => (typeof PL_IMG !== 'undefined' && PL_IMG[id]) ? `plats/${encodeURIComponent(id)}.webp` : '';
+
 function plCarte(x) {
-  const ok = !!PL.fait[x.id];
-  return `<article class="pl-card${ok ? ' ok' : ''}" data-act="ouvrir" data-id="${esc(x.id)}" role="button" tabindex="0" aria-label="Voir la fiche : ${esc(x.fr)}">
+  const ok = !!PL.fait[x.id], ph = plPhoto(x.id);
+  return `<article class="pl-card${ok ? ' ok' : ''}${ph ? ' pl-has-img' : ''}" data-act="ouvrir" data-id="${esc(x.id)}" role="button" tabindex="0" aria-label="Voir la fiche : ${esc(x.fr)}">
     <button class="pl-box" type="button" data-act="cocher" data-id="${esc(x.id)}" aria-pressed="${ok}" aria-label="${ok ? 'Retirer des plats goûtés' : 'Marquer comme goûté'} : ${esc(x.fr)}">${ic('check')}</button>
     <div class="pl-body">
       <div class="pl-zh">${esc(x.zh)}${x.top ? `<span class="pl-top" title="Incontournable">${ic('star-fill')}</span>` : ''}</div>
@@ -457,6 +460,7 @@ function plCarte(x) {
       <p class="pl-d">${esc(x.d)}</p>
       <div class="pl-meta"><span class="pl-lieu">${ic('pin')}<span>${esc(plLieu(x))}</span></span>${plPiment(x.p)}</div>
     </div>
+    ${ph ? `<img class="pl-thumb" src="${ph}" alt="" loading="lazy" decoding="async" onerror="this.remove()">` : ''}
     <span class="pl-chev" aria-hidden="true">${ic('arrow-up')}</span>
   </article>`;
 }
@@ -497,6 +501,7 @@ function plRendreDetail(id) {
       <button class="pl-f-btn" type="button" data-act="suiv" aria-label="Fiche suivante" ${pos < 0 || pos >= tot - 1 ? 'disabled' : ''}><span class="pl-rot-r">${ic('arrow-up')}</span></button>
     </div>
     <div class="pl-f-scroll">
+      ${plPhoto(x.id) ? `<figure class="pl-f-photo"><img src="${plPhoto(x.id)}" alt="${esc(x.fr)}" decoding="async" onerror="this.closest('figure').remove()"><figcaption>Photo : ${esc(PL_IMG[x.id][0])} · ${esc(PL_IMG[x.id][1])} · Wikimedia Commons</figcaption></figure>` : ''}
       <header class="pl-f-hero">
         <div class="pl-f-cat">${ic(c.ic)}<span>${esc(c.nom)}</span></div>
         <div class="pl-f-zh" lang="zh-Hans" style="font-size:${plTailleZh(x.zh)}">${esc(x.zh)}</div>
@@ -617,6 +622,13 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .pl-piment .gi{width:14px;height:14px;color:var(--laque)}
 .pl-piment em{font-style:normal;margin-left:3px}
 .pl-py,.pl-f-py,.pl-say-py{font-family:'Segoe UI','Roboto','Helvetica Neue',Arial,system-ui,sans-serif}
+.pl-card.pl-has-img{grid-template-columns:auto 1fr 72px auto}
+.pl-thumb{width:72px;height:72px;margin-top:2px;object-fit:cover;border-radius:14px;border:1px solid rgba(184,137,58,.5);background:#f3e9d6}
+.pl-card.ok .pl-thumb{opacity:.72}
+.pl-f-photo{margin:14px 16px 0}
+.pl-f-photo img{display:block;width:100%;max-height:260px;object-fit:cover;border-radius:22px;border:1px solid rgba(184,137,58,.55);box-shadow:var(--shadow-sm);background:#f3e9d6}
+.pl-f-photo figcaption{margin:5px 6px 0;font-size:.62rem;line-height:1.35;color:var(--txt3);text-align:right}
+.pl-f-photo+.pl-f-hero{margin-top:12px}
 .pl-chev{align-self:center;color:var(--txt3);display:flex;transform:rotate(90deg)}
 .pl-chev .gi{width:16px;height:16px}
 

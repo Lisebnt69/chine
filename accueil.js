@@ -15,6 +15,12 @@
    Réservé à Matis et Lise : Roomy et les dépenses (le visiteur ne voit aucun prix).
    ═══════════════════════════════════════════════════════════════ */
 
+const ND_GROUPES = [[10, 'Sur place'], [20, 'Idées'], [30, 'Organiser'], [40, 'Souvenirs']];
+const ND_ORDRE = { restaurants: 11, nourriture: 12, hotels: 13, transport: 14, pratique: 15, phrases: 16,
+  roomy: 21, activites: 22, cerveau: 23,
+  budget: 31, areserver: 32, checklist: 33, notes: 34, stats: 35, questions: 36,
+  souhaits: 41, galerie: 42 };
+
 const acEl = id => document.getElementById(id);
 const acEd = () => typeof isEditorMode === 'function' && isEditorMode();
 const acJours = (a, b) => Math.round((new Date(b + 'T12:00:00') - new Date(a + 'T12:00:00')) / 86400000);
@@ -229,7 +235,22 @@ function acRender() {
   acEl('acBudget').innerHTML = acBudgetHtml();
   acEl('acSos').innerHTML = acSosHtml();
   acMajTaux();
+  acTuto();
 }
+/* Première ouverture : Roomy dit en trois phrases où est quoi. Une seule fois par téléphone. */
+function acTuto() {
+  const box = acEl('acTuto'); if (!box || box.firstChild) return;
+  let vu = false; try { vu = localStorage.getItem('accueil_tuto') === '1'; } catch (e) { /* stockage indisponible */ }
+  if (vu) return;
+  box.innerHTML = `<section class="sh-tuto" aria-live="polite">
+    <div class="sh-tuto-tag"><span class="sh-step">Bienvenue</span></div>
+    <div class="mimi-row">
+      ${typeof shPoseImg === 'function' ? shPoseImg('explique') : ''}
+      <div class="mimi-bubble"><b>Accueil</b> : ce qui arrive maintenant.<br><b>Programme</b> : chaque jour en détail.<br><b>Plus</b> : le reste (restos, hôtels, transports…).</div>
+    </div>
+    <div class="sh-tuto-bar" style="margin-top:8px"><button class="sh-next" type="button" data-act="tutoOk">J’ai compris</button></div></section>`;
+}
+
 function acSafeRender() { try { acRender(); } catch (e) { console.warn('Accueil :', e); } }
 
 function acClic(e) {
@@ -239,6 +260,7 @@ function acClic(e) {
     case 'open': { const it = D.items.find(x => x.id == d.id); if (it) openItemSheet(it.type, it); break; }
     case 'nav': navigateToItem(JSON.parse(d.nav)); break;
     case 'meteo': if (typeof mtOuvrir === 'function') mtOuvrir(); break;
+    case 'tutoOk': try { localStorage.setItem('accueil_tuto', '1'); } catch (err) { /* tant pis */ } acEl('acTuto').innerHTML = ''; break;
     case 'roomy': acRoomy(); break;
     case 'autour': acAutour(); break;
     case 'budget': goTab('budget', acEl('nb-more')); break;
@@ -256,10 +278,11 @@ function acEnsureTab() {
   tab.className = 'tab'; tab.id = 'tab-accueil';
   tab.innerHTML = `
     <div class="ph"><h1>Accueil</h1><p id="acSub"></p></div>
+    <div id="acTuto"></div>
 
     <section class="ac-sec ac-meteo-sec" id="acMeteo"></section>
-    <section class="ac-sec"><div class="sl">Prochaines activités</div><div class="ac-card" id="acAct"></div></section>
-    <section class="ac-sec"><div class="sl">Prochaines étapes importantes</div><div class="ac-card" id="acEtapes"></div></section>
+    <section class="ac-sec"><div class="sl">Prochaines activités<span class="sl-s">heure de Chine</span></div><div class="ac-card" id="acAct"></div></section>
+    <section class="ac-sec"><div class="sl">Prochaines étapes importantes<span class="sl-s">trains, vols, hôtels</span></div><div class="ac-card" id="acEtapes"></div></section>
 
     <section class="ac-sec ac-ed">
       <button type="button" class="ac-roomy" data-act="roomy">
@@ -290,7 +313,7 @@ function acEnsureTab() {
 
     <section class="ac-sec ac-ed"><div class="sl">Dépenses</div><div class="ac-card ac-budget" id="acBudget" data-act="budget" role="button" tabindex="0"></div></section>
 
-    <section class="ac-sec ac-sosec"><div class="sl">Urgences</div><div id="acSos"></div></section>
+    <section class="ac-sec ac-sosec"><div class="sl">Urgences<span class="sl-s">touche pour appeler</span></div><div id="acSos"></div></section>
     <div style="height:18px"></div>`;
   main.appendChild(tab);
   tab.addEventListener('click', acClic);
@@ -311,6 +334,27 @@ function acEnsureTab() {
     b.onclick = () => { goTab('budget', acEl('nb-more')); closeNavDrawer(); };
     b.innerHTML = `<span class="nav-drawer-ic">${ic('coins')}</span><span class="nav-drawer-lbl">Budget</span>`;
     grid.insertBefore(b, grid.firstChild);
+  }
+
+  // Menu Plus : quatre groupes avec un titre. L'ordre vient du CSS (id -> order), donc il tient aussi
+  // pour les boutons que d'autres scripts ajoutent plus tard. Un titre sans bouton visible est masqué.
+  if (grid && !grid.querySelector('.nd-grp')) {
+    ND_GROUPES.forEach(([ordre, titre]) => {
+      const h = document.createElement('div');
+      h.className = 'nd-grp'; h.dataset.g = ordre; h.style.order = ordre; h.textContent = titre;
+      grid.appendChild(h);
+    });
+    const _toggle = toggleNavDrawer;
+    toggleNavDrawer = function (force) {
+      _toggle.apply(this, arguments);
+      if (!document.getElementById('navDrawer')?.classList.contains('open')) return;
+      grid.querySelectorAll('.nd-grp').forEach(h => {
+        const g = Number(h.dataset.g);
+        h.style.display = [...grid.querySelectorAll('.nav-drawer-btn')]
+          .some(b => { const o = ND_ORDRE[b.id.replace('nd-', '')]; return o > g && o < g + 10 && getComputedStyle(b).display !== 'none'; })
+          ? '' : 'none';
+      });
+    };
   }
 
   // L'accueil est l'onglet d'ouverture.
@@ -344,11 +388,40 @@ function acEnsureTab() {
 document.addEventListener('visibilitychange', () => { if (!document.hidden && acEl('tab-accueil')?.classList.contains('on')) acSafeRender(); });
 setInterval(() => { if (!document.hidden && acEl('tab-accueil')?.classList.contains('on')) acSafeRender(); }, 60000);
 
+
 /* ───────────── Styles ───────────── */
 document.head.insertAdjacentHTML('beforeend', `<style>
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+.nav .nb .nlb{font-size:.66rem}
+@media (max-width:420px){.nav{padding:4px;gap:2px}.nav .nb{padding:8px 1px}.nav .nb .nlb{font-size:.64rem}}
+@media (max-width:350px){.nav .nb .nlb{font-size:.58rem}}
+.nav-drawer-panel{max-height:calc(100dvh - var(--nav) - var(--safe) - 96px);overflow-y:auto;overscroll-behavior:contain}
+.nav-drawer-lbl{font-size:.7rem}
+.nav-drawer-panel{padding-top:12px}.nav-drawer-grid{gap:6px}.nav-drawer-btn{padding:8px 4px;gap:3px}
+.nav-drawer-title{margin-bottom:8px}
+.nd-grp{grid-column:1/-1;margin:6px 2px 0;padding-bottom:4px;border-bottom:1px solid rgba(184,137,58,.35);font-size:.66rem;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--accent-ink)}
+.nd-grp:first-child{margin-top:0}
+#navDrawer #nd-restaurants{order:11}
+#navDrawer #nd-nourriture{order:12}
+#navDrawer #nd-hotels{order:13}
+#navDrawer #nd-transport{order:14}
+#navDrawer #nd-pratique{order:15}
+#navDrawer #nd-phrases{order:16}
+#navDrawer #nd-roomy{order:21}
+#navDrawer #nd-activites{order:22}
+#navDrawer #nd-cerveau{order:23}
+#navDrawer #nd-budget{order:31}
+#navDrawer #nd-areserver{order:32}
+#navDrawer #nd-checklist{order:33}
+#navDrawer #nd-notes{order:34}
+#navDrawer #nd-stats{order:35}
+#navDrawer #nd-questions{order:36}
+#navDrawer #nd-souhaits{order:41}
+#navDrawer #nd-galerie{order:42}
 #tab-accueil .ph h1::after{content:'家'}#tab-accueil .ph::before{content:'福'}
 .reader-mode .ac-ed,.reader-mode #nd-budget{display:none!important}
 .ac-sec{margin:0 0 16px}
+.ac-sec .sl-s{margin-left:8px;text-transform:none;letter-spacing:0;font-weight:500;opacity:.7}
 .ac-card{margin:0 16px;background:#fffdf8;border:1px solid rgba(184,137,58,.45);border-radius:18px;box-shadow:var(--shadow-sm);overflow:hidden}
 .ac-vide{padding:16px;font-size:.8rem;color:var(--txt2)}
 .ac-row{display:grid;grid-template-columns:64px 1fr auto;gap:10px;align-items:center;padding:12px;border-top:1px solid var(--border);cursor:pointer;min-height:60px;-webkit-tap-highlight-color:transparent}

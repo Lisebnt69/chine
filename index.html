@@ -245,7 +245,7 @@ main{padding-top:calc(var(--hdr) + 46px);padding-bottom:calc(var(--nav) + var(--
 .tl-month{font-size:.55rem;font-weight:600;color:rgba(255,255,255,.8);text-transform:uppercase;letter-spacing:.4px;}
 .tl-weekday{font-size:.5rem;color:rgba(255,255,255,.6);margin-top:1px;}
 .tl-info{flex:1;padding:10px 12px;min-width:0;}
-.tl-city{font-size:.85rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.tl-city{font-size:.85rem;font-weight:600;line-height:1.25;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
 .tl-chips{display:flex;gap:5px;flex-wrap:wrap;margin-top:4px;}
 .tl-chip{font-size:.58rem;font-weight:500;padding:2px 7px;border-radius:20px;background:var(--bg);color:var(--txt2);}
 .tl-day-total{font-size:.82rem;font-weight:700;padding:0 10px;flex-shrink:0;}
@@ -1099,7 +1099,7 @@ select.form-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://
 .chat-msg-actions{display:flex;gap:4px;margin-top:4px;justify-content:flex-end;opacity:.5;transition:opacity .2s;}
 .chat-msg.me:hover .chat-msg-actions,.chat-msg-actions:hover{opacity:1;}
 .chat-msg.me .chat-msg-actions{opacity:.45;}
-.chat-act-btn{background:rgba(0,0,0,.07);border:none;border-radius:8px;padding:3px 8px;font-size:.62rem;cursor:pointer;font-family:var(--font);color:var(--txt2);}
+.chat-act-btn{background:rgba(0,0,0,.07);border:none;border-radius:10px;padding:6px 10px;min-width:38px;min-height:34px;font-size:.75rem;cursor:pointer;font-family:var(--font);color:var(--txt2);}
 .chat-act-btn:active{background:rgba(0,0,0,.14);}
 /* sondage */
 .chat-poll{background:#fff;border:1px solid var(--border);border-radius:14px;padding:12px 14px;min-width:200px;}
@@ -1426,6 +1426,11 @@ body::before,body::after{display:none;}
 .btn-danger{color:var(--red);border:1px solid var(--red-line);border-radius:999px;}
 .btn-cancel{background:var(--tint);color:var(--accent-ink);border-radius:999px;font-weight:600;}
 .gcal-btn{border:1px solid var(--border);border-radius:999px;}
+.plan-actions{display:flex;gap:8px;padding:0 16px 14px;}
+.plan-actions .gcal-btn,.plan-actions .pdf-export-btn{flex:1 1 0;width:auto;margin:0;min-height:46px;padding:10px 12px;border-radius:999px;justify-content:center;gap:7px;font-size:.78rem;font-weight:600;white-space:nowrap;}
+#tlWrap .meteo-card{margin:0 0 12px;}
+.tl-head .tl-date-block{align-self:stretch;}
+.tl-chip{font-size:.62rem;max-width:100%;}
 
 /* ═══ DÉCOR CHINE TRADITIONNELLE : papier de riz, bordeaux, or, lanternes, sceau ═══ */
 :root{
@@ -1652,9 +1657,9 @@ main::before{content:'';display:block;height:12px;margin-top:-6px;background:var
     <button class="pvs-btn on" id="pvs-timeline" onclick="switchPlanView('timeline')">📋 Timeline</button>
     <button class="pvs-btn" id="pvs-cal" onclick="switchPlanView('cal')">🗓 Calendrier</button>
   </div>
-  <div style="display:flex;gap:8px;padding:0 16px 4px;flex-wrap:wrap;">
-    <button class="gcal-btn" style="margin:0;flex:1;" onclick="exportGoogleCal()">📅 Google Calendar</button>
-    <button class="pdf-export-btn" style="flex:1;" onclick="exportPlanningPDF()">🖨️ Exporter PDF</button>
+  <div class="plan-actions">
+    <button class="gcal-btn" onclick="exportGoogleCal()">📅 Google Calendar</button>
+    <button class="pdf-export-btn" onclick="exportPlanningPDF()">🖨️ Exporter PDF</button>
   </div>
   <div class="tl-container" id="tlWrap"></div>
   <div class="cal-wrap" id="calWrap" style="display:none;"></div>
@@ -1859,7 +1864,7 @@ main::before{content:'';display:block;height:12px;margin-top:-6px;background:var
 <div class="nav-drawer" id="navDrawer">
   <div class="nav-drawer-bg" onclick="closeNavDrawer()"></div>
   <div class="nav-drawer-panel">
-    <div class="nav-drawer-title">Navigation rapide</div>
+    <div class="nav-drawer-title">Le reste de l'app</div>
     <div class="nav-drawer-grid">
       <button class="nav-drawer-btn" id="nd-restaurants" onclick="goTab('restaurants',navBtnRef(this));closeNavDrawer()"><span class="nav-drawer-ic">🍜</span><span class="nav-drawer-lbl">Restos</span></button>
       <button class="nav-drawer-btn" id="nd-hotels" onclick="goTab('hotels',navBtnRef(this));closeNavDrawer()"><span class="nav-drawer-ic">🏨</span><span class="nav-drawer-lbl">Hôtels</span></button>
@@ -2371,7 +2376,7 @@ function subAll(){
         else{const{data}=await sb.from(table).select('*').order('id',{ascending:true});D[key]=data||[];}
       }else if(payload.eventType==='INSERT'&&payload.new){
         if(!D[key])D[key]=[];
-        D[key].push(payload.new);
+        if(!D[key].some(x=>x.id===payload.new.id))D[key].push(payload.new); // déjà là si on vient de tout recharger
       }else if(payload.eventType==='DELETE'&&payload.old?.id){
         D[key]=(D[key]||[]).filter(x=>x.id!==payload.old.id);
       }else{
@@ -2841,7 +2846,7 @@ function renderItems(type){
     items=applyTerrainFilter(items);
   }
   if(!items.length){
-    cont.innerHTML=`<div class="empty-state"><div class="empty-icon">${TYPE_IC[type]||'📍'}</div><div class="empty-txt">${terrainMode?'Aucune activité planifiée':'Aucun élément'}</div><div class="empty-sub">${terrainMode?'Planifiez des activités':'Ajoutez le premier'}</div></div>`;
+    cont.innerHTML=`<div class="empty-state"><div class="empty-icon">${TYPE_IC[type]||'📍'}</div><div class="empty-txt">${terrainMode?'Aucune activité planifiée':'Rien ici pour l’instant'}</div><div class="empty-sub">${terrainMode?'Planifie des activités depuis l’onglet Planning.':(isEditorMode()?'Ajoute le premier avec le bouton ＋ sous la liste.':'Matis et Lise n’ont encore rien ajouté ici.')}</div></div>`;
     return;
   }
   if(sort==='statut'){
@@ -3682,7 +3687,7 @@ function renderPlanning(){
     const dayTotal=slotItems.reduce((s,{item})=>s+(parseFloat(item.prix||0)),0)+transportsDay.reduce((s,t)=>s+(parseFloat(t.prix||0)),0);
     const cities=[...new Set([day.matin_lieu,day.aprem_lieu,day.soir_lieu].filter(Boolean).filter(x=>x!=='—'))].join(' → ');
     const metaChips=[];
-    if(transportsDay.length)metaChips.push(transportsDay.map(t=>(t.prix_type||'').split(' ')[0]+' '+t.nom+(numeroVol(t)?' · '+numeroVol(t):'')).join(', '));
+    transportsDay.forEach(t=>metaChips.push(esc(((t.prix_type||'').split(' ')[0]+' '+t.nom+(numeroVol(t)?' · '+numeroVol(t):'')).replace(/\s*->\s*/g,' → ').trim())));
     if(hotel)metaChips.push('🏨 '+hotel.nom);
     if(slotItems.length)metaChips.push(slotItems.length+' activité(s)');
 
@@ -4070,7 +4075,7 @@ function renderTransports() {
   });
 
   if (!transports.length) {
-    cont.innerHTML = '<div class="empty"><div class="empty-ic">🚄</div>Aucun transport</div>';
+    cont.innerHTML = '<div class="empty"><div class="empty-ic">🚄</div>Aucun transport pour l’instant.<br><small>Les trains et les vols ajoutés apparaîtront ici.</small></div>';
     return;
   }
 
@@ -5456,7 +5461,7 @@ function appendChatMsg(msg,animate=true){
 
   const msgId=msg.id&&!msg.id.startsWith('temp_')?msg.id:null;
   const isTextMsg=!displayContent.startsWith('IMG:')&&!displayContent.startsWith('VIDEO:')&&!displayContent.startsWith('SNAP:')&&!displayContent.startsWith('POLL:');
-  const actionsHtml=isEditorMode()&&msgId?`<div class="chat-msg-actions" style="position:relative;">${isTextMsg&&isMe?`<button class="chat-act-btn" onclick="editMsgById('${msgId}')">✏️</button>`:''}<button class="chat-act-btn" onclick="showReactionPicker('${msgId}',this)">😊</button>${isMe?`<button class="chat-act-btn" style="color:#8b1d2c;" onclick="deleteMsgById('${msgId}')">🗑</button>`:''}</div>`:'';
+  const actionsHtml=isEditorMode()&&msgId?`<div class="chat-msg-actions" style="position:relative;">${isTextMsg&&isMe?`<button class="chat-act-btn" aria-label="Modifier le message" onclick="editMsgById('${msgId}')">✏️</button>`:''}<button class="chat-act-btn" aria-label="Réagir au message" onclick="showReactionPicker('${msgId}',this)">😊</button>${isMe?`<button class="chat-act-btn" aria-label="Supprimer le message" style="color:#8b1d2c;" onclick="deleteMsgById('${msgId}')">🗑</button>`:''}</div>`:'';
 
   const isPoll=displayContent.startsWith('POLL:');
   const bubbleClass='chat-bubble'+(isPoll?' chat-bubble-poll':'');
@@ -7123,15 +7128,16 @@ if(loginPasswordEl){
 
 </script>
 
-<script src="ia.js?v=7"></script>
-<script src="prog.js?v=4"></script>
+<script src="ia.js?v=11"></script>
+<script src="prog.js?v=7"></script>
 <script src="souhaits.js?v=4"></script>
 <script src="questions.js?v=1"></script>
 <script src="roomy.js?v=1"></script>
 <script src="resa.js?v=1"></script>
-<script src="plats.js?v=1"></script>
+<script src="plats-img.js?v=1"></script>
+<script src="plats.js?v=2"></script>
 <script src="meteo.js?v=1"></script>
-<script src="accueil.js?v=1"></script>
+<script src="accueil.js?v=6"></script>
 <script src="visiteur.js?v=1"></script>
 </body>
 </html>
