@@ -993,17 +993,18 @@ class TropLong extends Error {}
 async function boucleIA(
   messages: Anthropic.Beta.BetaMessageParam[], prog: boolean, changes: string[], signal?: AbortSignal,
   fin?: number,   // heure limite (ms epoch) : passé ce moment la boucle s'arrête avec TropLong au lieu de se faire couper par la passerelle
+  effort: "medium" | "high" | "xhigh" = "xhigh",
 ): Promise<Anthropic.Beta.BetaMessage | null> {
   let final: Anthropic.Beta.BetaMessage | null = null;
   for (let turn = 0; turn < MAX_TURNS; turn++) {
     if (signal?.aborted) throw new Arret();
-    if (fin && Date.now() >= fin) throw new TropLong();
+    if (fin && Date.now() >= fin) throw new TropLong(String(turn + 1));
     // deno-lint-ignore no-explicit-any
     const params: any = {
       model: MODEL,
       max_tokens: 16000,
       thinking: { type: "adaptive" },
-      output_config: { effort: "xhigh" },
+      output_config: { effort },
       system: [{ type: "text", text: prog ? SYSTEM + SYSTEM_PROG : SYSTEM, cache_control: { type: "ephemeral" } }],
       tools: prog ? tools.filter((t) => PROG_TOOLS.has((t as { name: string }).name)) : tools,
       messages,
@@ -1017,7 +1018,7 @@ async function boucleIA(
     try {
       res = await anthropic.beta.messages.create(params, sig ? { signal: sig } : undefined);
     } catch (e) {
-      if (delai?.aborted && !signal?.aborted) throw new TropLong();
+      if (delai?.aborted && !signal?.aborted) throw new TropLong(String(turn + 1));
       if (signal?.aborted || e instanceof Anthropic.APIUserAbortError) throw new Arret();
       throw e;
     }
@@ -1387,7 +1388,8 @@ ${user} demande : ${question}` },
     ];
 
     try {
-      const final = await boucleIA(messages, true, changes, undefined, fin);
+      // Effort medium : en xhigh, une demande de planning dépassait les 125 s (décision de Matis le 2026-11-05).
+      const final = await boucleIA(messages, true, changes, undefined, fin, "medium");
       let reply = texteDe(final);
       if (!reply) reply = changes.length ? "C'est fait." : "Je n'ai pas réussi à répondre, réessaie.";
       // Le chat de l'onglet Programme reste sur le téléphone : rien n'est publié ailleurs.
@@ -1395,7 +1397,7 @@ ${user} demande : ${question}` },
     } catch (e) {
       if (e instanceof TropLong) {
         const fait = changes.length ? ` Déjà modifié avant : ${changes.slice(0, 6).join(" · ")}.` : " Rien n'a été modifié.";
-        return { reply: "🧠 Je n'ai pas fini à temps." + fait + " Redemande-moi en plus précis ou sur un seul jour.", changes };
+        return { reply: `🧠 Je n'ai pas fini à temps (${PROG_LIMITE_MS / 1000} s, interrompu au tour ${e.message}).` + fait + " Redemande-moi en plus précis ou sur un seul jour.", changes };
       }
       const msg = e instanceof Anthropic.APIError ? `API ${e.status}: ${e.message}` : (e as Error).message;
       console.error(msg);
