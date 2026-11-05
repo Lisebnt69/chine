@@ -2,13 +2,16 @@
    souhaits.js — Onglet « Souhaits » (menu Plus) + la mascotte Roomy
 
    Souhaits : une liste de tickets « telle personne veut telle chose ».
-     - ouvert au mode visiteur : c'est le seul endroit où il peut écrire
-     - une personne ET un souhait obligatoires, une photo facultative
-     - Matis et Lise cochent « trouvé » ; chacun peut supprimer ses propres tickets
+     - ouvert au mode visiteur : c'est le seul endroit où il peut écrire, MAIS il ne lit pas la liste :
+       il envoie un ticket, c'est tout (la liste n'est même pas téléchargée dans son appareil)
+     - une personne ET un souhait obligatoires, une photo du souhait facultative
+     - Matis et Lise lisent, modifient, cochent « trouvé » (ou demandent à Roomy dans le chat), ajoutent la
+       photo du cadeau trouvé et suppriment
    Roomy : la chatte mascotte. Elle explique l'onglet aux visiteurs (mini tuto)
      et elle est l'assistante IA du chat : c'est à elle qu'on parle.
 
-   Table : public.souhaits (supabase/migrations/20261105010000_souhaits.sql)
+   Table : public.souhaits (supabase/migrations/20261105010000_souhaits.sql, _cadeau, _ferme).
+   Fermée à la clé publique sauf l'ajout : Matis et Lise passent par la fonction `assistant` (mode « souhaits »).
    Chargé APRÈS prog.js.
    ═══════════════════════════════════════════════════════════════ */
 
@@ -22,39 +25,59 @@ const MIMI = {
 window.MIMI = MIMI;
 
 /* ───────────── État ───────────── */
-const SH = { rows: [], charge: false, erreur: '', filtre: 'attente', pers: '', occupe: false, image: '', etape: 0 };
+const SH = { rows: [], charge: false, erreur: '', filtre: 'attente', pers: '', occupe: false, image: '', imageCadeau: '', edition: null, etape: 0 };
 const SH_TUTO = [
   { pose: 'explique', zh: '欢迎', txt: "Bienvenue ! Moi, c'est <b>Roomy</b>. Ici, on note ce que vos proches aimeraient qu'on leur rapporte de Chine. Un souhait = un ticket." },
   { pose: 'explique', num: 1, txt: "<b>Pour qui ?</b> Dis-moi la personne : un prénom suffit. Maman, Julien, Mamie…" },
   { pose: 'explique', num: 2, txt: "<b>Qu'est-ce qu'elle veut ?</b> Du thé, un éventail, un t-shirt… Plus tu es précis (taille, couleur), mieux Matis et Lise chercheront." },
   { pose: 'calme', num: 3, txt: "<b>Une photo ?</b> C'est facultatif. Si tu as un modèle en tête, montre-le-moi. Sinon, ce n'est pas grave." },
-  { pose: 'joie', zh: '太好了', txt: "Et voilà ! Ton ticket rejoint la liste. Matis et Lise le cocheront quand ils l'auront trouvé." },
+  { pose: 'joie', zh: '太好了', txt: "Et voilà ! Ton ticket part chez Matis et Lise. Ils sont les seuls à lire la liste, et ils feront de leur mieux pour le trouver." },
 ];
 
 const shLire = (k, def) => { try { const v = localStorage.getItem(k); return v === null ? def : v; } catch (e) { return def; } };
 const shEcrire = (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* stockage indisponible : tant pis */ } };
-const shMesIds = () => { try { return JSON.parse(shLire('souhaits_mes', '[]')); } catch (e) { return []; } };
+const shNbEnvoyes = () => Math.max(0, parseInt(shLire('souhaits_nb', '0'), 10) || 0); // tickets envoyés depuis cet appareil
+const shImgOk = s => /^data:image\/(jpeg|png|webp);base64,/.test(s || '');
+const shQui = k => k === 'matis' ? 'Matis' : k === 'lise' ? 'Lise' : k === 'roomy' ? MIMI.nom : '';
+const shColonneAbsente = err => /image_cadeau|trouve_par|trouve_le/.test((err && err.message) || '');
 const shPoseImg = (pose, cls) => `<img class="${cls || 'mimi-img'}" src="${MIMI.img[pose] || MIMI.img.calme}" alt="${MIMI.nom}, la chatte mascotte" draggable="false">`;
 
 SH.etape = shLire('souhaits_tuto', '') === '1' ? SH_TUTO.length : 0; // déjà vu sur cet appareil : on n'affiche que le rappel
 
 /* ───────────── Données ───────────── */
-async function loadSouhaits() {
-  if (typeof sb === 'undefined' || !sb) return;
-  const { data, error } = await sb.from('souhaits').select('*').order('created_at', { ascending: false });
-  if (error) {
-    SH.erreur = /souhaits|PGRST205|42P01/.test((error.code || '') + ' ' + (error.message || '')) ? 'table' : (error.message || 'erreur');
-  } else { SH.rows = data || []; SH.erreur = ''; }
-  SH.charge = true;
-  renderSouhaits();
+// La table est FERMÉE à la clé publique (sauf l'ajout d'un visiteur) : Matis et Lise lisent, modifient, cochent et
+// suppriment par la fonction `assistant` (mode « souhaits »), avec le code de l'assistant déjà saisi pour le chat @ia.
+// Retourne { data } ou { error: { code, message } }, code ∈ code | reseau | table | ''.
+async function shAppel(action, extra) {
+  const code = iaSecret();
+  if (!code) return { error: { code: 'code', message: 'code' } };
+  try {
+    const r = await fetch(IA_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY, 'x-app-secret': code },
+      body: JSON.stringify({ mode: 'souhaits', action, ...extra }),
+    });
+    const j = await r.json().catch(() => ({}));
+    if (r.status === 401) { try { localStorage.removeItem('ia_secret'); } catch (e) { /* tant pis */ } return { error: { code: 'code', message: 'code' } }; }
+    if (!r.ok) return { error: { code: j.code || '', message: j.error || 'erreur ' + r.status } };
+    return { data: j };
+  } catch (e) { return { error: { code: 'reseau', message: 'réseau' } }; }
+}
+function shMsgErreur(err) {
+  if (err.code === 'code') return "Il faut le bon code de l'assistant (le même que pour @roomy). Réessaie.";
+  if (err.code === 'reseau') return "Je n'arrive pas à joindre la liste. Vérifie ta connexion.";
+  if (shColonneAbsente(err)) return "La base n'est pas à jour : lancer la migration 20261105030000_souhaits_cadeau.sql.";
+  if (err.code === 'table') return "La liste n'est pas encore prête. Réessaie plus tard.";
+  return "Aïe, ça n'a pas marché : " + err.message;
 }
 
-let shAbonne = false;
-function shAbonner() {
-  if (shAbonne || typeof sb === 'undefined' || !sb) return;
-  shAbonne = true;
-  try { sb.channel('rt-souhaits').on('postgres_changes', { event: '*', schema: 'public', table: 'souhaits' }, () => loadSouhaits()).subscribe(); }
-  catch (e) { shAbonne = false; }
+async function loadSouhaits() {
+  if (typeof sb === 'undefined' || !sb || !isEditorMode()) return; // le visiteur ne lit jamais la liste
+  const { data, error } = await shAppel('lister');
+  if (error) SH.erreur = error.code === 'code' || error.code === 'reseau' ? error.code : error.code === 'table' ? 'table' : (error.message || 'erreur');
+  else { SH.rows = data.rows || []; SH.erreur = ''; }
+  SH.charge = true;
+  renderSouhaits();
 }
 
 /* ───────────── Onglet ───────────── */
@@ -93,24 +116,33 @@ function ensureSouhaitsTab() {
         <img class="mimi-img sm" id="shFormRoomy" src="${MIMI.img.explique}" alt="${MIMI.nom}" draggable="false">
         <div class="mimi-bubble" id="shFormBulle">Pour qui ? Et qu'est-ce qu'on lui rapporte ?</div>
       </div>
-      <div class="sheet-title">Nouveau ticket</div>
+      <div class="sheet-title" id="shTitre">Nouveau ticket</div>
       <div class="form-group"><label class="form-label" for="shWho">Pour qui ? <span class="sh-req">obligatoire</span></label>
         <input class="form-input" id="shWho" maxlength="40" autocomplete="off" list="shPersonnes" placeholder="Maman, Julien, Mamie…">
         <datalist id="shPersonnes"></datalist></div>
       <div class="form-group"><label class="form-label" for="shEnvie">Qu'est-ce qu'elle veut ? <span class="sh-req">obligatoire</span></label>
         <textarea class="form-input" id="shEnvie" rows="3" maxlength="300" placeholder="Du thé au jasmin, un éventail rouge, un t-shirt taille M…"></textarea></div>
-      <div class="form-group"><label class="form-label">Photo <span class="sh-opt">facultatif</span></label>
+      <div class="form-group"><label class="form-label">Photo de ce qu'elle veut <span class="sh-opt">facultatif</span></label>
         <input type="file" id="shFile" accept="image/*" hidden>
-        <button class="sh-photo-btn" id="shPhotoBtn" type="button" data-act="photo">${ic('camera')}<span>Ajouter une photo</span></button>
-        <div class="sh-photo-prev" id="shPrev" hidden><img id="shPrevImg" alt="Aperçu de la photo"><button type="button" data-act="retirer-photo" aria-label="Retirer la photo">${ic('x')}</button></div>
+        <button class="sh-photo-btn" id="shPhotoBtn" type="button" data-act="photo" data-slot="envie">${ic('camera')}<span>Ajouter une photo</span></button>
+        <div class="sh-photo-prev" id="shPrev" hidden><img id="shPrevImg" alt="Aperçu de la photo"><button type="button" data-act="retirer-photo" data-slot="envie" aria-label="Retirer la photo">${ic('x')}</button></div>
       </div>
-      <button class="btn-primary" id="shSend" type="button" data-act="envoyer">Créer le ticket</button>
+      <div id="shEditeur" hidden>
+        <div class="form-group"><label class="form-label">Photo du cadeau trouvé <span class="sh-opt">facultatif</span></label>
+          <input type="file" id="shFileC" accept="image/*" hidden>
+          <button class="sh-photo-btn" id="shPhotoBtnC" type="button" data-act="photo" data-slot="cadeau">${ic('gift')}<span>Ajouter la photo du cadeau</span></button>
+          <div class="sh-photo-prev" id="shPrevC" hidden><img id="shPrevImgC" alt="Aperçu du cadeau"><button type="button" data-act="retirer-photo" data-slot="cadeau" aria-label="Retirer la photo du cadeau">${ic('x')}</button></div>
+        </div>
+        <label class="sh-check"><input type="checkbox" id="shTrouve"><span>Trouvé : le cadeau est dans la valise</span></label>
+      </div>
+      <button class="btn-primary" id="shSend" type="button" data-act="envoyer">Envoyer le ticket</button>
       <button class="btn-cancel" type="button" data-act="fermer">Annuler</button>
       <div style="height:4px;"></div>
     </div>`;
   document.body.appendChild(ov);
   ov.addEventListener('click', shClic);
-  ov.querySelector('#shFile').addEventListener('change', shPhotoChoisie);
+  ov.querySelector('#shFile').addEventListener('change', e => shPhotoChoisie(e, 'envie'));
+  ov.querySelector('#shFileC').addEventListener('change', e => shPhotoChoisie(e, 'cadeau'));
   ov.querySelector('#shWho').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); document.getElementById('shEnvie').focus(); } });
 
   // Agrandir une photo
@@ -127,8 +159,10 @@ function shClic(e) {
   switch (a) {
     case 'ajouter': shOuvrirFormulaire(); break;
     case 'fermer': closeOverlay('sh-overlay'); break;
-    case 'photo': document.getElementById('shFile').click(); break;
-    case 'retirer-photo': shRetirerPhoto(); break;
+    case 'modifier': shOuvrirFormulaire(id); break;
+    case 'recharger': { if (SH.erreur === 'code') iaSecret(true); loadSouhaits(); break; }
+    case 'photo': document.getElementById(el.dataset.slot === 'cadeau' ? 'shFileC' : 'shFile').click(); break;
+    case 'retirer-photo': shRetirerPhoto(el.dataset.slot); break;
     case 'envoyer': shEnvoyer(); break;
     case 'suivant': SH.etape = Math.min(SH.etape + 1, SH_TUTO.length); if (SH.etape >= SH_TUTO.length) shFinTuto(); else renderTuto(); break;
     case 'passer': shFinTuto(); break;
@@ -145,6 +179,16 @@ function shClic(e) {
 function renderSouhaits() {
   const tab = document.getElementById('tab-souhaits'); if (!tab) return;
   renderTuto();
+  const addBtn = tab.querySelector('.sh-add span');
+  if (!isEditorMode()) { // visiteur : il envoie, il ne lit rien
+    if (addBtn) addBtn.textContent = 'Envoyer un ticket';
+    const sub = document.getElementById('shSub'); if (sub) sub.textContent = "Dis-nous ce que tu veux qu'on te rapporte";
+    document.getElementById('shFiltres').innerHTML = '';
+    const n = shNbEnvoyes();
+    document.getElementById('shListe').innerHTML = `<div class="sh-vide">${shPoseImg('calme')}<p>La liste est secrète : seuls Matis et Lise la lisent.<br>Toi, tu peux juste leur envoyer un ticket.${n ? `<br><b>${n} ticket${n > 1 ? 's' : ''} envoyé${n > 1 ? 's' : ''}</b> depuis cet appareil.` : ''}</p></div>`;
+    return;
+  }
+  if (addBtn) addBtn.textContent = 'Ajouter un ticket';
   const rows = SH.rows;
   const nbOk = rows.filter(r => r.trouve).length;
   const sub = document.getElementById('shSub');
@@ -153,9 +197,11 @@ function renderSouhaits() {
   const liste = document.getElementById('shListe'), fil = document.getElementById('shFiltres');
   if (SH.erreur) {
     fil.innerHTML = '';
-    liste.innerHTML = `<div class="sh-vide">${shPoseImg('calme')}<p>${SH.erreur === 'table'
-      ? (isEditorMode() ? "La liste n'est pas encore branchée. Lancer <b>supabase/migrations/20261105010000_souhaits.sql</b> dans Supabase (SQL Editor)." : "La liste dort encore. Reviens un peu plus tard !")
-      : 'Je n\'arrive pas à lire la liste pour le moment.'}</p></div>`;
+    const msg = SH.erreur === 'table' ? "La liste n'est pas encore branchée. Lancer <b>supabase/migrations/20261105010000_souhaits.sql</b> dans Supabase (SQL Editor)."
+      : SH.erreur === 'code' ? "La liste est protégée : il me faut le code de l'assistant, le même que pour <b>@roomy</b> dans le chat."
+      : SH.erreur === 'reseau' ? "Je n'arrive pas à joindre la liste. Vérifie ta connexion."
+      : "Je n'arrive pas à lire la liste pour le moment.";
+    liste.innerHTML = `<div class="sh-vide">${shPoseImg('calme')}<p>${msg}</p><button class="sh-lien" type="button" data-act="recharger">Réessayer${SH.erreur === 'code' ? ' avec le code' : ''}</button></div>`;
     return;
   }
   if (!SH.charge) { fil.innerHTML = ''; liste.innerHTML = '<div class="sh-vide"><p>Je cherche les tickets…</p></div>'; return; }
@@ -182,25 +228,28 @@ function renderSouhaits() {
     liste.innerHTML = `<div class="sh-vide">${shPoseImg('calme')}<p>${SH.filtre === 'trouve' ? 'Rien de trouvé pour le moment.' : 'Tout est trouvé ici. Bravo !'}</p></div>`;
     return;
   }
-  const mes = new Set(shMesIds()), editeur = isEditorMode();
   liste.innerHTML = vis.map(r => {
     const n = String(numero.get(r.id) || 0).padStart(2, '0');
     const date = r.created_at ? new Date(r.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }) : '';
-    const de = r.auteur === 'matis' ? 'Matis' : r.auteur === 'lise' ? 'Lise' : 'un visiteur';
-    const peutSuppr = editeur || mes.has(r.id);
+    const de = shQui(r.auteur) || 'un visiteur';
+    const par = r.trouve && shQui(r.trouve_par) ? ` · coché par ${shQui(r.trouve_par)}` : '';
+    const cadeau = shImgOk(r.image_cadeau)
+      ? `<div class="tk-cadeau"><img class="tk-img" src="${esc(r.image_cadeau)}" alt="Photo du cadeau pour ${esc(r.personne)}" data-act="zoom" loading="lazy"><span>${ic('gift')}Le cadeau</span></div>` : '';
     return `<article class="tk${r.trouve ? ' ok' : ''}">
       <div class="tk-stub"><span class="tk-seal">愿</span><span class="tk-n">N° ${n}</span></div>
       <div class="tk-body">
         <div class="tk-top">
           <div class="tk-txt"><div class="tk-pour">pour</div><div class="tk-who">${esc(r.personne)}</div></div>
-          ${/^data:image\/(jpeg|png|webp);base64,/.test(r.image || '') ? `<img class="tk-img" src="${esc(r.image)}" alt="Photo du souhait de ${esc(r.personne)}" data-act="zoom" loading="lazy">` : ''}
+          ${shImgOk(r.image) ? `<img class="tk-img" src="${esc(r.image)}" alt="Photo du souhait de ${esc(r.personne)}" data-act="zoom" loading="lazy">` : ''}
         </div>
         <div class="tk-want">${esc(r.envie)}</div>
+        ${cadeau}
         <div class="tk-foot">
-          <span class="tk-meta">${esc(date)} · ajouté par ${de}</span>
+          <span class="tk-meta">${esc(date)} · ajouté par ${esc(de)}${esc(par)}</span>
           <span class="tk-actions">
-            ${editeur ? `<button type="button" class="tk-btn${r.trouve ? ' done' : ''}" data-act="trouve" data-id="${esc(r.id)}">${ic('check-circle')}<span>${r.trouve ? 'Trouvé' : 'Marquer trouvé'}</span></button>` : ''}
-            ${peutSuppr ? `<button type="button" class="tk-btn del" data-act="suppr" data-id="${esc(r.id)}" aria-label="Supprimer ce ticket">${ic('trash')}</button>` : ''}
+            <button type="button" class="tk-btn${r.trouve ? ' done' : ''}" data-act="trouve" data-id="${esc(r.id)}">${ic('check-circle')}<span>${r.trouve ? 'Trouvé' : 'Marquer trouvé'}</span></button>
+            <button type="button" class="tk-btn" data-act="modifier" data-id="${esc(r.id)}" aria-label="Modifier ce ticket${r.trouve && !r.image_cadeau ? ' ou ajouter la photo du cadeau' : ''}">${ic('pencil')}${r.trouve && !r.image_cadeau ? '<span>Photo du cadeau</span>' : ''}</button>
+            <button type="button" class="tk-btn del" data-act="suppr" data-id="${esc(r.id)}" aria-label="Supprimer ce ticket">${ic('trash')}</button>
           </span>
         </div>
         ${r.trouve ? '<span class="tk-stamp" aria-hidden="true">到手</span>' : ''}
@@ -233,12 +282,32 @@ function renderTuto() {
 function shFinTuto() { shEcrire('souhaits_tuto', '1'); SH.etape = SH_TUTO.length; renderTuto(); }
 
 /* ───────────── Formulaire ───────────── */
-function shOuvrirFormulaire() {
-  document.getElementById('shWho').value = '';
-  document.getElementById('shEnvie').value = '';
-  shRetirerPhoto();
-  shBulle("Pour qui ? Et qu'est-ce qu'on lui rapporte ?", false);
-  document.getElementById('shPersonnes').innerHTML = [...new Set(SH.rows.map(r => r.personne.trim()))].map(p => `<option value="${esc(p)}">`).join('');
+// Deux photos possibles : celle du souhait (visiteurs et éditeurs) et celle du cadeau trouvé (éditeurs).
+const SH_SLOTS = {
+  envie: { prop: 'image', file: 'shFile', btn: 'shPhotoBtn', prev: 'shPrev', img: 'shPrevImg' },
+  cadeau: { prop: 'imageCadeau', file: 'shFileC', btn: 'shPhotoBtnC', prev: 'shPrevC', img: 'shPrevImgC' },
+};
+function shAfficherPhoto(slot, data) {
+  const s = SH_SLOTS[slot]; SH[s.prop] = data || '';
+  const f = document.getElementById(s.file); if (f) f.value = '';
+  const p = document.getElementById(s.prev), btn = document.getElementById(s.btn);
+  if (data) document.getElementById(s.img).src = data;
+  if (p) p.hidden = !data; if (btn) btn.hidden = !!data;
+}
+function shOuvrirFormulaire(id) {
+  const editeur = isEditorMode();
+  const r = id && editeur ? SH.rows.find(x => x.id === id) : null;
+  SH.edition = r ? r.id : null;
+  document.getElementById('shWho').value = r ? r.personne : '';
+  document.getElementById('shEnvie').value = r ? r.envie : '';
+  shAfficherPhoto('envie', r && shImgOk(r.image) ? r.image : '');
+  shAfficherPhoto('cadeau', r && shImgOk(r.image_cadeau) ? r.image_cadeau : '');
+  document.getElementById('shTrouve').checked = !!(r && r.trouve);
+  document.getElementById('shEditeur').hidden = !r;
+  document.getElementById('shTitre').textContent = r ? 'Modifier le ticket' : 'Nouveau ticket';
+  document.getElementById('shSend').textContent = r ? 'Enregistrer' : editeur ? 'Créer le ticket' : 'Envoyer le ticket';
+  shBulle(r ? `Tu changes le ticket de ${r.personne}.` : "Pour qui ? Et qu'est-ce qu'on lui rapporte ?", false);
+  document.getElementById('shPersonnes').innerHTML = editeur ? [...new Set(SH.rows.map(x => x.personne.trim()))].map(p => `<option value="${esc(p)}">`).join('') : '';
   document.getElementById('shSend').disabled = false;
   openOverlay('sh-overlay');
   setTimeout(() => document.getElementById('shWho').focus(), 250);
@@ -248,12 +317,7 @@ function shBulle(txt, alerte) {
   b.textContent = txt; b.classList.toggle('alerte', !!alerte);
   if (alerte) { b.classList.remove('secoue'); void b.offsetWidth; b.classList.add('secoue'); }
 }
-function shRetirerPhoto() {
-  SH.image = '';
-  const f = document.getElementById('shFile'); if (f) f.value = '';
-  const p = document.getElementById('shPrev'), btn = document.getElementById('shPhotoBtn');
-  if (p) p.hidden = true; if (btn) btn.hidden = false;
-}
+function shRetirerPhoto(slot) { shAfficherPhoto(slot || 'envie', ''); }
 // Photo réduite avant envoi : elle est stockée dans la ligne du ticket, pas dans un fichier à part.
 function shReduire(file, max = 900) {
   return new Promise((ok, ko) => {
@@ -271,16 +335,15 @@ function shReduire(file, max = 900) {
     im.src = url;
   });
 }
-async function shPhotoChoisie(e) {
+async function shPhotoChoisie(e, slot) {
   const f = e.target.files && e.target.files[0]; if (!f) return;
   try {
-    SH.image = await shReduire(f);
-    document.getElementById('shPrevImg').src = SH.image;
-    document.getElementById('shPrev').hidden = false;
-    document.getElementById('shPhotoBtn').hidden = true;
-  } catch (err) { shRetirerPhoto(); shBulle("Cette photo ne s'ouvre pas. Essaie-en une autre, ou continue sans.", true); }
+    shAfficherPhoto(slot, await shReduire(f));
+    if (slot === 'cadeau') document.getElementById('shTrouve').checked = true; // un cadeau en photo, c'est qu'il est trouvé
+  } catch (err) { shRetirerPhoto(slot); shBulle("Cette photo ne s'ouvre pas. Essaie-en une autre, ou continue sans.", true); }
 }
 
+const shTableAbsente = err => /souhaits|PGRST205|42P01/.test((err.code || '') + ' ' + (err.message || ''));
 async function shEnvoyer() {
   if (SH.occupe) return;
   const personne = document.getElementById('shWho').value.trim().replace(/\s+/g, ' ');
@@ -290,39 +353,66 @@ async function shEnvoyer() {
   if (!envie) { shBulle(`Et qu'est-ce que ${personne} veut ?`, true); document.getElementById('shEnvie').focus(); return; }
   if (typeof sb === 'undefined' || !sb) { shBulle("Je ne suis pas connectée pour le moment.", true); return; }
 
-  SH.occupe = true; const btn = document.getElementById('shSend'); btn.disabled = true; btn.textContent = 'Je note…';
+  const editeur = isEditorMode();
+  const cur = SH.edition && editeur ? SH.rows.find(x => x.id === SH.edition) : null;
+  const libelle = cur ? 'Enregistrer' : editeur ? 'Créer le ticket' : 'Envoyer le ticket';
+  SH.occupe = true; const btn = document.getElementById('shSend'); btn.disabled = true; btn.textContent = cur ? "J'enregistre…" : 'Je note…';
   try {
-    const ligne = { personne, envie, image: SH.image || null, auteur: currentUser || 'visiteur' };
-    const { data, error } = await sb.from('souhaits').insert(ligne).select().single();
-    if (error) {
-      shBulle(/souhaits|PGRST205|42P01/.test((error.code || '') + ' ' + (error.message || '')) ? "La liste n'est pas encore prête. Réessaie plus tard." : "Aïe, ça n'a pas marché : " + error.message, true);
+    if (cur) { // modification : réservée à Matis et Lise
+      const trouve = document.getElementById('shTrouve').checked;
+      const maj = {
+        personne, envie, image: SH.image || null, image_cadeau: SH.imageCadeau || null, trouve,
+        trouve_par: trouve ? (cur.trouve && cur.trouve_par ? cur.trouve_par : currentUser) : null,
+        trouve_le: trouve ? (cur.trouve && cur.trouve_le ? cur.trouve_le : new Date().toISOString()) : null,
+      };
+      const rep = await shAppel('modifier', { id: cur.id, champs: maj });
+      if (rep.error) { shBulle(shMsgErreur(rep.error), true); return; }
+      const data = rep.data.row;
+      SH.rows = SH.rows.map(x => x.id === data.id ? data : x);
+      closeOverlay('sh-overlay'); renderSouhaits();
+      if (trouve && !cur.trouve) mimiCelebre(`Trouvé pour ${personne} !`, '到手');
       return;
     }
+    const ligne = { personne, envie, image: SH.image || null, auteur: currentUser || 'visiteur' };
+    if (!editeur) { // le visiteur envoie sans rien relire : on ne demande pas la ligne en retour
+      const { error } = await sb.from('souhaits').insert(ligne);
+      if (error) {
+        shBulle(shTableAbsente(error) ? "La liste n'est pas encore prête. Réessaie plus tard." : "Aïe, ça n'a pas marché : " + error.message, true);
+        return;
+      }
+      shEcrire('souhaits_nb', String(shNbEnvoyes() + 1));
+      closeOverlay('sh-overlay'); renderSouhaits();
+      mimiCelebre(`Envoyé pour ${personne} !`, '太好了');
+      return;
+    }
+    const rep = await shAppel('ajouter', { champs: ligne });
+    if (rep.error) { shBulle(shMsgErreur(rep.error), true); return; }
+    const data = rep.data.row;
     SH.rows = [data, ...SH.rows.filter(r => r.id !== data.id)]; SH.erreur = ''; SH.charge = true;
-    shEcrire('souhaits_mes', JSON.stringify([data.id, ...shMesIds()].slice(0, 200)));
     SH.filtre = 'attente'; SH.pers = '';
     closeOverlay('sh-overlay'); renderSouhaits();
     mimiCelebre(`Noté pour ${personne} !`, '太好了');
   } catch (err) {
     shBulle("Je n'arrive pas à joindre la liste. Vérifie ta connexion.", true);
-  } finally { SH.occupe = false; btn.disabled = false; btn.textContent = 'Créer le ticket'; }
+  } finally { SH.occupe = false; btn.disabled = false; btn.textContent = libelle; }
 }
 
 async function shBasculer(id) {
   if (!isEditorMode()) { showToast('Réservé à Matis et Lise'); return; }
   const r = SH.rows.find(x => x.id === id); if (!r) return;
   const val = !r.trouve;
-  const { error } = await sb.from('souhaits').update({ trouve: val }).eq('id', id);
-  if (error) { showToast('Erreur : ' + error.message); return; }
-  r.trouve = val; renderSouhaits();
+  const maj = val ? { trouve: true, trouve_par: currentUser, trouve_le: new Date().toISOString() } : { trouve: false, trouve_par: null, trouve_le: null };
+  const { error } = await shAppel('modifier', { id, champs: maj });
+  if (error) { showToast(shColonneAbsente(error) ? 'Base pas à jour : lancer la migration souhaits_cadeau' : error.code === 'code' ? shMsgErreur(error) : 'Erreur : ' + error.message); return; }
+  Object.assign(r, maj); renderSouhaits();
   if (val) mimiCelebre(`Trouvé pour ${r.personne} !`, '到手');
 }
 async function shSupprimer(id) {
+  if (!isEditorMode()) return; // le visiteur envoie, il ne supprime pas
   const r = SH.rows.find(x => x.id === id); if (!r) return;
-  if (!(isEditorMode() || shMesIds().includes(id))) return;
   if (!confirm(`Supprimer le ticket de ${r.personne} ?`)) return;
-  const { error } = await sb.from('souhaits').delete().eq('id', id);
-  if (error) { showToast('Erreur : ' + error.message); return; }
+  const { error } = await shAppel('supprimer', { id });
+  if (error) { showToast(error.code === 'code' ? shMsgErreur(error) : 'Erreur : ' + error.message); return; }
   SH.rows = SH.rows.filter(x => x.id !== id); renderSouhaits();
 }
 
@@ -347,7 +437,8 @@ ensureSouhaitsTab();
     if (n !== 'souhaits') return;
     document.getElementById('nb-more')?.classList.add('on');
     document.getElementById('nd-souhaits')?.classList.add('active');
-    shAbonner(); renderSouhaits(); loadSouhaits();
+    // Le visiteur ne reçoit pas la liste. Pas de temps réel (la table est fermée à la clé publique) : relue à chaque ouverture.
+    renderSouhaits(); loadSouhaits();
   };
 }
 
@@ -423,6 +514,9 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .tk-who{font:700 1.15rem/1.2 var(--font-title);letter-spacing:-.02em;color:var(--accent-ink);overflow-wrap:anywhere}
 .tk-img{flex:none;width:64px;height:64px;object-fit:cover;border-radius:12px;border:2px solid #fff;box-shadow:0 0 0 1px rgba(184,137,58,.55),var(--shadow-sm);cursor:zoom-in;background:var(--sand)}
 .tk-want{margin-top:6px;font-size:.88rem;line-height:1.5;color:var(--txt);overflow-wrap:anywhere;white-space:pre-line}
+.tk-cadeau{display:flex;align-items:center;gap:10px;margin-top:10px;padding:8px 10px;border-radius:14px;background:rgba(184,137,58,.1);border:1px dashed rgba(184,137,58,.55)}
+.tk-cadeau span{display:inline-flex;align-items:center;gap:5px;font:700 .7rem var(--font);letter-spacing:.06em;text-transform:uppercase;color:var(--or)}
+.tk-cadeau .gi{width:15px;height:15px}
 .tk-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:10px;padding-top:8px;border-top:1px dashed rgba(184,137,58,.5);flex-wrap:wrap}
 .tk-meta{font-size:.66rem;color:var(--txt3)}
 .tk-actions{display:flex;gap:6px;margin-left:auto}
@@ -440,6 +534,8 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .sh-mimi-top .mimi-bubble{margin-bottom:14px}
 .sh-req,.sh-opt{margin-left:6px;font-size:.6rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
 .sh-req{color:var(--laque)}.sh-opt{color:var(--txt3)}
+.sh-check{display:flex;align-items:center;gap:10px;margin:2px 0 14px;font:600 .84rem var(--font);color:var(--txt);cursor:pointer}
+.sh-check input{width:20px;height:20px;accent-color:var(--accent);flex:none}
 textarea.form-input{resize:vertical;min-height:84px;line-height:1.45}
 .sh-photo-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px;border:2px dashed var(--border2);border-radius:var(--radius-sm);background:rgba(255,255,255,.7);color:var(--txt2);font:600 .84rem var(--font);cursor:pointer}
 .sh-photo-btn .gi{width:20px;height:20px;color:var(--accent)}
