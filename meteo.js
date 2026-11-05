@@ -36,29 +36,89 @@ function mtVilleDeTexte(t) {
   }
   return best;
 }
-// Ville d'un jour : l'après-midi d'abord (c'est là qu'on passe le plus de temps), puis le matin,
-// le soir, la ville de l'hôtel. Sinon celle de la veille ; avant la première ville reconnue
-// (jour de vol depuis la France), pas de météo.
-function mtVilleDuJour(day, veille) {
+// Une journée peut changer de ville. On lit le planning dans l'ordre (matin, après-midi, soir) :
+//   - « Chengdu → Chongqing » + horaire « 21h02 → 22h17 » : on est à Chengdu jusqu'à l'arrivée,
+//     à Chongqing à partir de 22 h 17 ;
+//   - une seule ville qui change, sans horaire : on y est dès le début de la tranche ;
+//   - aucune ville reconnue (« En vol », « Déjeuner puis… ») : on reste où l'on était.
+// Avant la première ville reconnue (jour de vol depuis la France), pas de météo.
+const MT_PLAGES = [[0, 12, 'matin_lieu', 'matin_h'], [12, 18, 'aprem_lieu', 'aprem_h'], [18, 24, 'soir_lieu', 'soir_h']];
+function mtVillesDeTexte(t) {
+  t = String(t || '');
+  return MT_VILLES.map(([nom, rx]) => [nom, rx.exec(t)]).filter(([, m]) => m).sort((a, b) => a[1].index - b[1].index).map(([nom]) => nom);
+}
+// Heures (décimales) citées dans « 06h32 → 07h48 » ou « jusqu'à 13h30 ou 14h30 → 15h30 ».
+function mtHeures(t) {
+  return [...String(t || '').matchAll(/(\d{1,2})\s*h\s*(\d{2})?/g)].map(m => +m[1] + (m[2] ? +m[2] / 60 : 0));
+}
+function mtGroupesDuJour(day, veille) {
   const hotel = day.hotel_id && typeof D !== 'undefined' ? (D.items || []).find(x => x.id === day.hotel_id) : null;
   if (!veille && !hotel) return null; // jour de vol depuis la France : pas encore sur place
-  for (const t of [day.aprem_lieu, day.matin_lieu, day.soir_lieu, hotel && hotel.ville]) {
-    const v = mtVilleDeTexte(t); if (v) return v;
-  }
-  return veille || null;
+  const lieux = MT_PLAGES.map(([, , k]) => mtVillesDeTexte(day[k]));
+  const cur = veille || mtVilleDeTexte(hotel && hotel.ville) || lieux.flat()[0] || null;
+  if (!cur) return null;
+  const ev = [{ ville: cur, from: 0 }];
+  const pousse = (ville, from) => {
+    if (from >= 24) return;                                   // arrivée après minuit : c'est le jour suivant
+    from = Math.max(Math.ceil(from), ev[ev.length - 1].from);   // présent à partir de l'heure pleine qui suit l'arrivée
+    if (ville !== ev[ev.length - 1].ville) ev.push({ ville, from });
+  };
+  MT_PLAGES.forEach(([s, e, , hk], i) => {
+    const vs = lieux[i]; if (!vs.length) return;
+    const hs = mtHeures(day[hk]), trajet = hs.length >= 2;
+    const arrivee = trajet ? (hs[hs.length - 1] < hs[0] ? 24 : hs[hs.length - 1]) : null; // « 22h25 → 00h30 » : demain
+    if (vs.length >= 2) {
+      pousse(vs[0], s);
+      pousse(vs[vs.length - 1], arrivee != null ? arrivee : (s + e) / 2);
+    } else {
+      pousse(vs[0], arrivee != null ? arrivee : s);
+    }
+  });
+  const out = [];
+  ev.forEach((x, j) => {
+    const h1 = j + 1 < ev.length ? ev[j + 1].from : 24;
+    if (h1 > x.from) out.push({ ville: x.ville, h0: out.length ? x.from : 0, h1 });
+  });
+  return out;
 }
 function mtJoursVoyage() {
   const out = []; let veille = null;
   for (const day of sortedDays()) {
-    const ville = mtVilleDuJour(day, veille); veille = ville;
-    if (!ville) continue;
-    out.push({ date: day.date_voyage, ville, rec: mtRec(ville, day.date_voyage) });
+    const groupes = mtGroupesDuJour(day, veille);
+    if (!groupes) continue;
+    veille = groupes[groupes.length - 1].ville;
+    groupes.forEach(g => { g.rec = mtRecHeures(g.ville, day.date_voyage, g.h0, g.h1); });
+    const main = groupes.find(g => g.h0 <= 15 && g.h1 > 15) || groupes[0]; // l'après-midi résume la journée
+    out.push({ date: day.date_voyage, ville: main.ville, rec: main.rec, groupes });
   }
   return out;
 }
 function mtRec(ville, date) {
   const l = MT.data && MT.data.lieux && MT.data.lieux[ville];
   return (l && l.find(j => j.d === date)) || null;
+}
+// Créneaux [début, fin[ où il pleut (au moins 0,2 mm) ; deux averses à une heure d'écart n'en font qu'un.
+function mtFenetres(p, h0, h1) {
+  const out = [];
+  for (let h = h0; h < h1; h++) {
+    if ((p[h] || 0) >= 0.2) { const l = out[out.length - 1]; if (l && h - l[1] <= 1) l[1] = h + 1; else out.push([h, h + 1]); }
+  }
+  return out;
+}
+// Un code « bruine » ou « averses » sans aucune pluie mesurée n'est pas de la pluie : on affiche nuageux.
+const MT_CODES_PLUIE = c => (c >= 51 && c <= 67) || (c >= 80 && c <= 82);
+const mtCielSec = (c, mm) => (MT_CODES_PLUIE(c) && !(mm >= 0.2) ? 3 : c);
+const mtSomme = (a, h0, h1) => Math.round(a.slice(h0, h1).reduce((s, x) => s + (x || 0), 0) * 10) / 10;
+// Résumé d'une tranche d'heures [h0, h1[ dans une ville. Température et ciel sont lus sur les heures éveillées
+// (7 h à 23 h) pour que la nuit ne tire pas le matin vers le bas ; la pluie, elle, est lue sur toute la tranche.
+function mtRecHeures(ville, date, h0, h1) {
+  const b = mtRec(ville, date); if (!b) return null;
+  if (!b.t || !b.c || !b.p) return b;       // ancien meteo.json sans heures : résumé du jour
+  if (h0 <= 0 && h1 >= 24) return { ...b, code: b.h ? b.code : mtCielSec(b.code, 0) }; // journée entière : extrêmes du jour tels quels
+  const a = Math.max(h0, 7), z = Math.min(h1, 23), v0 = a < z ? a : h0, v1 = a < z ? z : h1;
+  const t = b.t.slice(v0, v1), c = b.c.slice(v0, v1), f = mtFenetres(b.p, h0, h1);
+  return { ...b, min: Math.min(...t), max: Math.max(...t), code: f.length ? Math.max(...c) : mtCielSec(Math.max(...c), 0),
+    pluie: f.length ? b.pluie : 0, mm: mtSomme(b.p, h0, h1), f, h: f.reduce((s, [x, y]) => s + y - x, 0), neige: b.s ? mtSomme(b.s, h0, h1) : 0 };
 }
 
 /* ───────────── Codes météo → icône + libellé ───────────── */
@@ -129,69 +189,102 @@ function mtCible() {
   const jours = mtJoursVoyage(); if (!jours.length) return null;
   const now = chinaNow().date;
   if (now < jours[0].date) return { ...jours[0], avant: true };
-  return jours.find(j => j.date === now) ? { ...jours.find(j => j.date === now), avant: false } : null;
+  const j = jours.find(x => x.date === now);
+  return j ? { ...j, avant: false } : null;
 }
 
+// « Maintenant » : la ville où l'on est à cette heure (d'après le planning) et le temps qu'il y fait
+// à cette heure précise, avec la pluie à venir tant qu'on reste dans cette ville.
+function mtMaintenant() {
+  const c = mtCible(); if (!c) return null;
+  if (c.avant) return { ...c, g: c.groupes[0], temp: null };
+  const h = Math.floor(chinaNow().min / 60);
+  const g = c.groupes.find(x => h >= x.h0 && h < x.h1) || c.groupes[c.groupes.length - 1];
+  const b = mtRec(g.ville, c.date);
+  if (!b) return { ...c, ville: g.ville, rec: null, g };
+  if (!b.t || !b.c || !b.p) return { ...c, ville: g.ville, rec: g.rec, g, temp: null };
+  const f = mtFenetres(b.p, h, g.h1);
+  const reste = { ...b, f, h: f.reduce((s, [x, y]) => s + y - x, 0), mm: mtSomme(b.p, h, g.h1), neige: b.s ? mtSomme(b.s, h, g.h1) : 0 };
+  const p = mtPluie(reste), fin = g.h1 >= 24 ? "d'ici ce soir" : "jusqu'à " + mtH(g.h1);
+  const enCours = f.length && f[0][0] <= h;
+  const txt = p.pluie ? (enCours ? 'Il pleut en ce moment · ' : '') + p.txt : 'Pas de pluie prévue ' + fin;
+  return { ...c, ville: g.ville, rec: g.rec, g, h, temp: b.t[h], code: mtCielSec(b.c[h], b.p[h]), pluie: p.pluie, txt, neige: reste.neige };
+}
+// « jusqu'à 15 h », « de 15 h à 17 h », « dès 17 h » (rien si la journée entière est au même endroit).
+const mtPlage = (h0, h1) => h0 <= 0 && h1 >= 24 ? '' : h0 <= 0 ? "jusqu'à " + mtH(h1) : h1 >= 24 ? 'dès ' + mtH(h0) : 'de ' + mtH(h0) + ' à ' + mtH(h1);
+
 /* ───────────── 1. Pastille en haut de chaque jour du Planning ───────────── */
-function mtBadgeHtml(date, ville) {
-  const r = mtRec(ville, date); if (!r) return '';
+function mtBadgeHtml(e) {
+  const r = e.rec; if (!r) return '';
   const [ic, lib] = mtCode(r.code, r.neige);
   const p = mtPluie(r);
-  return '<button type="button" class="mt-badge" onclick="event.stopPropagation();mtOuvrir(\'' + date + '\')" aria-label="Météo du ' + fmtDate(date) + ' : ' + lib + ', ' + r.max + ' degrés' + (p.pluie ? ', pluie prévue' : '') + '. Ouvrir la météo">'
+  return '<button type="button" class="mt-badge" onclick="event.stopPropagation();mtOuvrir(\'' + e.date + '\')" aria-label="Météo du ' + fmtDate(e.date) + ' : ' + lib + ', ' + r.max + ' degrés' + (p.pluie ? ', pluie prévue' : '') + '. Ouvrir la météo">'
     + mtIcone(ic, 22) + '<span>' + r.max + '°</span></button>';
 }
 // Appelée par le gabarit du Planning. Le conteneur reste dans le DOM même sans donnée :
 // mtRafraichir() le remplit dès que meteo.json arrive.
 function mtBadge(day) {
   const e = mtJoursVoyage().find(j => j.date === day.date_voyage);
-  return '<span class="mt-slot" data-d="' + day.date_voyage + '">' + (e ? mtBadgeHtml(e.date, e.ville) : '') + '</span>';
+  return '<span class="mt-slot" data-d="' + day.date_voyage + '">' + (e ? mtBadgeHtml(e) : '') + '</span>';
 }
 
 /* ───────────── 2. Carte sur l'Accueil ───────────── */
 function mtAccueil() {
-  const c = mtCible(); if (!c || !c.rec) return '';
-  const r = c.rec, [ic, lib] = mtCode(r.code, r.neige), p = mtPluie(r);
-  const quand = c.avant ? 'Premier jour, ' + fmtDate(c.date) : "Aujourd'hui";
+  const m = mtMaintenant(); if (!m || !m.rec) return '';
+  const r = m.rec, maint = !m.avant && m.temp != null;
+  const [ic, lib] = maint ? mtCode(m.code, m.neige) : mtCode(r.code, r.neige);
+  const p = maint ? { pluie: m.pluie, txt: m.txt } : mtPluie(r);
+  const quand = m.avant ? 'Premier jour, ' + fmtDate(m.date) : 'Maintenant';
+  const deg = maint ? m.temp + ' °C' : mtTemp(r);
   return '<button type="button" class="mt-home" data-act="meteo" aria-label="Ouvrir la météo du voyage">'
     + '<span class="mt-home-ic">' + mtIcone(ic, 38) + '</span>'
-    + '<span class="mt-home-tx"><b>' + esc(c.ville) + ' · ' + esc(quand) + '</b>'
-    + '<span>' + esc(lib) + ', ' + mtTemp(r) + '</span>'
+    + '<span class="mt-home-tx"><b>' + esc(m.ville) + ' · ' + esc(quand) + '</b>'
+    + '<span>' + esc(lib) + ', ' + deg + '</span>'
     + '<em class="' + (p.pluie ? 'mt-pluie' : '') + '">' + esc(p.txt) + '</em></span>'
     + window.ic('arrow-right') + '</button>';
 }
 
 /* ───────────── 3. Vue « juste la météo » ───────────── */
-function mtLigneHtml(e, cible) {
-  const dt = new Date(e.date + 'T12:00:00');
-  const jour = dt.toLocaleDateString('fr-FR', { weekday: 'short' }).replace('.', ''), num = dt.getDate();
-  if (!e.rec) {
-    const n = typeof METEO_DATA !== 'undefined' && METEO_DATA[e.ville];
-    return '<div class="mt-row mt-row-vide' + (cible ? ' cible' : '') + '" id="mt-row-' + e.date + '"><div class="mt-d"><b>' + num + '</b><span>' + jour + '</span></div>'
-      + '<div class="mt-mid"><b>' + esc(e.ville) + '</b><span>Prévision pas encore publiée</span>'
+function mtGroupeHtml(e, g, multi) {
+  const titre = esc(g.ville) + (multi ? ' · ' + mtPlage(g.h0, g.h1) : '');
+  const r = g.rec;
+  if (!r) {
+    const n = typeof METEO_DATA !== 'undefined' && METEO_DATA[g.ville];
+    return '<div class="mt-g"><div class="mt-mid"><b>' + titre + '</b><span>Prévision pas encore publiée</span>'
       + (n ? '<em>Normale de saison : ' + n.min + '–' + n.max + ' °C</em>' : '') + '</div></div>';
   }
-  const r = e.rec, [ic, lib] = mtCode(r.code, r.neige), p = mtPluie(r);
-  return '<div class="mt-row' + (cible ? ' cible' : '') + '" id="mt-row-' + e.date + '"><div class="mt-d"><b>' + num + '</b><span>' + jour + '</span></div>'
-    + '<div class="mt-mid"><b>' + esc(e.ville) + '</b><span>' + esc(lib) + '</span>'
+  const [ic, lib] = mtCode(r.code, r.neige), p = mtPluie(r);
+  return '<div class="mt-g"><div class="mt-mid"><b>' + titre + '</b><span>' + esc(lib) + '</span>'
     + '<em class="' + (p.pluie ? 'mt-pluie' : '') + '">' + esc(p.txt) + '</em></div>'
     + '<div class="mt-r">' + mtIcone(ic, 30) + '<b>' + mtTemp(r) + '</b></div></div>';
 }
-function mtHeroHtml(c) {
-  if (!c) return '';
-  if (!c.rec) return '<div class="mt-hero"><div class="mt-hero-t">' + esc(c.ville) + '</div><p>Pas de prévision pour ce jour pour l\'instant.</p></div>';
-  const r = c.rec, [ic, lib] = mtCode(r.code, r.neige), p = mtPluie(r);
-  const titre = c.avant ? 'Premier jour, ' + fmtDate(c.date) : "Aujourd'hui, " + fmtDate(c.date);
-  return '<div class="mt-hero"><div class="mt-hero-t">' + esc(titre) + ' · ' + esc(c.ville) + '</div>'
-    + '<div class="mt-hero-m">' + mtIcone(ic, 56) + '<div><strong>' + r.max + '°</strong><span>minimum ' + r.min + '°</span></div></div>'
+function mtLigneHtml(e, cible) {
+  const dt = new Date(e.date + 'T12:00:00');
+  const jour = dt.toLocaleDateString('fr-FR', { weekday: 'short' }).replace('.', ''), num = dt.getDate();
+  const multi = e.groupes.length > 1;
+  return '<div class="mt-row' + (cible ? ' cible' : '') + '" id="mt-row-' + e.date + '"><div class="mt-d"><b>' + num + '</b><span>' + jour + '</span></div>'
+    + '<div class="mt-gs">' + e.groupes.map(g => mtGroupeHtml(e, g, multi)).join('') + '</div></div>';
+}
+function mtHeroHtml() {
+  const m = mtMaintenant(); if (!m) return '';
+  if (!m.rec) return '<div class="mt-hero"><div class="mt-hero-t">' + esc(m.ville) + '</div><p>Pas de prévision pour ce jour pour l\'instant.</p></div>';
+  const r = m.rec, maint = !m.avant && m.temp != null;
+  const [ic, lib] = maint ? mtCode(m.code, m.neige) : mtCode(r.code, r.neige);
+  const p = maint ? { pluie: m.pluie, txt: m.txt } : mtPluie(r);
+  const titre = m.avant ? 'Premier jour, ' + fmtDate(m.date) + ' · ' + m.ville : 'Maintenant, ' + mtH(m.h) + ' · ' + m.ville;
+  const gros = maint ? m.temp : r.max, petit = maint ? (r.min === r.max ? '' : "aujourd'hui " + mtTemp(r) + ' ici') : 'minimum ' + r.min + '°';
+  const neige = (maint ? m.neige : r.neige) >= 0.5;
+  return '<div class="mt-hero"><div class="mt-hero-t">' + esc(titre) + '</div>'
+    + '<div class="mt-hero-m">' + mtIcone(ic, 56) + '<div><strong>' + gros + '°</strong><span>' + esc(petit) + '</span></div></div>'
     + '<div class="mt-hero-l">' + esc(lib) + '</div>'
-    + '<div class="mt-hero-p ' + (p.pluie ? 'mt-pluie' : '') + '">' + mtIcone(p.pluie ? (r.neige >= 0.5 ? 'snow' : 'rain') : 'sun', 20) + '<span>' + esc(p.txt) + '</span></div></div>';
+    + '<div class="mt-hero-p ' + (p.pluie ? 'mt-pluie' : '') + '">' + mtIcone(p.pluie ? (neige ? 'snow' : 'rain') : 'sun', 20) + '<span>' + esc(p.txt) + '</span></div></div>';
 }
 function mtVueHtml(focus) {
   const jours = mtJoursVoyage(), cible = mtCible();
   if (!MT.data) return '<p class="mt-vide">Pas encore de prévision sur ce téléphone. Elle se charge dès qu\'il y a du réseau.</p>';
   if (!jours.length) return '<p class="mt-vide">Le planning est vide : aucun jour à afficher.</p>';
   const maj = mtMajTexte();
-  return (cible ? mtHeroHtml(cible) : '')
+  return (cible ? mtHeroHtml() : '')
     + '<div class="mt-sl">Tous les jours du voyage</div>'
     + '<div class="mt-list">' + jours.map(e => mtLigneHtml(e, e.date === focus)).join('') + '</div>'
     + '<p class="mt-src">' + esc(maj) + (maj ? ' · ' : '') + 'Prévisions Open-Meteo. Elles bougent : reviens voir la veille.</p>';
@@ -230,16 +323,19 @@ function mtLigneVille(ville) {
 
 /* ───────────── Réponse du chat local ───────────── */
 function mtResumeTexte() {
-  const c = mtCible(); if (!c || !c.rec) return '';
-  const r = c.rec, [, lib] = mtCode(r.code, r.neige);
-  return (c.avant ? 'Premier jour (' + fmtDate(c.date) + ')' : "Aujourd'hui") + ' à ' + c.ville + ' : ' + lib + ', ' + mtTemp(r) + '. ' + mtPluie(r).txt + '.';
+  const m = mtMaintenant(); if (!m || !m.rec) return '';
+  if (m.avant || m.temp == null) {
+    const lib = mtCode(m.rec.code, m.rec.neige)[1];
+    return (m.avant ? 'Premier jour (' + fmtDate(m.date) + ')' : "Aujourd'hui") + ' à ' + m.ville + ' : ' + lib + ', ' + mtTemp(m.rec) + '. ' + mtPluie(m.rec).txt + '.';
+  }
+  return 'Maintenant à ' + m.ville + ' : ' + mtCode(m.code, m.neige)[1] + ', ' + m.temp + ' °C. ' + m.txt + '.';
 }
 
 /* ───────────── Chargement ───────────── */
 function mtRafraichir() {
   document.querySelectorAll('.mt-slot').forEach(s => {
     const e = mtJoursVoyage().find(j => j.date === s.dataset.d);
-    s.innerHTML = e ? mtBadgeHtml(e.date, e.ville) : '';
+    s.innerHTML = e ? mtBadgeHtml(e) : '';
   });
   if (typeof loadMeteo === 'function') loadMeteo();
   if (typeof acSafeRender === 'function') acSafeRender();
@@ -294,11 +390,13 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 .mt-hero p{margin:6px 0 0;font-size:.86rem;color:var(--txt2)}
 .mt-sl{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--txt2);margin:4px 0 8px}
 .mt-list{display:flex;flex-direction:column;gap:8px}
-.mt-row{display:flex;align-items:center;gap:12px;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:#fff}
+.mt-row{display:flex;align-items:flex-start;gap:12px;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:#fff}
 .mt-row.cible{border-color:var(--accent);box-shadow:0 0 0 2px var(--tint)}
-.mt-row-vide{opacity:.75}
 .mt-d{display:flex;flex-direction:column;align-items:center;min-width:38px;line-height:1.1}
 .mt-d b{font-size:1.3rem}.mt-d span{font-size:.7rem;color:var(--txt2);text-transform:uppercase}
+.mt-gs{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px}
+.mt-g{display:flex;align-items:center;gap:10px}
+.mt-g+.mt-g{border-top:1px dashed var(--border2);padding-top:8px}
 .mt-mid{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
 .mt-mid b{font-size:.84rem}.mt-mid span{font-size:.78rem;color:var(--txt2)}
 .mt-r{display:flex;flex-direction:column;align-items:center;gap:2px;flex:none}

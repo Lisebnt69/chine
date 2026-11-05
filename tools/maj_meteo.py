@@ -49,7 +49,7 @@ def prevision(lat, lon):
         "latitude": lat,
         "longitude": lon,
         "daily": "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max",
-        "hourly": "precipitation,snowfall",
+        "hourly": "temperature_2m,weather_code,precipitation,snowfall",
         "timezone": "Asia/Shanghai",
         "forecast_days": 16,
     }
@@ -59,27 +59,35 @@ def prevision(lat, lon):
     d, hr = rep["daily"], rep["hourly"]
 
     par_jour = {}
-    for t, mm, neige in zip(hr["time"], hr["precipitation"], hr["snowfall"]):
+    for t, mm, neige, temp, code in zip(hr["time"], hr["precipitation"], hr["snowfall"],
+                                        hr["temperature_2m"], hr["weather_code"]):
         jour, heure = t.split("T")
-        par_jour.setdefault(jour, []).append((int(heure[:2]), mm or 0.0, neige or 0.0))
+        par_jour.setdefault(jour, []).append((int(heure[:2]), mm or 0.0, neige or 0.0, temp, code))
 
     jours = []
     for i, jour in enumerate(d["time"]):
         if d["temperature_2m_max"][i] is None or d["temperature_2m_min"][i] is None:
             continue
         heures = par_jour.get(jour, [])
-        creneaux = fenetres_de_pluie([(h, mm) for h, mm, _ in heures])
+        creneaux = fenetres_de_pluie([(h, mm) for h, mm, _, _, _ in heures])
         jours.append({
             "d": jour,
             "min": round(d["temperature_2m_min"][i]),
             "max": round(d["temperature_2m_max"][i]),
             "code": d["weather_code"][i],
             "pluie": d["precipitation_probability_max"][i],       # % de risque, maximum de la journée
-            "mm": round(sum(mm for _, mm, _ in heures), 1),        # cumul de la journée
+            "mm": round(sum(mm for _, mm, _, _, _ in heures), 1),  # cumul de la journée
             "f": creneaux,                                          # créneaux de pluie [début, fin[ en heures
             "h": sum(fin - debut for debut, fin in creneaux),      # durée de pluie prévue, en heures
-            "neige": round(sum(n for _, _, n in heures), 1),       # cm de neige
+            "neige": round(sum(n for _, _, n, _, _ in heures), 1), # cm de neige
         })
+        # Heure par heure (24 valeurs) : l'app s'en sert pour la météo « maintenant »
+        # et pour les jours où l'on change de ville entre le matin et le soir.
+        if len(heures) == 24:
+            jours[-1]["t"] = [round(x[3]) for x in heures]          # température, °C
+            jours[-1]["c"] = [x[4] for x in heures]                 # code météo WMO
+            jours[-1]["p"] = [round(x[1], 1) for x in heures]       # précipitations, mm
+            jours[-1]["s"] = [round(x[2], 1) for x in heures]       # neige, cm
     if not jours:
         raise ValueError("aucun jour dans la réponse")
     return jours
