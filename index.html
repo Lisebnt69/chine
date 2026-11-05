@@ -245,7 +245,7 @@ main{padding-top:calc(var(--hdr) + 46px);padding-bottom:calc(var(--nav) + var(--
 .tl-month{font-size:.55rem;font-weight:600;color:rgba(255,255,255,.8);text-transform:uppercase;letter-spacing:.4px;}
 .tl-weekday{font-size:.5rem;color:rgba(255,255,255,.6);margin-top:1px;}
 .tl-info{flex:1;padding:10px 12px;min-width:0;}
-.tl-city{font-size:.85rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.tl-city{font-size:.85rem;font-weight:600;line-height:1.25;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
 .tl-chips{display:flex;gap:5px;flex-wrap:wrap;margin-top:4px;}
 .tl-chip{font-size:.58rem;font-weight:500;padding:2px 7px;border-radius:20px;background:var(--bg);color:var(--txt2);}
 .tl-day-total{font-size:.82rem;font-weight:700;padding:0 10px;flex-shrink:0;}
@@ -1424,6 +1424,11 @@ body::before,body::after{display:none;}
 .btn-danger{color:var(--red);border:1px solid var(--red-line);border-radius:999px;}
 .btn-cancel{background:var(--tint);color:var(--accent-ink);border-radius:999px;font-weight:600;}
 .gcal-btn{border:1px solid var(--border);border-radius:999px;}
+.plan-actions{display:flex;gap:8px;padding:0 16px 14px;}
+.plan-actions .gcal-btn,.plan-actions .pdf-export-btn{flex:1 1 0;width:auto;margin:0;min-height:46px;padding:10px 12px;border-radius:999px;justify-content:center;gap:7px;font-size:.78rem;font-weight:600;white-space:nowrap;}
+#tlWrap .meteo-card{margin:0 0 12px;}
+.tl-head .tl-date-block{align-self:stretch;}
+.tl-chip{font-size:.62rem;max-width:100%;}
 
 /* ═══ DÉCOR CHINE TRADITIONNELLE : papier de riz, bordeaux, or, lanternes, sceau ═══ */
 :root{
@@ -1650,9 +1655,9 @@ main::before{content:'';display:block;height:12px;margin-top:-6px;background:var
     <button class="pvs-btn on" id="pvs-timeline" onclick="switchPlanView('timeline')">📋 Timeline</button>
     <button class="pvs-btn" id="pvs-cal" onclick="switchPlanView('cal')">🗓 Calendrier</button>
   </div>
-  <div style="display:flex;gap:8px;padding:0 16px 4px;flex-wrap:wrap;">
-    <button class="gcal-btn" style="margin:0;flex:1;" onclick="exportGoogleCal()">📅 Google Calendar</button>
-    <button class="pdf-export-btn" style="flex:1;" onclick="exportPlanningPDF()">🖨️ Exporter PDF</button>
+  <div class="plan-actions">
+    <button class="gcal-btn" onclick="exportGoogleCal()">📅 Google Calendar</button>
+    <button class="pdf-export-btn" onclick="exportPlanningPDF()">🖨️ Exporter PDF</button>
   </div>
   <div class="tl-container" id="tlWrap"></div>
   <div class="cal-wrap" id="calWrap" style="display:none;"></div>
@@ -3622,6 +3627,12 @@ function renderCalendar(){
   wrap.appendChild(leg);
 }
 
+// Les notes d'un transport mélangent du texte et des champs lus par le code (DEP_ADDR, ARR_LAT…) : on n'affiche que le texte.
+function notesTransportLisibles(notes){
+  const parts=String(notes||'').split('|').map(x=>x.trim()).filter(x=>x&&!/^(DEP|ARR)_(ADDR|LAT|LNG):/.test(x)&&!/^[DA]:/.test(x));
+  return parts.join(' · ')||'—';
+}
+
 function renderPlanning(){
   const wrap=document.getElementById('tlWrap');wrap.innerHTML='';
   // Météo inline dans planning
@@ -3653,7 +3664,7 @@ function renderPlanning(){
     const dayTotal=slotItems.reduce((s,{item})=>s+(parseFloat(item.prix||0)),0)+transportsDay.reduce((s,t)=>s+(parseFloat(t.prix||0)),0);
     const cities=[...new Set([day.matin_lieu,day.aprem_lieu,day.soir_lieu].filter(Boolean).filter(x=>x!=='—'))].join(' → ');
     const metaChips=[];
-    if(transportsDay.length)metaChips.push(transportsDay.map(t=>(t.prix_type||'').split(' ')[0]+' '+t.nom).join(', '));
+    transportsDay.forEach(t=>metaChips.push(esc(((t.prix_type||'').split(' ')[0]+' '+t.nom).replace(/\s*->\s*/g,' → ').trim())));
     if(hotel)metaChips.push('🏨 '+hotel.nom);
     if(slotItems.length)metaChips.push(slotItems.length+' activité(s)');
 
@@ -3737,7 +3748,7 @@ function renderDayTimeline(day,transports,slotItems,hotel){
           <span class="tl-entry-name">${esc(t.nom)}</span>
           <span style="font-size:.65rem;color:var(--txt2);">${t.quartier?esc(t.quartier):''} ${t.description?'→ '+esc(t.description):''}</span>
         </div>
-        <div class="tl-entry-sub"><b>Durée :</b> ${esc(t.notes||'—')}${isEditorMode()?` · <b>Prix :</b> ${fmtE(parseFloat(t.prix||0))}`:''}</div>
+        <div class="tl-entry-sub">${esc(notesTransportLisibles(t.notes))}${isEditorMode()?` · <b>Prix :</b> ${fmtE(parseFloat(t.prix||0))}`:''}</div>
       </div></div>`});
   });
   const po={Matin:1,'Après-midi':2,Soir:3,Journée:4,'':5};

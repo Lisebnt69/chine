@@ -310,7 +310,8 @@ function vitalRows(day) {
   const plan = buildDayPlan(day), rows = [];
   transportsForDay(day).forEach(t => {
     const arrJ1 = t.adresse !== day.date_voyage;
-    const dep = String(t.notes || '').match(/DEP_ADDR:([^|]+)/)?.[1]?.trim();
+    let dep = String(t.notes || '').match(/DEP_ADDR:([^|]+)/)?.[1]?.trim();
+    if (dep && dep.length < 3) dep = ''; // une saisie d'une lettre n'est pas une adresse
     rows.push({ t: arrJ1 ? (toMin(t.description) ?? 6 * 60) : (toMin(t.quartier) ?? 0), ic: transportIcon(t), item: t,
       title: t.nom, sub: arrJ1 ? `Arrivée à ${t.description || '?'} (départ la veille)` : `${t.quartier || '?'} → ${t.description || '?'}`,
       extra: dep ? 'Départ : ' + dep : '', tag: t.fait ? ['Réservé', 'ok'] : ['À réserver', 'warn'], big: true,
