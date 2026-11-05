@@ -2832,7 +2832,7 @@ function renderItems(type){
     items=applyTerrainFilter(items);
   }
   if(!items.length){
-    cont.innerHTML=`<div class="empty-state"><div class="empty-icon">${TYPE_IC[type]||'📍'}</div><div class="empty-txt">${terrainMode?'Aucune activité planifiée':'Aucun élément'}</div><div class="empty-sub">${terrainMode?'Planifiez des activités':'Ajoutez le premier'}</div></div>`;
+    cont.innerHTML=`<div class="empty-state"><div class="empty-icon">${TYPE_IC[type]||'📍'}</div><div class="empty-txt">${terrainMode?'Aucune activité planifiée':'Rien ici pour l’instant'}</div><div class="empty-sub">${terrainMode?'Planifie des activités depuis l’onglet Planning.':(isEditorMode()?'Ajoute le premier avec le bouton ＋ sous la liste.':'Matis et Lise n’ont encore rien ajouté ici.')}</div></div>`;
     return;
   }
   if(sort==='statut'){
@@ -4039,7 +4039,7 @@ function renderTransports() {
   });
 
   if (!transports.length) {
-    cont.innerHTML = '<div class="empty"><div class="empty-ic">🚄</div>Aucun transport</div>';
+    cont.innerHTML = '<div class="empty"><div class="empty-ic">🚄</div>Aucun transport pour l’instant.<br><small>Les trains et les vols ajoutés apparaîtront ici.</small></div>';
     return;
   }
 
@@ -7090,13 +7090,13 @@ if(loginPasswordEl){
 </script>
 
 <script src="ia.js?v=8"></script>
-<script src="prog.js?v=4"></script>
+<script src="prog.js?v=5"></script>
 <script src="souhaits.js?v=4"></script>
 <script src="questions.js?v=1"></script>
 <script src="roomy.js?v=1"></script>
 <script src="resa.js?v=1"></script>
 <script src="plats.js?v=1"></script>
-<script src="accueil.js?v=2"></script>
+<script src="accueil.js?v=3"></script>
 <script src="visiteur.js?v=1"></script>
 </body>
 </html>

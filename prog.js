@@ -101,6 +101,7 @@ function progClick(e) {
     case 'fill': { const i = document.getElementById('pcInp'); if (i) { i.value = d.q; i.focus(); } break; }
     case 'send': sendProg(); break;
     case 'locate': progLocate(true); break;
+    case 'vue': progView = d.v; try { localStorage.setItem('prog_view', progView); } catch (err) { /* ignoré */ } renderProgramme(); break;
     case 'reset': progChat = []; saveChat(); renderClaudeView(); break;
   }
 }
@@ -338,7 +339,7 @@ function viewVital() {
     nR += rows.filter(r => r.item.type !== 'transport' && r.item.type !== 'hotel').length;
     const nuit = nuitHtml(day, plan.hotel);
     return `<div class="prog-day">${dayHead(day)}
-      ${rows.length ? rows.map(vitalRow).join('') : `<div class="pv-empty">Rien de vital ce jour-là : pas de train, pas d'heure fixée.</div>`}
+      ${rows.length ? rows.map(vitalRow).join('') : `<div class="pv-empty">Rien d’important ce jour-là : ni train, ni vol, ni heure fixée. <button type="button" class="prog-btn" data-act="vue" data-v="leger">Voir les idées</button></div>`}
       ${nuit}</div>`;
   }).join('');
   h += `<div class="prog-hint">${nT} trajet(s) · ${nR} activité(s) à heure fixe ou réservée sur ${days.length} jour(s).</div>` + blocks;
@@ -617,7 +618,7 @@ function viewDetail() {
           ${etapeHtml(r.et)}${(r.pos || r.cn) ? `<div class="pv-a">${navBtns(r.title, r.pos, r.cn, 'sm')}</div>` : ''}</div></div>`;
       return `<div class="pd-r ${r.k}"><div class="pd-h">${r.hl || fmtMin(r.t)}</div><div class="pd-dot"></div><div class="pd-c"><div class="pd-t">${r.mode ? ic(MODES[r.mode]?.[0]) + ' ' : ''}${esc(r.title)}</div>${r.sub ? `<div class="pd-s">${esc(r.sub)}</div>` : ''}${r.html || ''}</div></div>`;
     }).join('')}</div>`
-      : `<div class="pv-empty">Journée libre : rien de prévu. ${isEditorMode() ? 'Demande à Roomy ou ouvre' : 'Ouvre'} la vue Idées pour des propositions.</div>
+      : `<div class="pv-empty">Journée libre : rien de prévu. <button type="button" class="prog-btn" data-act="vue" data-v="leger">Voir les idées</button>${isEditorMode() ? ' <button type="button" class="prog-btn" data-act="vue" data-v="claude">Demander à Roomy</button>' : ''}</div>
          <button class="prog-wide" data-act="ask" data-q="${esc(`Le ${day.date_voyage} on n'a rien de prévu. Propose-nous une journée complète, d'abord depuis ma liste, puis le cerveau, et planifie-la.`)}">Faire proposer une journée par Roomy</button>`;
     h += `</div>`;
   });

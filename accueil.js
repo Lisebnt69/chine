@@ -261,8 +261,8 @@ function acEnsureTab() {
   tab.innerHTML = `
     <div class="ph"><h1>Accueil</h1><p id="acSub"></p></div>
 
-    <section class="ac-sec"><div class="sl">Prochaines activités</div><div class="ac-card" id="acAct"></div></section>
-    <section class="ac-sec"><div class="sl">Prochaines étapes importantes</div><div class="ac-card" id="acEtapes"></div></section>
+    <section class="ac-sec"><div class="sl">Prochaines activités<span class="sl-s">heure de Chine</span></div><div class="ac-card" id="acAct"></div></section>
+    <section class="ac-sec"><div class="sl">Prochaines étapes importantes<span class="sl-s">trains, vols, hôtels</span></div><div class="ac-card" id="acEtapes"></div></section>
 
     <section class="ac-sec ac-ed">
       <button type="button" class="ac-roomy" data-act="roomy">
@@ -293,7 +293,7 @@ function acEnsureTab() {
 
     <section class="ac-sec ac-ed"><div class="sl">Dépenses</div><div class="ac-card ac-budget" id="acBudget" data-act="budget" role="button" tabindex="0"></div></section>
 
-    <section class="ac-sec ac-sosec"><div class="sl">Urgences</div><div id="acSos"></div></section>
+    <section class="ac-sec ac-sosec"><div class="sl">Urgences<span class="sl-s">touche pour appeler</span></div><div id="acSos"></div></section>
     <div style="height:18px"></div>`;
   main.appendChild(tab);
   tab.addEventListener('click', acClic);
@@ -400,6 +400,7 @@ document.head.insertAdjacentHTML('beforeend', `<style>
 #tab-accueil .ph h1::after{content:'家'}#tab-accueil .ph::before{content:'福'}
 .reader-mode .ac-ed,.reader-mode #nd-budget{display:none!important}
 .ac-sec{margin:0 0 16px}
+.ac-sec .sl-s{margin-left:8px;text-transform:none;letter-spacing:0;font-weight:500;opacity:.7}
 .ac-card{margin:0 16px;background:#fffdf8;border:1px solid rgba(184,137,58,.45);border-radius:18px;box-shadow:var(--shadow-sm);overflow:hidden}
 .ac-vide{padding:16px;font-size:.8rem;color:var(--txt2)}
 .ac-row{display:grid;grid-template-columns:64px 1fr auto;gap:10px;align-items:center;padding:12px;border-top:1px solid var(--border);cursor:pointer;min-height:60px;-webkit-tap-highlight-color:transparent}
