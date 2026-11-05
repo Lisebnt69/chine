@@ -2374,7 +2374,7 @@ function subAll(){
         else{const{data}=await sb.from(table).select('*').order('id',{ascending:true});D[key]=data||[];}
       }else if(payload.eventType==='INSERT'&&payload.new){
         if(!D[key])D[key]=[];
-        D[key].push(payload.new);
+        if(!D[key].some(x=>x.id===payload.new.id))D[key].push(payload.new); // déjà là si on vient de tout recharger
       }else if(payload.eventType==='DELETE'&&payload.old?.id){
         D[key]=(D[key]||[]).filter(x=>x.id!==payload.old.id);
       }else{
@@ -7100,7 +7100,7 @@ if(loginPasswordEl){
 
 </script>
 
-<script src="ia.js?v=8"></script>
+<script src="ia.js?v=9"></script>
 <script src="prog.js?v=6"></script>
 <script src="souhaits.js?v=4"></script>
 <script src="questions.js?v=1"></script>

@@ -258,6 +258,12 @@ async function applyOptimised(dayId) {
   showToast(`✅ ${stops.length} heure(s) fixée(s)`); renderProgramme(); renderPlanning();
 }
 
+/* Après une écriture faite depuis le Programme : on recharge tout et on redessine tous les onglets (Planning compris),
+   sans attendre le temps réel, qui peut décrocher en Chine. */
+async function syncEtRendre() {
+  try { await loadAll(); } catch (e) { /* hors ligne : le temps réel rattrapera */ }
+  renderAll();
+}
 function quickPlan(itemId, pre) {
   pre = pre || {};
   if (!requireEditorSoft()) return;
@@ -280,7 +286,7 @@ async function confirmQuickPlan(itemId) {
   const { error } = await sb.from('planning_slots').insert(row);
   if (error) { showToast('❌ ' + error.message); return; }
   await sb.from('items').update({ statut: 'planifie' }).eq('id', itemId);
-  document.getElementById('qp-sheet')?.remove(); showToast('📅 Ajouté au planning'); renderProgramme();
+  document.getElementById('qp-sheet')?.remove(); showToast('📅 Ajouté au planning'); await syncEtRendre();
 }
 
 /* ═══════════ 3. CERVEAU ═══════════ */
@@ -366,7 +372,7 @@ async function cerveauToItem(cle) {
   if (error) { showToast('❌ ' + error.message); return; }
   await sb.from('cerveau').update({ item_id: data.id, lat: row.lat, lng: row.lng }).eq('cle', cle);
   c.item_id = data.id; showToast('💡 Ajouté aux idées' + (row.lat ? ' + carte' : ''));
-  renderCerveau(); renderProgramme();
+  renderCerveau(); await syncEtRendre();
   return data.id;
 }
 
