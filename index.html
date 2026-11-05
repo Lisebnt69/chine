@@ -957,7 +957,7 @@ select.form-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://
 .mp-statut.fait{background:#dcfce7;color:#166534;}
 .mp-actions{display:flex;gap:6px;}
 .mp-btn{flex:1;padding:7px 4px;border-radius:9px;border:1.5px solid var(--border);background:var(--bg);color:var(--txt);font-size:.68rem;font-weight:600;cursor:pointer;font-family:var(--font);text-align:center;}
-.mp-btn.nav{background:var(--accent);border-color:var(--accent);color:#fff;}
+.mp-btn.mp-go{background:var(--accent);border-color:var(--accent);color:#fff;}
 .mp-btn:active{transform:scale(.96);}
 /* Marker custom couleur */
 .map-marker{width:32px;height:32px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,.2);}
@@ -1002,6 +1002,19 @@ select.form-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://
 .chat-msg.me .chat-bubble{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border-bottom-right-radius:4px;}
 .chat-msg.other .chat-bubble{background:#fff;border:1px solid var(--border);color:var(--txt);border-bottom-left-radius:4px;box-shadow:var(--shadow-sm);}
 .chat-msg.bot .chat-bubble{background:linear-gradient(135deg,#3b1219,#2a0a10);color:#fff;border-bottom-left-radius:4px;}
+.md>:first-child{margin-top:0}.md>:last-child{margin-bottom:0}
+.md p{margin:0 0 .55em}
+.md h3,.md h4,.md h5,.md h6{margin:.8em 0 .3em;font-size:.9rem;font-weight:700;line-height:1.3;color:#e9c46a}
+.md h3{font-size:.98rem}
+.md ul,.md ol{margin:.2em 0 .6em;padding-left:1.25em}
+.md li{margin:.15em 0}
+.md strong{font-weight:700;color:#fff}
+.md a{color:#e9c46a;text-decoration:underline;overflow-wrap:anywhere}
+.md code{background:rgba(255,255,255,.14);border-radius:5px;padding:1px 5px;font-size:.78rem}
+.md pre{background:rgba(0,0,0,.35);border-radius:10px;padding:9px 11px;overflow-x:auto;margin:.4em 0 .6em}
+.md pre code{background:none;padding:0}
+.md blockquote{margin:.4em 0;padding:2px 0 2px 10px;border-left:3px solid #e9c46a;opacity:.9}
+.md hr{border:none;border-top:1px solid rgba(255,255,255,.25);margin:.7em 0}
 .chat-bubble-poll{background:#fff!important;border:1px solid var(--border)!important;color:var(--txt)!important;padding:12px!important;}
 .chat-msg.me .chat-bubble .chat-poll,.chat-msg.other .chat-bubble .chat-poll{background:transparent;border:none;padding:0;}
 .chat-poll{min-width:200px;}
@@ -3018,7 +3031,7 @@ function buildItemForm(type, item, readOnly=false) {
       </div>
       <div class="form-group"><div class="form-label">Durée du trajet</div><input class="form-input" id="if-duree" value="${nts.split('Durée: ')[1] || ''}" placeholder="11h50"></div>
       <div class="form-group"><div class="form-label">Date de départ</div><input class="form-input" id="if-date" type="date" value="${v('adresse')}"></div>
-      <div class="form-group"><div class="form-label">Prix total (€)</div>${readOnly?'<div class="form-input" style="background:var(--sand);color:var(--txt2);">***€</div>':`<input class="form-input" id="if-prix" type="number" value="${n('prix')||''}">`}</div>
+      <div class="form-group"><div class="form-label">Prix total (€)</div>${readOnly?'<div class="prix-masque"></div>':`<input class="form-input" id="if-prix" type="number" value="${n('prix')||''}">`}</div>
       <div class="form-group"><div class="form-label">Type de transport</div>
         <select class="form-input" id="if-prix-type">
           <option value="✈️ Vol" ${tType === '✈️ Vol' ? 'selected' : ''}>✈️ Vol</option>
@@ -3081,7 +3094,7 @@ function buildItemForm(type, item, readOnly=false) {
       <div class="row-2">
         <div class="form-group">
           <div class="form-label">Prix / nuit (€)</div>
-          ${readOnly?'<div class="form-input" style="background:var(--sand);color:var(--txt2);">***€</div>':`<input class="form-input" id="if-prix" type="number" value="${n('prix')||''}" placeholder="0.00">`}
+          ${readOnly?'<div class="prix-masque"></div>':`<input class="form-input" id="if-prix" type="number" value="${n('prix')||''}" placeholder="0.00">`}
         </div>
         <div class="form-group">
           <div class="form-label">Nb de nuits</div>
@@ -3144,7 +3157,7 @@ function buildItemForm(type, item, readOnly=false) {
     <div class="row-2">
       <div class="form-group">
         <div class="form-label">${prixLabel}</div>
-        ${readOnly?'<div class="form-input" style="background:var(--sand);color:var(--txt2);">***€</div>':`<input class="form-input" id="if-prix" type="number" value="${n('prix')||''}" placeholder="0.00">`}
+        ${readOnly?'<div class="prix-masque"></div>':`<input class="form-input" id="if-prix" type="number" value="${n('prix')||''}" placeholder="0.00">`}
       </div>
       <div class="form-group">
         <div class="form-label">Adresse</div>
@@ -3547,7 +3560,7 @@ function renderDayTimeline(day,transports,slotItems,hotel){
           <span class="tl-entry-name">${esc(t.nom)}</span>
           <span style="font-size:.65rem;color:var(--txt2);">${t.quartier?esc(t.quartier):''} ${t.description?'→ '+esc(t.description):''}</span>
         </div>
-        <div class="tl-entry-sub"><b>Durée :</b> ${esc(t.notes||'—')} · <b>Prix :</b> ${fmtE(parseFloat(t.prix||0))}</div>
+        <div class="tl-entry-sub"><b>Durée :</b> ${esc(t.notes||'—')}${isEditorMode()?` · <b>Prix :</b> ${fmtE(parseFloat(t.prix||0))}`:''}</div>
       </div></div>`});
   });
   const po={Matin:1,'Après-midi':2,Soir:3,Journée:4,'':5};
@@ -4126,7 +4139,7 @@ function exportPlanningPDF(){
   // Budget résumé
   let depM=0,depL=0;
   D.budget.forEach(r=>{const t=parseFloat(r.total||0);const w=(r.personne||'les deux').toLowerCase();if(w==='matis')depM+=t;else if(w==='lise')depL+=t;else{depM+=t/2;depL+=t/2;}});
-  body+=`<div style="margin-top:24px;padding:14px;background:#f8ece8;border-radius:10px;border:1px solid #fdd;"><h2 style="font-size:13px;font-weight:700;margin-bottom:10px;color:#8b1d2c;">💰 Résumé Budget</h2><table style="width:100%;font-size:11px;border-collapse:collapse;"><tr><td style="padding:4px 8px;border-bottom:1px solid #eee;">Total dépensé</td><td style="text-align:right;font-weight:700;padding:4px 8px;border-bottom:1px solid #eee;">${fmtE(depM+depL)}</td></tr><tr><td style="padding:4px 8px;border-bottom:1px solid #eee;">Matis</td><td style="text-align:right;font-weight:700;padding:4px 8px;border-bottom:1px solid #eee;">${fmtE(depM)}</td></tr><tr><td style="padding:4px 8px;">Lise</td><td style="text-align:right;font-weight:700;padding:4px 8px;">${fmtE(depL)}</td></tr></table></div>`;
+  if(isEditorMode())body+=`<div style="margin-top:24px;padding:14px;background:#f8ece8;border-radius:10px;border:1px solid #fdd;"><h2 style="font-size:13px;font-weight:700;margin-bottom:10px;color:#8b1d2c;">💰 Résumé Budget</h2><table style="width:100%;font-size:11px;border-collapse:collapse;"><tr><td style="padding:4px 8px;border-bottom:1px solid #eee;">Total dépensé</td><td style="text-align:right;font-weight:700;padding:4px 8px;border-bottom:1px solid #eee;">${fmtE(depM+depL)}</td></tr><tr><td style="padding:4px 8px;border-bottom:1px solid #eee;">Matis</td><td style="text-align:right;font-weight:700;padding:4px 8px;border-bottom:1px solid #eee;">${fmtE(depM)}</td></tr><tr><td style="padding:4px 8px;">Lise</td><td style="text-align:right;font-weight:700;padding:4px 8px;">${fmtE(depL)}</td></tr></table></div>`;
 
   const w=window.open('','_blank');
   w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Chine 2026 — Planning</title></head><body>${body}<\/body></html>`);
@@ -4164,8 +4177,51 @@ function exportGoogleCal(){
 
 // ── UTILS ──
 function esc(v){if(!v&&v!==0)return'';return String(v).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+// Markdown minimal pour les réponses de l'assistant IA. Tout est échappé AVANT la mise en forme,
+// donc aucun HTML venu du modèle (ou d'un reel) ne passe ; seuls les liens http(s) sont gardés.
+function mdIA(src){
+  // Code et liens sont mis de côté (marqueurs \u0000n\u0000) AVANT le gras/italique, puis remis à la fin :
+  // aucune regex ne retravaille du HTML déjà produit, et un lien ne peut pas en contenir un autre.
+  const URL_RE='https?:\\/\\/(?:(?!&quot;|&lt;|&gt;)[^\\s\'<>)\\u0000])+';
+  const inline=s=>{
+    const keep=[];
+    const stash=h=>'\u0000'+(keep.push(h)-1)+'\u0000';
+    const a=(u,t)=>stash('<a href="'+u+'" target="_blank" rel="noopener noreferrer">'+t+'</a>');
+    let t=esc(s).replace(/\u0000/g,'')
+      .replace(/`([^`\n]+)`/g,(m,c)=>stash('<code>'+c+'</code>'))
+      .replace(new RegExp('\\[([^\\]\\n\\u0000]+)\\]\\(('+URL_RE+')\\)','g'),(m,l,u)=>a(u,l))
+      .replace(new RegExp('(^|[\\s(])('+URL_RE+')','g'),(m,p,u)=>p+a(u,u));
+    t=t.replace(/\*\*([^*\n]+)\*\*|__([^_\n]+)__/g,(m,x,y)=>'<strong>'+(x||y)+'</strong>')
+      .replace(/(^|[^*\w])\*([^*\n]+)\*(?!\*)/g,'$1<em>$2</em>');
+    return t.replace(/\u0000(\d+)\u0000/g,(m,i)=>keep[+i]);
+  };
+  const lines=String(src||'').replace(/\r\n?/g,'\n').split('\n');
+  let out='',list=null,code=null,para=[];
+  const flushPara=()=>{if(para.length){out+='<p>'+para.map(inline).join('<br>')+'</p>';para=[];}};
+  const flushList=()=>{if(list){out+='<'+list.t+'>'+list.items.map(i=>'<li>'+inline(i)+'</li>').join('')+'</'+list.t+'>';list=null;}};
+  for(const raw of lines){
+    if(code){
+      if(/^\s*```/.test(raw)){out+='<pre><code>'+esc(code.join('\n'))+'</code></pre>';code=null;}else code.push(raw);
+      continue;
+    }
+    if(/^\s*```/.test(raw)){flushPara();flushList();code=[];continue;}
+    const line=raw.trimEnd();
+    let m;
+    if(!line.trim()){flushPara();flushList();continue;}
+    if((m=line.match(/^\s*(#{1,6})\s+(.*)$/))){flushPara();flushList();out+='<h'+Math.min(m[1].length+2,6)+'>'+inline(m[2])+'</h'+Math.min(m[1].length+2,6)+'>';continue;}
+    if(/^\s*([-*_])(\s*\1){2,}\s*$/.test(line)){flushPara();flushList();out+='<hr>';continue;}
+    if((m=line.match(/^\s*>\s?(.*)$/))){flushPara();flushList();out+='<blockquote>'+inline(m[1])+'</blockquote>';continue;}
+    if((m=line.match(/^\s*[-*•]\s+(.*)$/))){flushPara();if(!list||list.t!=='ul'){flushList();list={t:'ul',items:[]};}list.items.push(m[1]);continue;}
+    if((m=line.match(/^\s*\d+[.)]\s+(.*)$/))){flushPara();if(!list||list.t!=='ol'){flushList();list={t:'ol',items:[]};}list.items.push(m[1]);continue;}
+    flushList();para.push(line);
+  }
+  if(code)out+='<pre><code>'+esc(code.join('\n'))+'</code></pre>';
+  flushPara();flushList();
+  return '<div class="md">'+out+'</div>';
+}
 function fmtE(n){
-  if(!isEditorMode())return '***€';
+  if(!isEditorMode())return '';
   return Math.round(n||0).toLocaleString('fr-FR')+' €';
 }
 window.addEventListener('scroll',()=>{const b=document.getElementById('st-btn');if(b)b.classList.toggle('vis',window.scrollY>200);},{passive:true});
@@ -4513,7 +4569,7 @@ function renderMapMarkers(){
       ${prix>0?`<div class="mp-meta">💰 ${fmtE(prix)}</div>`:''}
       <div class="mp-actions">
         <button class="mp-btn" onclick="event.stopPropagation();changeStatutFromMap('${item.id}')">✏️ Statut</button>
-        <button class="mp-btn nav" onclick="event.stopPropagation();navigateToItem(${JSON.stringify({nom:item.nom,lat:coords[0],lng:coords[1],adresse_cn:item.adresse_cn||''}).replace(/"/g,'&quot;')})">🧭 Y aller</button>
+        <button class="mp-btn mp-go" onclick="event.stopPropagation();navigateToItem(${JSON.stringify({nom:item.nom,lat:coords[0],lng:coords[1],adresse_cn:item.adresse_cn||''}).replace(/"/g,'&quot;')})">🧭 Y aller</button>
       </div>
     </div>`;
 
@@ -4527,7 +4583,7 @@ function renderMapMarkers(){
       const arrAddr=item.notes?(item.notes.match(/ARR_ADDR:([^|]+)/)||['',''])[1].trim():'';
       if(arrCoords){
         const arrMarker=L.marker(arrCoords,{icon:buildMarkerIcon('transport')});
-        const arrPopup='<div class="map-popup"><div class="mp-type">🏁 Arrivée</div><div class="mp-name">'+(arrAddr||esc(item.nom))+'</div><div class="mp-meta">'+esc(item.nom)+'</div><div class="mp-actions"><button class="mp-btn nav" data-alat="'+arrCoords[0]+'" data-alng="'+arrCoords[1]+'" onclick="navigateToItem({nom:decodeURIComponent(this.dataset.an),lat:parseFloat(this.dataset.alat),lng:parseFloat(this.dataset.alng)})" data-an="'+_an+'">🧭 Y aller</button></div></div>';
+        const arrPopup='<div class="map-popup"><div class="mp-type">🏁 Arrivée</div><div class="mp-name">'+(arrAddr||esc(item.nom))+'</div><div class="mp-meta">'+esc(item.nom)+'</div><div class="mp-actions"><button class="mp-btn mp-go" data-alat="'+arrCoords[0]+'" data-alng="'+arrCoords[1]+'" onclick="navigateToItem({nom:decodeURIComponent(this.dataset.an),lat:parseFloat(this.dataset.alat),lng:parseFloat(this.dataset.alng)})" data-an="'+_an+'">🧭 Y aller</button></div></div>';
         arrMarker.bindPopup(arrPopup,{maxWidth:240});
         arrMarker.addTo(mapInst);
         mapMarkers.push(arrMarker);
@@ -4971,7 +5027,7 @@ function appendChatMsg(msg,animate=true){
         +'</div>';
     }catch(e){bubbleInner=esc(content);}
   }else{
-    bubbleInner=esc(displayContent||content).replace(/\n/g,'<br>');
+    bubbleInner=isBot?mdIA(displayContent||content):esc(displayContent||content).replace(/\n/g,'<br>');
   }
 
   const msgId=msg.id&&!msg.id.startsWith('temp_')?msg.id:null;
@@ -6323,6 +6379,6 @@ if(loginPasswordEl){
 
 </script>
 
-<script src="ia.js?v=2"></script>
+<script src="ia.js?v=3"></script>
 </body>
 </html>
