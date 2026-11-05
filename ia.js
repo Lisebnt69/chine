@@ -192,11 +192,12 @@ function ensureProgrammeTab() {
   tab.innerHTML = `
     <div class="ph" style="padding-bottom:8px;"><h1>Programme</h1><p id="progSub"></p></div>
     <div class="prog-switch">
-      <button data-v="vital">🏨 Vital</button>
-      <button data-v="leger">🧭 Léger</button>
-      <button data-v="detail">🕐 Détaillé</button>
+      <button data-v="vital">🏨 Essentiel</button>
+      <button data-v="leger">🧭 Idées</button>
+      <button data-v="detail">🕐 Heure par heure</button>
       <button data-v="claude"><img class="mimi-mini" src="mascotte/tete.webp" alt="">Roomy</button>
     </div>
+    <div id="progHint" style="margin:8px 16px 0;font-size:.78rem;line-height:1.4;color:var(--txt2)"></div>
     <div id="progDays"></div>
     <div id="progBody"></div>`;
   main.appendChild(tab);
