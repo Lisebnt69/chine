@@ -225,6 +225,7 @@ function acRender() {
   const etapes = acProchainesEtapes(2);
   acEl('acEtapes').innerHTML = etapes.length ? etapes.map(a => acLigneEtape(a, now)).join('') : vide('Plus de train, de vol ni de check-in à venir.');
 
+  const mt = acEl('acMeteo'); if (mt) mt.innerHTML = typeof mtAccueil === 'function' ? mtAccueil() : '';
   acEl('acBudget').innerHTML = acBudgetHtml();
   acEl('acSos').innerHTML = acSosHtml();
   acMajTaux();
@@ -237,6 +238,7 @@ function acClic(e) {
   switch (d.act) {
     case 'open': { const it = D.items.find(x => x.id == d.id); if (it) openItemSheet(it.type, it); break; }
     case 'nav': navigateToItem(JSON.parse(d.nav)); break;
+    case 'meteo': if (typeof mtOuvrir === 'function') mtOuvrir(); break;
     case 'roomy': acRoomy(); break;
     case 'autour': acAutour(); break;
     case 'budget': goTab('budget', acEl('nb-more')); break;
@@ -255,6 +257,7 @@ function acEnsureTab() {
   tab.innerHTML = `
     <div class="ph"><h1>Accueil</h1><p id="acSub"></p></div>
 
+    <section class="ac-sec ac-meteo-sec" id="acMeteo"></section>
     <section class="ac-sec"><div class="sl">Prochaines activités</div><div class="ac-card" id="acAct"></div></section>
     <section class="ac-sec"><div class="sl">Prochaines étapes importantes</div><div class="ac-card" id="acEtapes"></div></section>
 

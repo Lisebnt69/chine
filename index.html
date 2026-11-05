@@ -2405,11 +2405,18 @@ function loadMeteo(){
   const cont=document.getElementById('meteoBody');
   if(!cont)return;
   cont.innerHTML='';
-  Object.entries(METEO_DATA).forEach(([city,m])=>{
+  Object.entries(METEO_DATA).forEach(([city,s])=>{
+    // Prévision réelle (meteo.js) quand on l'a, sinon la normale de saison.
+    const m=(typeof mtLigneVille==='function'&&mtLigneVille(city))||{ic:`<span style="font-size:1.2rem;">${s.ic}</span>`,desc:s.desc,min:s.min,max:s.max};
     const d=document.createElement('div');d.className='meteo-row';
-    d.innerHTML=`<span style="font-size:1.2rem;">${m.ic}</span><span class="meteo-city-name">${city}</span><span class="meteo-desc">${m.desc}</span><span class="meteo-temp">${m.min}–${m.max}°C</span>`;
+    d.innerHTML=`${m.ic}<span class="meteo-city-name">${city}</span><span class="meteo-desc">${m.desc}</span><span class="meteo-temp">${m.min}–${m.max}°C</span>`;
     cont.appendChild(d);
   });
+  if(typeof mtOuvrir==='function'){
+    const b=document.createElement('button');b.type='button';b.className='slot-add-btn';b.style.cssText='width:auto;padding:8px 12px;margin-top:4px;';
+    b.textContent='Voir la météo jour par jour';b.onclick=()=>mtOuvrir();
+    cont.appendChild(b);
+  }
 }
 
 function toggleMeteo(){
@@ -3665,6 +3672,7 @@ function renderPlanning(){
           <div class="tl-city">${esc(cities)||'Journée'}</div>
           <div class="tl-chips">${metaChips.map(c=>`<span class="tl-chip">${c}</span>`).join('')}</div>
         </div>
+        ${typeof mtBadge==='function'?mtBadge(day):''}
         <div class="tl-drag-handle" onclick="event.stopPropagation()" id="dh-${day.id}">⠿</div>
         ${dayTotal>0?`<div class="tl-day-total">${fmtE(dayTotal)}</div>`:''}
         <div class="tl-arrow">▼</div>
@@ -6094,6 +6102,7 @@ function generateBotReply(question){
 
   // Météo
   if(q.includes('météo')||q.includes('temps')||q.includes('température')){
+    if(typeof mtResumeTexte==='function'){const t=mtResumeTexte();if(t)return '🌤 '+t;}
     return '🌤 Météo novembre en Chine :\n🏙️ Shanghai : 10–18°C, nuageux\n🌆 Chongqing : 10–16°C, nuageux\n🐼 Chengdu : 9–15°C, brumeux\n🏞️ Zhangjiajie : 6–13°C, brume magnifique\n🌸 Furong : 8–14°C';
   }
 
@@ -7096,6 +7105,7 @@ if(loginPasswordEl){
 <script src="roomy.js?v=1"></script>
 <script src="resa.js?v=1"></script>
 <script src="plats.js?v=1"></script>
+<script src="meteo.js?v=1"></script>
 <script src="accueil.js?v=1"></script>
 <script src="visiteur.js?v=1"></script>
 </body>

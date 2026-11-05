@@ -1,0 +1,63 @@
+# Météo du voyage : 3 mises à jour par jour (6 h 30, 14 h 30 et 22 h 30, heure de Chine).
+# Le job se désactive lui-même à la première exécution après le 22 novembre 2026.
+name: Météo
+
+on:
+  schedule:
+    - cron: '30 22 * * *'   # 06:30 Chine
+    - cron: '30 6 * * *'    # 14:30 Chine
+    - cron: '30 14 * * *'   # 22:30 Chine
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: meteo
+  cancel-in-progress: false
+
+jobs:
+  maj:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Fin du voyage ?
+        id: fin
+        env:
+          FIN: '2026-11-22'
+        run: |
+          aujourdhui=$(TZ=Asia/Shanghai date +%F)
+          echo "Date en Chine : $aujourdhui (dernière mise à jour le $FIN)"
+          if [[ "$aujourdhui" > "$FIN" ]]; then
+            echo "stop=oui" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Désactiver l'automatisation
+        if: steps.fin.outputs.stop == 'oui'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow disable meteo.yml --repo "$GITHUB_REPOSITORY"
+
+      - uses: actions/checkout@v4
+        if: steps.fin.outputs.stop != 'oui'
+        with:
+          ref: main
+
+      - name: Récupérer les prévisions
+        if: steps.fin.outputs.stop != 'oui'
+        run: python3 tools/maj_meteo.py
+
+      - name: Publier meteo.json
+        if: steps.fin.outputs.stop != 'oui'
+        run: |
+          if git diff --quiet -- meteo.json; then
+            echo "Rien de changé."
+            exit 0
+          fi
+          git config user.name "meteo-bot"
+          git config user.email "meteo-bot@users.noreply.github.com"
+          git add meteo.json
+          git commit -m "Météo : mise à jour automatique"
+          git pull --rebase origin main
+          git push origin HEAD:main
