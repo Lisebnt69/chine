@@ -388,6 +388,7 @@ setInterval(() => { if (!document.hidden && acEl('tab-accueil')?.classList.conta
 
 /* ───────────── Styles ───────────── */
 document.head.insertAdjacentHTML('beforeend', `<style>
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
 .nav .nb .nlb{font-size:.66rem}
 @media (max-width:420px){.nav{padding:4px;gap:2px}.nav .nb{padding:8px 1px}.nav .nb .nlb{font-size:.64rem}}
 @media (max-width:350px){.nav .nb .nlb{font-size:.58rem}}

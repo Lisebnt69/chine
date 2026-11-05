@@ -1099,7 +1099,7 @@ select.form-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://
 .chat-msg-actions{display:flex;gap:4px;margin-top:4px;justify-content:flex-end;opacity:.5;transition:opacity .2s;}
 .chat-msg.me:hover .chat-msg-actions,.chat-msg-actions:hover{opacity:1;}
 .chat-msg.me .chat-msg-actions{opacity:.45;}
-.chat-act-btn{background:rgba(0,0,0,.07);border:none;border-radius:8px;padding:3px 8px;font-size:.62rem;cursor:pointer;font-family:var(--font);color:var(--txt2);}
+.chat-act-btn{background:rgba(0,0,0,.07);border:none;border-radius:10px;padding:6px 10px;min-width:38px;min-height:34px;font-size:.75rem;cursor:pointer;font-family:var(--font);color:var(--txt2);}
 .chat-act-btn:active{background:rgba(0,0,0,.14);}
 /* sondage */
 .chat-poll{background:#fff;border:1px solid var(--border);border-radius:14px;padding:12px 14px;min-width:200px;}
@@ -5423,7 +5423,7 @@ function appendChatMsg(msg,animate=true){
 
   const msgId=msg.id&&!msg.id.startsWith('temp_')?msg.id:null;
   const isTextMsg=!displayContent.startsWith('IMG:')&&!displayContent.startsWith('VIDEO:')&&!displayContent.startsWith('SNAP:')&&!displayContent.startsWith('POLL:');
-  const actionsHtml=isEditorMode()&&msgId?`<div class="chat-msg-actions" style="position:relative;">${isTextMsg&&isMe?`<button class="chat-act-btn" onclick="editMsgById('${msgId}')">✏️</button>`:''}<button class="chat-act-btn" onclick="showReactionPicker('${msgId}',this)">😊</button>${isMe?`<button class="chat-act-btn" style="color:#8b1d2c;" onclick="deleteMsgById('${msgId}')">🗑</button>`:''}</div>`:'';
+  const actionsHtml=isEditorMode()&&msgId?`<div class="chat-msg-actions" style="position:relative;">${isTextMsg&&isMe?`<button class="chat-act-btn" aria-label="Modifier le message" onclick="editMsgById('${msgId}')">✏️</button>`:''}<button class="chat-act-btn" aria-label="Réagir au message" onclick="showReactionPicker('${msgId}',this)">😊</button>${isMe?`<button class="chat-act-btn" aria-label="Supprimer le message" style="color:#8b1d2c;" onclick="deleteMsgById('${msgId}')">🗑</button>`:''}</div>`:'';
 
   const isPoll=displayContent.startsWith('POLL:');
   const bubbleClass='chat-bubble'+(isPoll?' chat-bubble-poll':'');
@@ -7096,7 +7096,7 @@ if(loginPasswordEl){
 <script src="roomy.js?v=1"></script>
 <script src="resa.js?v=1"></script>
 <script src="plats.js?v=1"></script>
-<script src="accueil.js?v=4"></script>
+<script src="accueil.js?v=5"></script>
 <script src="visiteur.js?v=1"></script>
 </body>
 </html>
