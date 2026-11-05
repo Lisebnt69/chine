@@ -1,6 +1,6 @@
 // Cache offline. Réseau d'abord pour la page et les scripts (pour recevoir les mises à jour),
 // cache en secours quand il n'y a pas de réseau.
-const CACHE_NAME = 'chine-app-v9';
+const CACHE_NAME = 'chine-app-v10';
 const ASSETS = ['./', './index.html', './ia.js', './prog.js', './souhaits.js', './questions.js','./mascotte/calme.webp', './mascotte/explique.webp', './mascotte/joie.webp', './mascotte/tete.webp', './icons.js', './fonts/GeneralSans-500.woff2', './fonts/GeneralSans-600.woff2', './fonts/GeneralSans-700.woff2', './cerveau.json', './manifest.webmanifest'];
 
 self.addEventListener('install', event => {
