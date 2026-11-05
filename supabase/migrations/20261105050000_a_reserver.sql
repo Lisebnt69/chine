@@ -66,7 +66,7 @@ from (values
    'Appeler ou écrire sur WeChat au chauffeur de l''hôtel (numéro dans le fichier local)', null,
    'Départ à 7h20 à confirmer. À réserver avant, en prévenant du nombre de personnes.',
    'Shanghai Disney Resort', null, false, 21),
-  ('zjj-porte-17', 'Billet du parc de Zhangjiajie : porte Est et créneau du 17', '2026-11-17', '2026-11-16', '13h30', 'resa',
+  ('zjj-porte-17', 'Billet du parc de Zhangjiajie : porte Est et créneau du 17', '2026-11-17', '2026-11-16', '13h30', 'verifier',
    'Trip.com › Mes commandes', 'https://www.trip.com/',
    'Depuis juin 2025 la première entrée se réserve avec une porte et un créneau horaire. Vérifier que le 17 est sur la porte EST, créneau 13h30-14h30. Prendre les passeports (reconnaissance faciale ou empreinte à la porte).',
    'Parc National Zhangjiajie', null, false, 30),
