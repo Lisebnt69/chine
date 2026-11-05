@@ -110,7 +110,7 @@ function buildDayPlan(day) {
     const arrJ1 = t.adresse !== day.date_voyage;
     const time = arrJ1 ? toMin(t.description) : toMin(t.quartier);
     out.push({ kind: 'transport', min: time ?? 6 * 60, end: arrJ1 ? time : toMin(t.description), item: t,
-      label: t.nom, sub: arrJ1 ? `Arrivée ${t.description || ''}` : `${t.quartier || '?'} → ${t.description || '?'}` });
+      label: t.nom + (numeroVol(t) ? ' · ' + numeroVol(t) : ''), sub: arrJ1 ? `Arrivée ${t.description || ''}` : `${t.quartier || '?'} → ${t.description || '?'}` });
   });
 
   const slots = D.slots.filter(s => s.planning_id === day.id)

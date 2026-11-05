@@ -3209,7 +3209,8 @@ function buildItemForm(type, item, readOnly=false) {
           </select>
         </div>
       </div>
-      <div class="form-group"><div class="form-label">Durée du trajet</div><input class="form-input" id="if-duree" value="${nts.split('Durée: ')[1] || ''}" placeholder="11h50"></div>
+      <div class="form-group"><div class="form-label">Durée du trajet</div><input class="form-input" id="if-duree" value="${((nts.match(/Durée:\s*([^|]*)/)||['',''])[1]).trim()}" placeholder="11h50"></div>
+      <div class="form-group"><div class="form-label">N° de vol</div><input class="form-input" id="if-numvol" value="${esc(numeroVol(item))}" placeholder="AY 1234" autocapitalize="characters"></div>
       <div class="form-group"><div class="form-label">Date de départ</div><input class="form-input" id="if-date" type="date" value="${v('adresse')}"></div>
       <div class="form-group"><div class="form-label">Prix total (€)</div>${readOnly?'<div class="prix-masque"></div>':`<input class="form-input" id="if-prix" type="number" value="${n('prix')||''}">`}</div>
       <div class="form-group"><div class="form-label">Type de transport</div>
@@ -3391,7 +3392,9 @@ async function saveItem() {
       const depLng=document.getElementById('if-dep-lng')?.value?.trim()||'';
       const arrLat=document.getElementById('if-arr-lat')?.value?.trim()||'';
       const arrLng=document.getElementById('if-arr-lng')?.value?.trim()||'';
+      const numVol=(document.getElementById('if-numvol')?.value||'').replace(/\|/g,' ').trim().toUpperCase();
       let notesTransport = `D:${tzDep} | A:${tzArr}${dayRel} | Durée: ${duree}`;
+      if(numVol)notesTransport+=` | VOL:${numVol}`;
       if(depAddr)notesTransport+=` | DEP_ADDR:${depAddr}`;
       if(depLat&&depLng)notesTransport+=` | DEP_LAT:${depLat} | DEP_LNG:${depLng}`;
       if(arrAddr)notesTransport+=` | ARR_ADDR:${arrAddr}`;
@@ -3629,6 +3632,17 @@ function renderCalendar(){
   wrap.appendChild(leg);
 }
 
+// Les notes d'un transport mélangent du texte et des champs lus par le code (DEP_ADDR, ARR_LAT…) : on n'affiche que le texte.
+function notesTransportLisibles(notes){
+  const parts=String(notes||'').split('|').map(x=>x.trim()).filter(x=>x&&!/^(DEP|ARR)_(ADDR|LAT|LNG):/.test(x)&&!/^[DA]:/.test(x)&&!/^VOL:/.test(x));
+  return parts.join(' · ')||'—';
+}
+// Numéro de vol d'un transport, rangé dans les notes sous la forme « VOL:AY1234 ». Vide si non renseigné.
+function numeroVol(t){
+  const m=String(t&&t.notes||'').match(/(?:^|\|)\s*VOL:([^|]*)/);
+  return m?m[1].trim():'';
+}
+
 function renderPlanning(){
   const wrap=document.getElementById('tlWrap');wrap.innerHTML='';
   // Météo inline dans planning
@@ -3660,7 +3674,7 @@ function renderPlanning(){
     const dayTotal=slotItems.reduce((s,{item})=>s+(parseFloat(item.prix||0)),0)+transportsDay.reduce((s,t)=>s+(parseFloat(t.prix||0)),0);
     const cities=[...new Set([day.matin_lieu,day.aprem_lieu,day.soir_lieu].filter(Boolean).filter(x=>x!=='—'))].join(' → ');
     const metaChips=[];
-    if(transportsDay.length)metaChips.push(transportsDay.map(t=>(t.prix_type||'').split(' ')[0]+' '+t.nom).join(', '));
+    if(transportsDay.length)metaChips.push(transportsDay.map(t=>(t.prix_type||'').split(' ')[0]+' '+t.nom+(numeroVol(t)?' · '+numeroVol(t):'')).join(', '));
     if(hotel)metaChips.push('🏨 '+hotel.nom);
     if(slotItems.length)metaChips.push(slotItems.length+' activité(s)');
 
@@ -3742,7 +3756,7 @@ function renderDayTimeline(day,transports,slotItems,hotel){
       <div class="tl-entry-card">
         <div class="tl-entry-top">
           <span class="tl-entry-icon">${(t.prix_type||'').split(' ')[0]||'🚄'}</span>
-          <span class="tl-entry-name">${esc(t.nom)}</span>
+          <span class="tl-entry-name">${esc(t.nom)}${numeroVol(t)?' · '+esc(numeroVol(t)):''}</span>
           <span style="font-size:.65rem;color:var(--txt2);">${t.quartier?esc(t.quartier):''} ${t.description?'→ '+esc(t.description):''}</span>
         </div>
         <div class="tl-entry-sub"><b>Durée :</b> ${esc(t.notes||'—')}${isEditorMode()?` · <b>Prix :</b> ${fmtE(parseFloat(t.prix||0))}`:''}</div>
@@ -4075,6 +4089,7 @@ function renderTransports() {
         <div class="tr-route">${esc(t.nom)}</div>
         <div class="tr-tags">
           ${t.adresse ? `<span class="tr-tag">📅 ${esc(t.adresse)}</span>` : ''}
+          ${numeroVol(t) ? `<span class="tr-tag">${ico} ${esc(numeroVol(t))}</span>` : ''}
           <span class="tr-tag">🛫 ${esc(t.quartier)} <small style="opacity:0.8;">${tzDep}</small></span>
           ${t.description ? `<span class="tr-tag">🛬 ${esc(t.description)} <small style="opacity:0.8;">${tzArr}</small></span>` : ''}
           <span class="tr-price">${fmtE(parseFloat(t.prix || 0))}</span>
@@ -4295,7 +4310,7 @@ function exportPlanningPDF(){
     body+=`<div class="day"><div class="day-head"><div class="day-date"><div class="day-num">${dn}</div><div class="day-month">${months[mn]}</div></div><div class="day-info"><div class="day-city">${cities}</div><div class="day-total">${dayTotal>0?fmtE(dayTotal)+' estimé':''}</div></div></div><div class="day-body">`;
 
     // Transports du jour
-    if(transports.length)transports.forEach(t=>{body+=`<div class="transport-block"><div class="tr-route">${t.prix_type||'🚄'} ${t.nom}</div><div class="tr-meta">${t.quartier||''}${t.description?' → '+t.description:''}${t.notes?' · '+t.notes:''}</div></div>`;});
+    if(transports.length)transports.forEach(t=>{body+=`<div class="transport-block"><div class="tr-route">${t.prix_type||'🚄'} ${t.nom}${numeroVol(t)?' · '+esc(numeroVol(t)):''}</div><div class="tr-meta">${t.quartier||''}${t.description?' → '+t.description:''}${notesTransportLisibles(t.notes)!=='—'?' · '+esc(notesTransportLisibles(t.notes)):''}</div></div>`;});
 
     // Hôtel
     if(hotel)body+=`<div class="hotel-block"><span class="hotel-icon">🏨</span><div><div class="hotel-name">${hotel.nom}</div><div class="hotel-city">${hotel.ville||''}</div></div></div>`;
@@ -6083,7 +6098,7 @@ function generateBotReply(question){
   if(q.includes('transport')||q.includes('train')||q.includes('vol')||q.includes('avion')){
     const upcoming=D.items.filter(x=>x.type==='transport'&&!x.fait).sort((a,b)=>(a.adresse||'').localeCompare(b.adresse||''));
     if(!upcoming.length)return '✅ Tous les transports sont faits !';
-    return '🚄 Prochains transports :\n'+upcoming.slice(0,4).map(t=>`${t.adresse||'?'} — ${t.nom} (${t.prix_type||'?'})`).join('\n');
+    return '🚄 Prochains transports :\n'+upcoming.slice(0,4).map(t=>`${t.adresse||'?'} — ${t.nom}${numeroVol(t)?' · '+numeroVol(t):''} (${t.prix_type||'?'})`).join('\n');
   }
 
   // Checklist
@@ -6818,7 +6833,7 @@ function updateNextStep() {
   const tag=nextDate===todayStr?'🚀 Aujourd\'hui':nextDate===tomorrow?'⏰ Demain':'📅 '+(nextDate||'').split('-').reverse().slice(0,2).join('/');
   const icon=nextType==='transport'?((next.prix_type||'').split(' ')[0]||'🚄'):(TYPE_IC[next.type]||'🎯');
   const sub=nextType==='transport'
-    ?esc(next.quartier||'')+(next.description?' → '+esc(next.description):'')
+    ?esc(next.quartier||'')+(next.description?' → '+esc(next.description):'')+(numeroVol(next)?' · '+esc(numeroVol(next)):'')
     :esc(next.ville||'')+(next.quartier?' · '+esc(next.quartier):'');
 
   container.style.display='block';
@@ -7098,7 +7113,7 @@ if(loginPasswordEl){
 
 </script>
 
-<script src="ia.js?v=6"></script>
+<script src="ia.js?v=7"></script>
 <script src="prog.js?v=4"></script>
 <script src="souhaits.js?v=4"></script>
 <script src="questions.js?v=1"></script>
