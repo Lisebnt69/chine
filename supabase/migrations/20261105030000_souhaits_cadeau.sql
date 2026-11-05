@@ -14,8 +14,8 @@ create policy souhaits_ajouter on public.souhaits for insert with check (
   trouve = false
   and image_cadeau is null and trouve_par is null and trouve_le is null
   and length(personne) <= 40 and length(envie) <= 300
-  and coalesce(auteur, 'visiteur') in ('matis', 'lise', 'visiteur')
-  and (image is null or (image like 'data:image/%' and length(image) <= 450000))
+  and coalesce(auteur, 'visiteur') = 'visiteur'                 -- Matis et Lise ajoutent par la fonction, jamais en direct
+  and (image is null or (image ~ '^data:image/(jpeg|png|webp);base64,' and length(image) <= 450000))
 );
 
 -- Modifier : mêmes bornes qu'à l'ajout (la distinction Matis / Lise / visiteur n'existe que dans l'interface,

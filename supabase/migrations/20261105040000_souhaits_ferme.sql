@@ -16,7 +16,8 @@ drop policy if exists souhaits_supprimer on public.souhaits;
 drop policy if exists acces_app on public.souhaits;
 
 revoke all on table public.souhaits from anon, authenticated;
-grant insert on table public.souhaits to anon;                 -- le visiteur envoie un ticket, rien d'autre
+-- Le visiteur envoie un ticket, rien d'autre, et ne choisit que ces 4 colonnes : id, date, trouve, etc. restent aux valeurs par défaut.
+grant insert (personne, envie, image, auteur) on table public.souhaits to anon;
 grant all on table public.souhaits to service_role;
 
 -- La politique d'ajout (bornée, un ticket neuf n'est jamais « trouvé ») reste celle de 20261105030000.

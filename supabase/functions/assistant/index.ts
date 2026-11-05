@@ -446,7 +446,8 @@ async function runTool(name: string, input: Json, changes: string[], mode = "lib
       ).eq("id", cur.id);
       if (error) throw error;
       changes.push(`${trouve ? "🎁 Trouvé" : "↩️ À retrouver"} : ${String(cur.personne).slice(0, 40)}`);
-      return `OK, ticket de ${cur.personne} (${String(cur.envie).slice(0, 80)}) ${trouve ? "coché : trouvé" : "décoché : à trouver"}.`;
+      // Le texte du ticket n'est pas renvoyé au modèle : il est déjà dans le bloc balisé « non fiable ».
+      return `OK, ticket ${trouve ? "coché : trouvé" : "décoché : à trouver"}.`;
     }
     case "ajouter_lieu": {
       const row: Json = {
@@ -599,7 +600,7 @@ async function snapshot(): Promise<string> {
 // Onglet Souhaits : ce que des proches veulent qu'on leur rapporte. Le mode visiteur peut y écrire sans
 // compte : c'est du TEXTE NON FIABLE. On ne le charge que si la question parle de souhaits, jamais en mode
 // Programme (celui-là modifie le planning), et on le range dans un bloc balisé, nettoyé et borné.
-const PARLE_SOUHAITS = /souhait|rapporter|ramener|cadeau|souvenir|ticket|veut\b|veulent\b|\bcoch|trouv[ée]\b/i;
+const PARLE_SOUHAITS = /souhait|rapporter|ramener|cadeau|souvenir|ticket|veut\b|veulent\b/i;
 async function souhaitsBloc(): Promise<string> {
   const { data } = await sb.from("souhaits").select("id,personne,envie,trouve").order("created_at").limit(60);
   const net = (t: unknown, n: number) => String(t ?? "").replace(/[<>]/g, "").replace(/\s+/g, " ").trim().slice(0, n);
