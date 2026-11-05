@@ -15,6 +15,12 @@
    Réservé à Matis et Lise : Roomy et les dépenses (le visiteur ne voit aucun prix).
    ═══════════════════════════════════════════════════════════════ */
 
+const ND_GROUPES = [[10, 'Sur place'], [20, 'Idées'], [30, 'Organiser'], [40, 'Souvenirs']];
+const ND_ORDRE = { restaurants: 11, nourriture: 12, hotels: 13, transport: 14, pratique: 15, phrases: 16,
+  roomy: 21, activites: 22, cerveau: 23,
+  budget: 31, areserver: 32, checklist: 33, notes: 34, stats: 35, questions: 36,
+  souhaits: 41, galerie: 42 };
+
 const acEl = id => document.getElementById(id);
 const acEd = () => typeof isEditorMode === 'function' && isEditorMode();
 const acJours = (a, b) => Math.round((new Date(b + 'T12:00:00') - new Date(a + 'T12:00:00')) / 86400000);
@@ -310,6 +316,27 @@ function acEnsureTab() {
     grid.insertBefore(b, grid.firstChild);
   }
 
+  // Menu Plus : quatre groupes avec un titre. L'ordre vient du CSS (id -> order), donc il tient aussi
+  // pour les boutons que d'autres scripts ajoutent plus tard. Un titre sans bouton visible est masqué.
+  if (grid && !grid.querySelector('.nd-grp')) {
+    ND_GROUPES.forEach(([ordre, titre]) => {
+      const h = document.createElement('div');
+      h.className = 'nd-grp'; h.dataset.g = ordre; h.style.order = ordre; h.textContent = titre;
+      grid.appendChild(h);
+    });
+    const _toggle = toggleNavDrawer;
+    toggleNavDrawer = function (force) {
+      _toggle.apply(this, arguments);
+      if (!document.getElementById('navDrawer')?.classList.contains('open')) return;
+      grid.querySelectorAll('.nd-grp').forEach(h => {
+        const g = Number(h.dataset.g);
+        h.style.display = [...grid.querySelectorAll('.nav-drawer-btn')]
+          .some(b => { const o = ND_ORDRE[b.id.replace('nd-', '')]; return o > g && o < g + 10 && getComputedStyle(b).display !== 'none'; })
+          ? '' : 'none';
+      });
+    };
+  }
+
   // L'accueil est l'onglet d'ouverture.
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
   document.querySelectorAll('.nb').forEach(t => t.classList.remove('on'));
@@ -341,8 +368,35 @@ function acEnsureTab() {
 document.addEventListener('visibilitychange', () => { if (!document.hidden && acEl('tab-accueil')?.classList.contains('on')) acSafeRender(); });
 setInterval(() => { if (!document.hidden && acEl('tab-accueil')?.classList.contains('on')) acSafeRender(); }, 60000);
 
+
 /* ───────────── Styles ───────────── */
 document.head.insertAdjacentHTML('beforeend', `<style>
+.nav .nb .nlb{font-size:.66rem}
+@media (max-width:420px){.nav{padding:4px;gap:2px}.nav .nb{padding:8px 1px}.nav .nb .nlb{font-size:.64rem}}
+@media (max-width:350px){.nav .nb .nlb{font-size:.58rem}}
+.nav-drawer-panel{max-height:calc(100dvh - var(--nav) - var(--safe) - 96px);overflow-y:auto;overscroll-behavior:contain}
+.nav-drawer-lbl{font-size:.7rem}
+.nav-drawer-panel{padding-top:12px}.nav-drawer-grid{gap:6px}.nav-drawer-btn{padding:8px 4px;gap:3px}
+.nav-drawer-title{margin-bottom:8px}
+.nd-grp{grid-column:1/-1;margin:6px 2px 0;padding-bottom:4px;border-bottom:1px solid rgba(184,137,58,.35);font-size:.66rem;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--accent-ink)}
+.nd-grp:first-child{margin-top:0}
+#navDrawer #nd-restaurants{order:11}
+#navDrawer #nd-nourriture{order:12}
+#navDrawer #nd-hotels{order:13}
+#navDrawer #nd-transport{order:14}
+#navDrawer #nd-pratique{order:15}
+#navDrawer #nd-phrases{order:16}
+#navDrawer #nd-roomy{order:21}
+#navDrawer #nd-activites{order:22}
+#navDrawer #nd-cerveau{order:23}
+#navDrawer #nd-budget{order:31}
+#navDrawer #nd-areserver{order:32}
+#navDrawer #nd-checklist{order:33}
+#navDrawer #nd-notes{order:34}
+#navDrawer #nd-stats{order:35}
+#navDrawer #nd-questions{order:36}
+#navDrawer #nd-souhaits{order:41}
+#navDrawer #nd-galerie{order:42}
 #tab-accueil .ph h1::after{content:'家'}#tab-accueil .ph::before{content:'福'}
 .reader-mode .ac-ed,.reader-mode #nd-budget{display:none!important}
 .ac-sec{margin:0 0 16px}

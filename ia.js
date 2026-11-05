@@ -219,7 +219,7 @@ function ensureProgrammeTab() {
     nbAct.id = 'nb-programme';
     nbAct.setAttribute('onclick', "goTab('programme',this);closeNavDrawer()");
     nbAct.querySelector('.nic').textContent = '🧭';
-    nbAct.querySelector('.nlb').textContent = 'Prog.';
+    nbAct.querySelector('.nlb').textContent = 'Programme';
   }
   const drawerAnchor = document.getElementById('nd-restaurants');
   if (drawerAnchor) {
