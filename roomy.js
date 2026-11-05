@@ -476,8 +476,33 @@ document.addEventListener('visibilitychange', () => { if (document.visibilitySta
 
 rmEnsureTab();
 
+/* ───────────── Raccourci flottant ───────────── */
+// Un bouton Roomy sur tous les onglets (sauf Roomy, le chat et la carte, où il gênerait) pour ouvrir une nouvelle
+// conversation d'un tap. Montré seulement à Matis et Lise : même règle que l'onglet.
+function rmEnsureFab() {
+  if (rmEl('rmFab')) return;
+  const b = document.createElement('button');
+  b.id = 'rmFab'; b.type = 'button'; b.hidden = true;
+  b.setAttribute('aria-label', 'Parler à Roomy');
+  b.innerHTML = `<img src="${MIMI.tete}" alt="">`;
+  b.addEventListener('click', () => rmDemander(''));
+  document.body.appendChild(b);
+}
+function rmMajFab() { const b = rmEl('rmFab'); if (b) b.hidden = !isEditorMode(); }
+rmEnsureFab();
+{
+  const _update = updateEditorUI;
+  updateEditorUI = function () { _update.apply(this, arguments); rmMajFab(); };
+  rmMajFab();
+}
+
 /* ───────────── Styles ───────────── */
 document.head.insertAdjacentHTML('beforeend', `<style>
+#rmFab{position:fixed;right:14px;bottom:calc(var(--nav) + var(--safe) + 62px);width:46px;height:46px;padding:0;border-radius:50%;border:0;background:var(--white,#fff);box-shadow:0 0 0 1.5px rgba(184,137,58,.75),0 6px 18px rgba(20,22,32,.18);z-index:850;cursor:pointer;display:flex;align-items:center;justify-content:center;overflow:hidden;-webkit-tap-highlight-color:transparent}
+#rmFab[hidden]{display:none}
+#rmFab img{width:100%;height:100%;object-fit:cover;object-position:50% 38%;display:block}
+#rmFab:active{transform:scale(.94)}
+body:has(#tab-roomy.on) #rmFab,body:has(#tab-chat.on) #rmFab,body:has(#tab-carte.on) #rmFab{display:none}
 .reader-mode #nd-roomy,.reader-mode #tab-roomy{display:none!important}
 #tab-roomy.rm-fil-on.on::after{display:none}
 .rm-tiroir-av{width:30px;height:30px;border-radius:50%;object-fit:cover;object-position:50% 38%;box-shadow:0 0 0 1px rgba(184,137,58,.6)}
