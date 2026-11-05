@@ -4583,7 +4583,7 @@ function statsModel(){
   // ───────────── Tuiles ─────────────
   const cards = [
     { value: daysBefore > 0 ? `${daysBefore}j` : inTrip ? `Jour ${tripDay}` : 'Terminé', label: 'Temps' },
-    { value: eur(depTotal) || '—', label: 'Engagé' },
+    ...(ed ? [{ value: eur(depTotal) || '—', label: 'Engagé' }] : []),
     { value: `${villes.length}`, label: 'Villes' },
     { value: `${clPct}%`, label: 'Checklist' },
     { value: `${lieux.length + hotels.length}`, label: 'Lieux' },
@@ -4732,7 +4732,8 @@ function renderStats(){
   const cont = document.getElementById('statsCont');
   if(!cont) return;
   const m = statsModel();
-  renderBudgetChart();
+  // Le graphique des dépenses est réservé à Matis et Lise : un visiteur ne reçoit ni les montants ni le bloc.
+  if (isEditorMode()) renderBudgetChart(); else { const bc = document.getElementById('budgetChartCont'); if (bc) bc.innerHTML = ''; }
   cont.innerHTML = '';
   renderVoyageScore(cont);
   cont.insertAdjacentHTML('beforeend',
@@ -7096,5 +7097,6 @@ if(loginPasswordEl){
 <script src="resa.js?v=1"></script>
 <script src="plats.js?v=1"></script>
 <script src="accueil.js?v=1"></script>
+<script src="visiteur.js?v=1"></script>
 </body>
 </html>
