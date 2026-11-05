@@ -1275,6 +1275,8 @@ select.form-input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://
 .tr-tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:3px;}
 .tr-tag{font-size:.6rem;font-weight:800;border-radius:999px;padding:2px 8px;background:var(--accent);color:#fff;}
 .tr-tag.maybe{background:var(--bg);color:var(--accent-ink,var(--accent));border:1px solid var(--border2);}
+.suivi-vol{display:inline-flex;align-items:center;gap:5px;font-size:.66rem;font-weight:700;color:var(--accent);background:var(--bg);border:1px solid var(--accent);border-radius:999px;padding:3px 10px;text-decoration:none;}
+.suivi-vol svg{width:12px;height:12px;}
 .sos-row.tr-moi{background:rgba(184,137,58,.10);border-radius:12px;padding:8px;margin:2px -8px;}
 .tr-mots{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px;}
 .tr-mot{background:var(--bg);border:1px solid var(--border2);border-radius:10px;padding:6px 8px;}
@@ -3637,6 +3639,12 @@ function notesTransportLisibles(notes){
   const parts=String(notes||'').split('|').map(x=>x.trim()).filter(x=>x&&!/^(DEP|ARR)_(ADDR|LAT|LNG):/.test(x)&&!/^[DA]:/.test(x)&&!/^VOL:/.test(x));
   return parts.join(' · ')||'—';
 }
+// Lien de suivi en direct d'un vol (Flightradar24), seulement pour un vol dont le numéro est connu. Ouvert aussi aux visiteurs.
+function boutonSuiviVol(t){
+  const n=numeroVol(t).replace(/\s+/g,'');
+  if(!/vol|✈/i.test(t&&t.prix_type||'')||!/^[A-Z0-9]{2}\d{1,4}[A-Z]?$/i.test(n))return '';
+  return `<a class="suivi-vol" href="https://www.flightradar24.com/data/flights/${encodeURIComponent(n.toLowerCase())}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${ic('plane')} Suivre le vol</a>`;
+}
 // Numéro de vol d'un transport, rangé dans les notes sous la forme « VOL:AY1234 ». Vide si non renseigné.
 function numeroVol(t){
   const m=String(t&&t.notes||'').match(/(?:^|\|)\s*VOL:([^|]*)/);
@@ -3759,7 +3767,8 @@ function renderDayTimeline(day,transports,slotItems,hotel){
           <span class="tl-entry-name">${esc(t.nom)}${numeroVol(t)?' · '+esc(numeroVol(t)):''}</span>
           <span style="font-size:.65rem;color:var(--txt2);">${t.quartier?esc(t.quartier):''} ${t.description?'→ '+esc(t.description):''}</span>
         </div>
-        <div class="tl-entry-sub"><b>Durée :</b> ${esc(t.notes||'—')}${isEditorMode()?` · <b>Prix :</b> ${fmtE(parseFloat(t.prix||0))}`:''}</div>
+        <div class="tl-entry-sub">${esc(notesTransportLisibles(t.notes))}${isEditorMode()?` · <b>Prix :</b> ${fmtE(parseFloat(t.prix||0))}`:''}</div>
+        ${boutonSuiviVol(t)?`<div class="tl-entry-sub">${boutonSuiviVol(t)}</div>`:''}
       </div></div>`});
   });
   const po={Matin:1,'Après-midi':2,Soir:3,Journée:4,'':5};
@@ -4090,6 +4099,7 @@ function renderTransports() {
         <div class="tr-tags">
           ${t.adresse ? `<span class="tr-tag">📅 ${esc(t.adresse)}</span>` : ''}
           ${numeroVol(t) ? `<span class="tr-tag">${ico} ${esc(numeroVol(t))}</span>` : ''}
+          ${boutonSuiviVol(t)}
           <span class="tr-tag">🛫 ${esc(t.quartier)} <small style="opacity:0.8;">${tzDep}</small></span>
           ${t.description ? `<span class="tr-tag">🛬 ${esc(t.description)} <small style="opacity:0.8;">${tzArr}</small></span>` : ''}
           <span class="tr-price">${fmtE(parseFloat(t.prix || 0))}</span>
