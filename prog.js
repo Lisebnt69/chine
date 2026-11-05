@@ -216,7 +216,45 @@ function nuitHtml(day, hotel) {
   if (cs >= 1440) return '';
   return `<div class="prog-warn">Pas d'hôtel pour cette nuit.</div>`;
 }
+/* ── Longue escale à Helsinki (aller, dimanche 8 novembre : 10h45 → 16h40) ──
+   Paris → Helsinki est dans l'espace Schengen, donc aucun contrôle à l'arrivée : on peut sortir. Le contrôle de passeport
+   n'a lieu qu'au retour, avant le vol pour Shanghai. Tout est calculé à partir des heures des deux vols (heures d'Helsinki).
+   Les durées de train (27 min en I, 32 min en P) et le billet ABC viennent de hsl.fi. Le plan ne s'applique qu'aux escales de plus
+   de 5 h 30 : celle du retour (3 h 10) garde le simple bloc d'attente. */
+const ESCALE_LONGUE_MIN = 330;
+function escalePlan(nom, de, a) {
+  if (!/helsinki/i.test(nom || '') || de == null || a == null || a - de < ESCALE_LONGUE_MIN) return null;
+  const ville = de + 75, retour = a - 210, rows = [];
+  const ajoute = r => rows.push({ ...r, sub: pourVisiteur(r.sub || '') });
+  ajoute({ t: de, k: 'step', title: "Décider à l'atterrissage : ville ou aéroport", sub: `On va en ville seulement si l'avion a atterri avant ${hmJour(de + 30)}, s'il n'y a ni neige ni verglas dehors, et si vous tenez debout après la nuit courte. Sinon, on reste à l'aéroport : mieux vaut manquer la cathédrale que le vol.` });
+  ajoute({ t: de + 1, k: 'step', title: "Descente de l'avion et sortie", sub: "Compter 20 à 30 min entre l'atterrissage et la gare : descente de l'avion, marche dans le terminal. Suivre les panneaux « Arrivals / Saapuvat » jusqu'à la sortie, puis « Train / Juna ». Les valises en soute sont prises en charge jusqu'à Shanghai : rien à récupérer, vous sortez avec vos sacs à main. Pas de contrôle de passeport (Paris → Helsinki reste dans l'espace Schengen)." });
+  ajoute({ t: de + 35, k: 'go', mode: 'train', title: 'Train I ou P vers la gare centrale', sub: "La gare est sous l'aéroport, dans le couloir entre les deux terminaux (panneaux « Train / Juna », environ 5 min de marche depuis la sortie des arrivées). Billet ABC à 4,80 € par personne : appli HSL, distributeur ou carte sans contact. 27 min en I, 32 min en P, plus l'attente du train. Sans le train : Finnair City Bus (environ 30 min, 6 à 7 €) ou taxi (35 à 50 €)." });
+  ajoute({ t: ville, k: 'key', icone: 'city', title: 'Helsinki, gare centrale', sub: `Vous avez ${dureeTxt(retour - ville)} en ville. Dehors : 0 à 5 °C environ, la nuit tombe vers 15h45. Manteau, gants et bonnet.` });
+  ajoute({ t: ville, k: 'go', mode: 'marche', title: 'À pied vers le Karl Fazer Café', sub: "Kaivokatu vers le sud-est, puis à gauche dans Aleksanterinkatu, puis Kluuvikatu : le café est au numéro 3. Environ 8 min, sur le chemin de la place du Sénat." });
+  ajoute({ t: ville + 8, k: 'key', icone: 'utensils', title: 'Karl Fazer Café : repas à emporter', sub: "Kluuvikatu 3, ouvert le dimanche (vers 10h-18h). Prendre à emporter : sandwich ou plat froid facile à manger debout, café ou chocolat chaud dans un gobelet, korvapuusti (brioche à la cannelle). Environ 10 min, file comprise. Le service à emporter est à confirmer sur place ; sinon, repli sur l'aéroport. Pas de soupe garantie le dimanche." });
+  ajoute({ t: ville + 18, k: 'go', mode: 'marche', title: 'À pied vers la place du Sénat, repas en main', sub: "Aleksanterinkatu vers l'est, environ 7 min. Le grand magasin Stockmann est derrière vous, la place du Sénat devant." });
+  ajoute({ t: ville + 26, k: 'key', icone: 'star', title: "Manger en visitant : cathédrale et place du Sénat", sub: "Mangez dehors, sur les marches ou sur la place, avant d'entrer : on ne mange pas dans la cathédrale. Il fait 0 à 5 °C, mangez vite pour que ça reste chaud, et gardez les gants. Photos de la place, puis la cathédrale, la grande église blanche au sommet des marches : intérieur fermé pendant les offices, ouverture en principe vers midi le dimanche (12h à 17h en été, hiver à vérifier sur helsingintuomiokirkko.fi). Environ 30 min en tout." });
+  ajoute({ t: ville + 56, k: 'go', mode: 'marche', title: 'Retour à pied vers la gare centrale', sub: "Aleksanterinkatu en sens inverse, puis Kaivokatu jusqu'à la gare : 12 à 15 min. Ne pas s'arrêter en route : la gare est à 13h10." });
+  ajoute({ t: retour, k: 'step', title: 'Être à la gare centrale', sub: `Dernier moment pour partir : train vers ${hmJour(retour + 10)}. Entre ce moment et le vol, ${dureeTxt(a - retour)} : train, marche, passeport, sécurité, porte d'embarquement. Avec des files de 30 min au passeport et à la sécurité, il reste encore 35 min avant l'embarquement.` });
+  ajoute({ t: retour + 10, k: 'go', mode: 'train', title: "Train pour l'aéroport", sub: 'Nouveau billet ABC, 27 à 32 min.' });
+  ajoute({ t: a - 160, k: 'step', title: "Arrivée à l'aéroport", sub: "Marche de la gare jusqu'aux départs hors Schengen : 5 à 10 min. Carte d'embarquement du vol pour Shanghai en main (appli ou papier)." });
+  ajoute({ t: a - 155, k: 'step', title: 'Contrôle de passeport', sub: "Obligatoire pour quitter la zone Schengen. Suivre « Non-Schengen / Flights outside Schengen » (l'ordre passeport et sécurité suit le fléchage sur place). File d'attente : 15 à 30 min selon l'affluence. Finnair compte 40 à 45 min au minimum entre les deux côtés, et on part de l'extérieur." });
+  ajoute({ t: a - 125, k: 'step', title: 'Sécurité', sub: "Portique : 15 à 30 min. Liquides en sachet, ordinateur et batteries externes sortis du sac, ceinture et manteau à enlever." });
+  ajoute({ t: a - 95, k: 'step', title: "Marche jusqu'à la porte, repas et attente", sub: "Le numéro de porte est sur la carte d'embarquement et sur les écrans (les sources donnent des portes non-Schengen vers 38 à 55, à vérifier) ; elles peuvent être à 10 à 15 min de marche. Déjeuner à l'aéroport, une fois la porte repérée. Carte d'arrivée en Chine à remplir en ligne si ce n'est pas fait (gratuit). Wi-Fi gratuit de l'aéroport : télécharger les cartes hors ligne, charger les téléphones." });
+  ajoute({ t: a - 45, k: 'step', title: 'Embarquement', sub: "La porte ferme 15 min avant le vol. Être à la porte quand l'embarquement commence." });
+  return rows;
+}
 function escaleBlock(e) {
+  const plan = escalePlan(e.nom, e.de, e.a);
+  if (plan) {
+    const retour = plan.find(r => r.title === 'Être à la gare centrale').t;
+    const cles = plan.filter(r => r.k === 'key' && (r.icone === 'star' || r.icone === 'utensils'));
+    return `<div class="pl-esc"><div class="pl-esc-t">Escale à Helsinki de ${hmJour(e.de)} à ${hmJour(e.a)}</div>
+      <div class="pl-esc-s">${dureeTxt(e.a - e.de)} devant vous, dont environ ${dureeTxt(plan.find(r => r.title === 'Être à la gare centrale').t - plan.find(r => r.icone === 'city').t)} en ville. Vous n'êtes pas en Chine : rien de Chine n'est proposé. Le détail est dans la vue Détaillé.</div>
+      <div class="pl-esc-s"><b>Règle :</b> en ville seulement si l'avion atterrit avant ${hmJour(e.de + 30)}, sans neige ni verglas, et si vous tenez debout. Sinon on reste à l'aéroport.</div>
+      <div class="pl-esc-s"><b>Marge du vol :</b> à la gare centrale à ${hmJour(retour)}, train de ${hmJour(retour + 10)}, à l'aéroport vers ${hmJour(e.a - 160)}. Même avec 10 min d'attente de train, 30 min de passeport, 30 min de sécurité et 15 min de marche, vous êtes à la porte à ${hmJour(e.a - 80)}, ${dureeTxt(35)} avant l'embarquement. Dernier délai absolu à la gare : ${hmJour(retour + 30)}. Au-delà, le vol est en danger.</div>
+      <ul class="pd-li">${cles.map(r => `<li><b>${hmJour(r.t)}</b> ${esc(r.title)}</li>`).join('')}<li><b>${hmJour(plan.find(r => r.title === 'Être à la gare centrale').t)}</b> à la gare, au plus tard</li></ul></div>`;
+  }
   const lieu = e.nom ? `Escale à ${esc(e.nom)}` : 'En transit';
   const duree = e.de != null && e.a != null ? `de ${hmJour(e.de)} à ${hmJour(e.a)}` : '';
   return `<div class="pl-esc"><div class="pl-esc-t">✈️ ${lieu}</div><div class="pl-esc-s">${duree}${duree ? ' · ' : ''}vous n'êtes pas en Chine à ce moment-là : rien n'est proposé.</div></div>`;
@@ -469,6 +507,7 @@ function detailRows(day) {
   let loc = { pos: posOf(depart), nom: depart ? depart.nom : 'votre point de départ', id: depart?.id }, free = null; // free = heure à laquelle on est dispo
   const entries = plan.entries.filter(e => e.kind !== 'hotel').sort((a, b) => a.min - b.min);
   const push = r => rows.push(r);
+  let avecPlanEscale = false;  // le plan d'escale gère déjà le retour à l'aéroport
   if (depart?.type === 'hotel' && entries[0] && entries[0].min >= 10 * 60) free = DAY_START;
   const reveil = toMin(day.route?.reveil);
   if (reveil != null) push({ t: reveil, k: 'step', title: 'Réveil', sub: day.route.pourquoi_horaire || '' });
@@ -504,10 +543,12 @@ function detailRows(day) {
       const dejaLa = loc.fin != null && e.min - loc.fin <= 10;
       if (dejaLa) { /* rien à ajouter */ }
       else if (L && !L.depCN) {
-        // On part d'une escale (pas de trajet en ville à calculer) : on montre l'attente, c'est tout.
-        if (free != null && e.min - avance - free >= 60) push({ t: free, k: 'free', title: `Escale à ${loc.nom.replace(/^l'aéroport de /, '')}`, sub: `${dureeTxt(e.min - free)} avant le vol de ${fmtMin(e.min)} · hors de Chine` });
+        // On part d'une escale (pas de trajet en ville à calculer) : on montre l'attente, ou le plan quand l'escale est longue.
+        const planEscale = free != null ? escalePlan(loc.nom, free, e.min) : null;
+        if (planEscale) { planEscale.forEach(push); avecPlanEscale = true; }
+        else if (free != null && e.min - avance - free >= 60) push({ t: free, k: 'free', title: `Escale à ${loc.nom.replace(/^l'aéroport de /, '')}`, sub: `${dureeTxt(e.min - free)} avant le vol de ${fmtMin(e.min)} · hors de Chine` });
       } else if (leg.km == null || leg.km >= 0.1) push({ t: quitter, k: 'go', mode: modeDe(leg), title: `Quitter ${loc.nom}`, sub: `${legTxt(leg)} jusqu'à la gare ou l'aéroport` });
-      if (!dejaLa) push({ t: e.min - avance, k: 'step', title: avance >= 120 ? "Être à l'aéroport" : avance >= 60 ? 'Être à la gare' : "Être au point d'embarquement", sub: `${avance} min avant le départ · ${avance >= 120 ? 'enregistrement et sécurité' : avance >= 60 ? 'contrôle des billets et sécurité' : 'embarquement'}` });
+      if (!dejaLa && !avecPlanEscale) push({ t: e.min - avance, k: 'step', title: avance >= 120 ? "Être à l'aéroport" : avance >= 60 ? 'Être à la gare' : "Être au point d'embarquement", sub: `${avance} min avant le départ · ${avance >= 120 ? 'enregistrement et sécurité' : avance >= 60 ? 'contrôle des billets et sécurité' : 'embarquement'}` });
       push({ t: e.min, k: 'key', icone: avion ? 'plane' : 'train', ic: transportIcon(it), title: e.label, sub: e.sub, cn: it.adresse_cn, pos: depPos });
       const memeJour = e.end != null && e.end > e.min;
       if (memeJour) push({ t: e.end, k: 'step', title: `Arrivée${L?.arrNom ? ' à ' + L.arrNom : ''}`, sub: '' });
