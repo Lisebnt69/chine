@@ -4191,7 +4191,7 @@ function mdIA(src){
     let t=esc(s).replace(/\u0000/g,'')
       .replace(/`([^`\n]+)`/g,(m,c)=>stash('<code>'+c+'</code>'))
       .replace(new RegExp('\\[([^\\]\\n\\u0000]+)\\]\\(('+URL_RE+')\\)','g'),(m,l,u)=>a(u,l))
-      .replace(new RegExp('(^|[\\s(])('+URL_RE+')','g'),(m,p,u)=>p+a(u,u));
+      .replace(new RegExp('(^|[\\s(])('+URL_RE+')','g'),(m,p,u)=>{const fin=(u.match(/[.,;:!?]+$/)||[''])[0];u=u.slice(0,u.length-fin.length);return p+a(u,u)+fin;});
     t=t.replace(/\*\*([^*\n]+)\*\*|__([^_\n]+)__/g,(m,x,y)=>'<strong>'+(x||y)+'</strong>')
       .replace(/(^|[^*\w])\*([^*\n]+)\*(?!\*)/g,'$1<em>$2</em>');
     return t.replace(/\u0000(\d+)\u0000/g,(m,i)=>keep[+i]);
