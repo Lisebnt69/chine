@@ -234,7 +234,22 @@ function acRender() {
   acEl('acBudget').innerHTML = acBudgetHtml();
   acEl('acSos').innerHTML = acSosHtml();
   acMajTaux();
+  acTuto();
 }
+/* Première ouverture : Roomy dit en trois phrases où est quoi. Une seule fois par téléphone. */
+function acTuto() {
+  const box = acEl('acTuto'); if (!box || box.firstChild) return;
+  let vu = false; try { vu = localStorage.getItem('accueil_tuto') === '1'; } catch (e) { /* stockage indisponible */ }
+  if (vu) return;
+  box.innerHTML = `<section class="sh-tuto" aria-live="polite">
+    <div class="sh-tuto-tag"><span class="sh-step">Bienvenue</span></div>
+    <div class="mimi-row">
+      ${typeof shPoseImg === 'function' ? shPoseImg('explique') : ''}
+      <div class="mimi-bubble"><b>Accueil</b> : ce qui arrive maintenant.<br><b>Programme</b> : chaque jour en détail.<br><b>Plus</b> : le reste (restos, hôtels, transports…).</div>
+    </div>
+    <div class="sh-tuto-bar" style="margin-top:8px"><button class="sh-next" type="button" data-act="tutoOk">J’ai compris</button></div></section>`;
+}
+
 function acSafeRender() { try { acRender(); } catch (e) { console.warn('Accueil :', e); } }
 
 function acClic(e) {
@@ -243,6 +258,7 @@ function acClic(e) {
   switch (d.act) {
     case 'open': { const it = D.items.find(x => x.id == d.id); if (it) openItemSheet(it.type, it); break; }
     case 'nav': navigateToItem(JSON.parse(d.nav)); break;
+    case 'tutoOk': try { localStorage.setItem('accueil_tuto', '1'); } catch (err) { /* tant pis */ } acEl('acTuto').innerHTML = ''; break;
     case 'roomy': acRoomy(); break;
     case 'autour': acAutour(); break;
     case 'budget': goTab('budget', acEl('nb-more')); break;
@@ -260,6 +276,7 @@ function acEnsureTab() {
   tab.className = 'tab'; tab.id = 'tab-accueil';
   tab.innerHTML = `
     <div class="ph"><h1>Accueil</h1><p id="acSub"></p></div>
+    <div id="acTuto"></div>
 
     <section class="ac-sec"><div class="sl">Prochaines activités<span class="sl-s">heure de Chine</span></div><div class="ac-card" id="acAct"></div></section>
     <section class="ac-sec"><div class="sl">Prochaines étapes importantes<span class="sl-s">trains, vols, hôtels</span></div><div class="ac-card" id="acEtapes"></div></section>
