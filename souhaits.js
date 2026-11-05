@@ -27,11 +27,11 @@ window.MIMI = MIMI;
 /* ───────────── État ───────────── */
 const SH = { rows: [], charge: false, erreur: '', filtre: 'attente', pers: '', occupe: false, image: '', imageCadeau: '', edition: null, etape: 0 };
 const SH_TUTO = [
-  { pose: 'explique', zh: '欢迎', txt: "Bienvenue ! Moi, c'est <b>Roomy</b>. Ici, on note ce que vos proches aimeraient qu'on leur rapporte de Chine. Un souhait = un ticket." },
-  { pose: 'explique', num: 1, txt: "<b>Pour qui ?</b> Dis-moi la personne : un prénom suffit. Maman, Julien, Mamie…" },
-  { pose: 'explique', num: 2, txt: "<b>Qu'est-ce qu'elle veut ?</b> Du thé, un éventail, un t-shirt… Plus tu es précis (taille, couleur), mieux Matis et Lise chercheront." },
+  { pose: 'explique', zh: '欢迎', txt: "Bienvenue ! Moi, c'est <b>Roomy</b>, je voyage avec Matis et Lise. Ils aimeraient te rapporter quelque chose de Chine : ici, tu leur dis quoi. Un souhait = un ticket." },
+  { pose: 'explique', num: 1, txt: "<b>Pour qui ?</b> Pour toi, ou pour quelqu'un de la famille : un prénom suffit. Maman, Julien, Mamie…" },
+  { pose: 'explique', num: 2, txt: "<b>Qu'est-ce qui te ferait plaisir ?</b> Du thé, un éventail, un t-shirt… Plus tu es précis (taille, couleur), mieux Matis et Lise chercheront." },
   { pose: 'calme', num: 3, txt: "<b>Une photo ?</b> C'est facultatif. Si tu as un modèle en tête, montre-le-moi. Sinon, ce n'est pas grave." },
-  { pose: 'joie', zh: '太好了', txt: "Et voilà ! Ton ticket part chez Matis et Lise. Ils sont les seuls à lire la liste, et ils feront de leur mieux pour le trouver." },
+  { pose: 'joie', zh: '太好了', txt: "Et voilà ! Ton ticket part chez Matis et Lise. Ils sont les seuls à lire la liste, donc la surprise reste entière, et ils feront de leur mieux pour le trouver." },
 ];
 
 const shLire = (k, def) => { try { const v = localStorage.getItem(k); return v === null ? def : v; } catch (e) { return def; } };
