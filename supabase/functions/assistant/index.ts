@@ -988,13 +988,16 @@ async function handleQuestions(body: Json, json: (b: unknown, s?: number) => Res
 // Commune à l'onglet Programme et aux conversations. `signal` : « stop » de l'utilisateur. Il coupe l'appel en cours
 // et, avant chaque outil, empêche toute nouvelle modification : ce qui est déjà fait reste fait.
 class Arret extends Error {}
+class TropLong extends Error {}
 
 async function boucleIA(
   messages: Anthropic.Beta.BetaMessageParam[], prog: boolean, changes: string[], signal?: AbortSignal,
+  fin?: number,   // heure limite (ms epoch) : passé ce moment la boucle s'arrête avec TropLong au lieu de se faire couper par la passerelle
 ): Promise<Anthropic.Beta.BetaMessage | null> {
   let final: Anthropic.Beta.BetaMessage | null = null;
   for (let turn = 0; turn < MAX_TURNS; turn++) {
     if (signal?.aborted) throw new Arret();
+    if (fin && Date.now() >= fin) throw new TropLong();
     // deno-lint-ignore no-explicit-any
     const params: any = {
       model: MODEL,
@@ -1008,9 +1011,13 @@ async function boucleIA(
       fallbacks: "default",
     };
     let res: Anthropic.Beta.BetaMessage;
+    const delai = fin ? AbortSignal.timeout(Math.max(1000, fin - Date.now())) : null;
+    const signaux = [signal, delai].filter((s): s is AbortSignal => !!s);
+    const sig = signaux.length > 1 ? AbortSignal.any(signaux) : signaux[0];
     try {
-      res = await anthropic.beta.messages.create(params, signal ? { signal } : undefined);
+      res = await anthropic.beta.messages.create(params, sig ? { signal: sig } : undefined);
     } catch (e) {
+      if (delai?.aborted && !signal?.aborted) throw new TropLong();
       if (signal?.aborted || e instanceof Anthropic.APIUserAbortError) throw new Arret();
       throw e;
     }
@@ -1290,6 +1297,29 @@ async function roomyEnvoyer(
   }
 }
 
+// Temps accordé à l'IA pour l'onglet Programme. La fonction est coupée par la plateforme à ~150 s (offre gratuite) : on
+// s'arrête avant, avec un vrai message, au lieu de laisser le navigateur conclure « injoignable ».
+const PROG_LIMITE_MS = 125_000;
+
+// Répond tout de suite (200, JSON) puis envoie un espace toutes les 10 s tant que `travail` n'a pas fini ; le JSON
+// final suit. Les espaces avant le JSON sont ignorés par `response.json()`.
+function reponseLongue(travail: () => Promise<unknown>): Response {
+  const enc = new TextEncoder();
+  let ping: number | undefined;
+  const flux = new ReadableStream<Uint8Array>({
+    async start(c) {
+      c.enqueue(enc.encode(" "));
+      ping = setInterval(() => { try { c.enqueue(enc.encode(" ")); } catch (_) { /* flux fermé */ } }, 10_000);
+      let sortie: unknown;
+      try { sortie = await travail(); } catch (e) { console.error((e as Error).message); sortie = { error: (e as Error).message }; }
+      clearInterval(ping);
+      try { c.enqueue(enc.encode(JSON.stringify(sortie))); c.close(); } catch (_) { /* le navigateur est parti */ }
+    },
+    cancel() { clearInterval(ping); },
+  });
+  return new Response(flux, { status: 200, headers: { ...CORS, "Content-Type": "application/json" } });
+}
+
 // ───────────────────────── Handler ─────────────────────────
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
@@ -1322,44 +1352,54 @@ Deno.serve(async (req) => {
   const user = String(body.user || "quelqu'un");
   if (!question) return json({ error: "Question vide" }, 400);
   const changes: string[] = [];
+  const fin = Date.now() + PROG_LIMITE_MS;
 
-  const nowChina = new Date().toLocaleString("fr-FR", { timeZone: "Asia/Shanghai", dateStyle: "full", timeStyle: "short" });
-  const [snap, hist] = await Promise.all([snapshot(), Promise.resolve(progHistory(body.historique))]);
+  // La réponse part tout de suite (flux) et reste ouverte avec un battement : sans ça, la passerelle coupe une requête
+  // qui ne répond pas avant ~150 s, et le navigateur ne voit qu'une erreur réseau (« Roomy est injoignable »).
+  // Le statut est donc toujours 200 : une erreur voyage dans le JSON final, sous la clé `error`.
+  return reponseLongue(async () => {
+    const nowChina = new Date().toLocaleString("fr-FR", { timeZone: "Asia/Shanghai", dateStyle: "full", timeStyle: "short" });
+    const [snap, hist] = await Promise.all([snapshot(), Promise.resolve(progHistory(body.historique))]);
 
-  const pos = body.position as { lat?: number; lng?: number; acc?: number } | null;
-  const jours = Array.isArray(body.jours) ? (body.jours as unknown[]).map(String).slice(0, 14) : [];
-  const contexte = `
+    const pos = body.position as { lat?: number; lng?: number; acc?: number } | null;
+    const jours = Array.isArray(body.jours) ? (body.jours as unknown[]).map(String).slice(0, 14) : [];
+    const contexte = `
 Jours affichés dans l'app : ${jours.join(", ") || "aucun"}.
 ` +
-    (pos?.lat != null && pos?.lng != null
-      ? `Position GPS de ${user} : lat ${pos.lat}, lng ${pos.lng} (± ${Math.round(Number(pos.acc) || 0)} m). Utilise-la avec autour_de_nous.
+      (pos?.lat != null && pos?.lng != null
+        ? `Position GPS de ${user} : lat ${pos.lat}, lng ${pos.lng} (± ${Math.round(Number(pos.acc) || 0)} m). Utilise-la avec autour_de_nous.
 `
-      : `Position GPS inconnue.
+        : `Position GPS inconnue.
 `);
 
-  const messages: Anthropic.Beta.BetaMessageParam[] = [
-    ...hist,
-    {
-      role: "user",
-      content: [
-        { type: "text", text: `<etat_voyage>
+    const messages: Anthropic.Beta.BetaMessageParam[] = [
+      ...hist,
+      {
+        role: "user",
+        content: [
+          { type: "text", text: `<etat_voyage>
 ${snap}
 </etat_voyage>` },
-        { type: "text", text: `Maintenant en Chine : ${nowChina}.${contexte}
+          { type: "text", text: `Maintenant en Chine : ${nowChina}.${contexte}
 ${user} demande : ${question}` },
-      ],
-    },
-  ];
+        ],
+      },
+    ];
 
-  try {
-    const final = await boucleIA(messages, true, changes);
-    let reply = texteDe(final);
-    if (!reply) reply = changes.length ? "C'est fait." : "Je n'ai pas réussi à répondre, réessaie.";
-    // Le chat de l'onglet Programme reste sur le téléphone : rien n'est publié ailleurs.
-    return json({ reply: "🧠 " + reply, changes });
-  } catch (e) {
-    const msg = e instanceof Anthropic.APIError ? `API ${e.status}: ${e.message}` : (e as Error).message;
-    console.error(msg);
-    return json({ error: msg, changes }, 500);
-  }
+    try {
+      const final = await boucleIA(messages, true, changes, undefined, fin);
+      let reply = texteDe(final);
+      if (!reply) reply = changes.length ? "C'est fait." : "Je n'ai pas réussi à répondre, réessaie.";
+      // Le chat de l'onglet Programme reste sur le téléphone : rien n'est publié ailleurs.
+      return { reply: "🧠 " + reply, changes };
+    } catch (e) {
+      if (e instanceof TropLong) {
+        const fait = changes.length ? ` Déjà modifié avant : ${changes.slice(0, 6).join(" · ")}.` : " Rien n'a été modifié.";
+        return { reply: "🧠 Je n'ai pas fini à temps." + fait + " Redemande-moi en plus précis ou sur un seul jour.", changes };
+      }
+      const msg = e instanceof Anthropic.APIError ? `API ${e.status}: ${e.message}` : (e as Error).message;
+      console.error(msg);
+      return { error: msg, changes };
+    }
+  });
 });

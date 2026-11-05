@@ -694,9 +694,15 @@ async function sendProg() {
       body: JSON.stringify({ mode: 'programme', question, user: USERS[currentUser]?.name || currentUser, jours: progDaysSelected().map(d => d.date_voyage),
         position: position ? { lat: position.lat, lng: position.lng, acc: position.acc } : null, historique }),
     });
-    const j = await r.json().catch(() => ({}));
+    // La fonction répond en flux (200 tout de suite, JSON à la fin) : une erreur arrive dans `j.error`, et une
+    // connexion coupée en route donne un corps vide ou tronqué, pas une réponse à prendre pour « C'est fait. ».
+    const j = await r.json().catch(() => null);
     if (r.status === 401) { localStorage.removeItem('ia_secret'); progChat.push({ role: 'assistant', text: 'Code assistant invalide. Renvoie ton message pour le ressaisir.' }); }
-    else if (!r.ok) progChat.push({ role: 'assistant', text: 'Roomy est indisponible : ' + (j.error || r.status) });
+    else if (!j) progChat.push({ role: 'assistant', text: 'Roomy n\'a pas fini de répondre : la connexion a été coupée. Vérifie le planning, puis réessaie plus court.' });
+    else if (!r.ok || j.error) {
+      progChat.push({ role: 'assistant', text: 'Roomy est indisponible : ' + (j.error || r.status) });
+      if (j.changes?.length) { try { await loadAll(); renderAll(); } catch (e) { /* le temps réel rattrapera */ } }
+    }
     else {
       progChat.push({ role: 'assistant', text: String(j.reply || 'C\'est fait.').replace(/^🧠\s*/, ''), changes: j.changes || [] });
       if (j.changes?.length) { try { await loadAll(); renderAll(); } catch (e) { /* le temps réel rattrapera */ } }
