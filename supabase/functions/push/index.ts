@@ -103,6 +103,10 @@ async function handleChat(body: Json) {
   const author = String(body.author || "");
   if (!USERS.includes(author as User)) return { ignore: "auteur" };
   const dest = USERS.filter((u) => u !== author);   // l'autre personne, jamais l'auteur
+  // Au plus une notif toutes les 20 s par auteur : le chat reste inscriptible avec la clé publique, ça borne le spam.
+  const { error: dup } = await sb.from("push_envoyes").insert({ cle: `chat:${author}:${Math.floor(Date.now() / 20000)}` });
+  if (dup) return { ignore: "limite" };
+  sb.from("push_envoyes").delete().like("cle", "chat:%").lt("created_at", new Date(Date.now() - 86400e3).toISOString()).then(() => {});
   const r = await envoyer(dest, {
     titre: `💬 ${NOM[author as User]}`,
     corps: resumeMessage(String(body.content || "")),
@@ -120,12 +124,22 @@ async function handleRappels(body: Json) {
   const moment = body.moment === "jour" ? "jour" : "veille";
   // Le job « jour » tourne à 23 h UTC = 7 h en Chine, donc déjà le lendemain en date de Chine : dateChine(0) est bien « aujourd'hui ».
   const date = moment === "jour" ? dateChine(0) : dateChine(1);
-  const { data, error } = await sb.from("items").select("id, nom, quartier, prix_type")
-    .eq("type", "transport").eq("adresse", date).eq("fait", false);
+  // La date de départ est dans `adresse`. Quand elle est vide, l'app prend le jour du planning où le transport est placé : pareil ici.
+  const { data: tous, error } = await sb.from("items").select("id, nom, quartier, adresse")
+    .eq("type", "transport").eq("fait", false);
   if (error) return { erreur: error.message };
+  const sansDate = (tous || []).filter((t) => !t.adresse).map((t) => t.id);
+  const dateDuSlot = new Map<string, string>();
+  if (sansDate.length) {
+    const { data: slots } = await sb.from("planning_slots").select("item_id, planning:planning_id(date_voyage)").in("item_id", sansDate);
+    for (const sl of (slots || []) as unknown as { item_id: string; planning: { date_voyage?: string } | null }[]) {
+      if (sl.planning?.date_voyage) dateDuSlot.set(sl.item_id, sl.planning.date_voyage);
+    }
+  }
+  const data = (tous || []).filter((t) => (t.adresse || dateDuSlot.get(t.id)) === date);
 
   const bilan = { transports: 0, envoyes: 0 };
-  for (const t of data || []) {
+  for (const t of data) {
     // Une seule fois par transport et par moment, même si le job est relancé.
     const cle = `${moment}:${t.id}:${date}`;
     const { error: dup } = await sb.from("push_envoyes").insert({ cle });

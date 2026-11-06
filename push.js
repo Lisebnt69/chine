@@ -39,9 +39,12 @@ function pushCleEnBinaire(b64) {
   return Uint8Array.from(raw, c => c.charCodeAt(0));
 }
 
+// `ready` ne se résout jamais si le service worker n'est pas enregistré : on abandonne après 4 s plutôt que de bloquer l'écran.
+const pushReg = () => Promise.race([navigator.serviceWorker.ready, new Promise(r => setTimeout(() => r(null), 4000))]);
+
 async function pushAbonnementLocal() {
   if (!pushSupporte()) return null;
-  try { const reg = await navigator.serviceWorker.ready; return await reg.pushManager.getSubscription(); }
+  try { const reg = await pushReg(); return reg ? await reg.pushManager.getSubscription() : null; }
   catch (e) { return null; }
 }
 
@@ -83,7 +86,8 @@ async function pushActiver() {
   if (!k.key) { showToast(k.code === 'reseau' ? 'Pas de réseau' : 'Notifications pas encore branchées côté serveur'); return; }
 
   try {
-    const reg = await navigator.serviceWorker.ready;
+    const reg = await pushReg();
+    if (!reg) { showToast('Le mode hors-ligne n\'est pas prêt, recharge l\'app'); return; }
     const cle = pushCleEnBinaire(k.key);
     let sub = await reg.pushManager.getSubscription();
     try {
