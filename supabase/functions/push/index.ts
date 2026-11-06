@@ -19,6 +19,7 @@
 
 import webpush from "npm:web-push@3.6.7";
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { escalesHelsinki, evenementsEscale, evenementsResa, type Evt } from "./horaires.ts";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -225,6 +226,41 @@ async function handleRappels(body: Json) {
   return bilan;
 }
 
+// ── Échéances à l'heure près ───────────────────────────────────
+// Appelée chaque minute par pg_cron. Calcule les moments clés (escale d'Helsinki, résas avec une heure) et envoie ceux qui
+// viennent d'arriver. Une notif n'est envoyée qu'une fois (push_envoyes) et jamais en retard de plus de FENETRE_MS : si le
+// cron a raté un tour, on préfère se taire que dire « repartez maintenant » une heure trop tard.
+const FENETRE_MS = 6 * 60e3;
+// Les résas des journées passées en Chine seulement : les horaires du 8 et du 22 (vols, train en France) ne sont pas en heure de Chine.
+const CHINE_DU = "2026-11-09", CHINE_AU = "2026-11-21";
+
+async function handleEcheances() {
+  const maintenant = Date.now();
+  const evenements: Evt[] = [];
+
+  const { data: transports } = await sb.from("items").select("nom, adresse, quartier, description").eq("type", "transport");
+  for (const e of escalesHelsinki(transports || [])) evenements.push(...evenementsEscale(e.de, e.a));
+
+  const { data: resas } = await sb.from("a_reserver").select("id, titre, jour, heure, ou, item:item_id(type)")
+    .not("heure", "is", null).not("jour", "is", null).gte("jour", CHINE_DU).lte("jour", CHINE_AU);
+  for (const r of (resas || []) as unknown as { id: string; titre: string; jour: string; heure: string; ou: string | null; item: { type?: string } | null }[]) {
+    if (r.item?.type === "transport") continue;   // vols et trains ont leurs propres rappels
+    evenements.push(...evenementsResa(r));
+  }
+
+  const bilan = { dus: 0, envoyes: 0 };
+  for (const e of evenements) {
+    const age = maintenant - e.ts;
+    if (age < 0 || age >= FENETRE_MS) continue;
+    const { error: dup } = await sb.from("push_envoyes").insert({ cle: e.cle });
+    if (dup) continue;
+    bilan.dus++;
+    const r = await envoyer([...USERS], { titre: e.titre, corps: e.corps, tag: e.tag, onglet: e.onglet }, 3600);
+    bilan.envoyes += r.envoyes;
+  }
+  return bilan;
+}
+
 // ── Abonnements (depuis l'app) ─────────────────────────────────
 function abonnementValide(s: unknown): s is { endpoint: string; keys: { p256dh: string; auth: string } } {
   const x = s as { endpoint?: unknown; keys?: { p256dh?: unknown; auth?: unknown } } | null;
@@ -245,10 +281,10 @@ Deno.serve(async (req) => {
   if (mode === "cle") return json({ key: VAPID_PUBLIC || null, pret: vapidPret });
 
   // Appels de la base : code PUSH_HOOK_SECRET.
-  if (mode === "chat" || mode === "rappels" || mode === "souhait" || mode === "resa_faite") {
+  if (mode === "chat" || mode === "rappels" || mode === "souhait" || mode === "resa_faite" || mode === "echeances") {
     if (!memeCode(req.headers.get("x-push-secret"), Deno.env.get("PUSH_HOOK_SECRET"))) return json({ error: "Code invalide" }, 401);
     if (!vapidPret) return json({ error: "VAPID non configuré" }, 503);
-    const gestionnaire = { chat: handleChat, rappels: handleRappels, souhait: handleSouhait, resa_faite: handleResaFaite }[mode]!;
+    const gestionnaire = { chat: handleChat, rappels: handleRappels, souhait: handleSouhait, resa_faite: handleResaFaite, echeances: handleEcheances }[mode]!;
     return json(await gestionnaire(body));
   }
 
