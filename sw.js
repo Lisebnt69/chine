@@ -1,6 +1,6 @@
 // Cache offline. Réseau d'abord pour la page et les scripts (pour recevoir les mises à jour),
 // cache en secours quand il n'y a pas de réseau.
-const CACHE_NAME = 'chine-app-v29';
+const CACHE_NAME = 'chine-app-v30';
 const PLATS_IMGS = ['baijiu','baozi','beibingyang','bieres','bingfen','chadan','chagee','changde','choudoufu','chun','ciba','cybm','dabaitu','danchao','dandan','danhonggao','dazhaxie','duojiao','eggtart','fengzhua','fuqi','gaiwan','ganbian','gongbao','guazi','guiling','guokui','haidilao','heytea','hongshao','hongshu','huangjiu','huiguo','huoguo','icecream','jianbing','jiaozi','jiuniang','kaoya','kfcwrap','kfczhou','koushui','kungfu','laitang','latiao','laziji','liangpi','lizi','luckin','lulu','luosi','maocai','maoxuewang','mapo','mctaro','mcteri','mcwings','mixue','naicha','roujiamo','sandapao','sanxia','shuangpi','shuizhu','sjb','suancaiyu','suanmei','sulafen','sursou','tangcu','tanghua','tanghulu','tastien','wallace','wanglaoji','wanza','xiaochaorou','xiaomian','xlb','yabo','yangrouchuan','yangzhi','youtiao','yuxiang','zhongshui'].map(f => './plats/' + f + '.webp');
 const ASSETS = ['./', './index.html', './ia.js', './prog.js', './souhaits.js', './questions.js', './roomy.js','./push.js','./resa.js', './plats.js','./plats-img.js','./accueil.js','./meteo.js','./meteo.json','./visiteur.js','./mascotte/calme.webp', './mascotte/explique.webp', './mascotte/joie.webp', './mascotte/tete.webp', './icons.js', './fonts/GeneralSans-500.woff2', './fonts/GeneralSans-600.woff2', './fonts/GeneralSans-700.woff2', './cerveau.json', './manifest.webmanifest', './icons-app/icon-192.png', './icons-app/icon-512.png', './icons-app/icon-maskable-512.png', './icons-app/apple-touch-icon.png'];
 
@@ -30,14 +30,14 @@ self.addEventListener('fetch', event => {
 self.addEventListener('push', event => {
   let d = {};
   try { d = event.data ? event.data.json() : {}; } catch (e) { d = { corps: event.data ? event.data.text() : '' }; }
-  event.waitUntil(self.registration.showNotification(d.titre || 'Chine 2026', {
+  event.waitUntil(Promise.all([self.clients.matchAll({ type: 'window' }).then(ws => ws.forEach(w => w.postMessage({ type: 'push-recu', onglet: d.onglet || '' }))), self.registration.showNotification(d.titre || 'Chine 2026', {
     body: d.corps || '',
     tag: d.tag || undefined,          // même tag = la notif précédente est remplacée au lieu de s'empiler
     renotify: !!d.tag,                // mais le téléphone vibre quand même
     icon: './icons-app/icon-192.png',
     badge: './icons-app/icon-192.png',
     data: { onglet: d.onglet || '' },
-  }));
+  })]));
 });
 self.addEventListener('notificationclick', event => {
   event.notification.close();

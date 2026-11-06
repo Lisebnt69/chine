@@ -850,6 +850,11 @@ async function handleSouhaits(body: Json, json: (b: unknown, s?: number) => Resp
       const { data, error } = await sb.from("souhaits").select("*").order("created_at", { ascending: false }).limit(500);
       return error ? echec(error) : json({ rows: data || [] });
     }
+    // Pastille de l'onglet : juste le nombre de tickets pas encore trouvés, sans les photos (la liste complète pèse des Mo).
+    case "compter": {
+      const { count, error } = await sb.from("souhaits").select("id", { count: "exact", head: true }).eq("trouve", false);
+      return error ? echec(error) : json({ nb: count || 0 });
+    }
     case "ajouter": {
       const c = propres({ personne: champs.personne, envie: champs.envie, image: champs.image ?? null });
       if (typeof c === "string") return json({ error: c }, 400);

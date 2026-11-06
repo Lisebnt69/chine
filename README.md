@@ -51,7 +51,12 @@ npx supabase functions deploy assistant --project-ref <ref> --no-verify-jwt
 - `--no-verify-jwt` est nécessaire parce que l'app utilise une clé `sb_publishable_…`, qui n'est pas un JWT
 
 ### 4. Notifications push (Matis et Lise seulement)
-Elles préviennent quand l'autre écrit dans le chat, et la veille (19 h) et le jour même (7 h, heure de Chine) de chaque transport, même app fermée. Un visiteur ne peut ni s'abonner ni rien recevoir : l'abonnement demande le code de l'assistant et les tables sont fermées à la clé publique.
+Même app fermée, elles préviennent de :
+- **l'essentiel du voyage** : chaque transport la veille (19 h) et le jour même (7 h, heure de Chine), l'hôtel le jour du check-in, et ce qui est **à réserver** avant le jour J (une seule notif groupée) ;
+- **une réservation cochée** dans « À réserver » (« Lise a réservé … ») ;
+- **un nouveau souhait** (d'un visiteur ou de l'autre) ;
+- le chat.
+Les souhaits pas encore trouvés ont aussi une **pastille** (bouton Souhaits du tiroir et bouton Plus). Un visiteur ne peut ni s'abonner ni rien recevoir : l'abonnement demande le code de l'assistant et les tables sont fermées à la clé publique.
 ```bash
 npx web-push generate-vapid-keys            # affiche une clé publique et une clé privée
 npx supabase secrets set --project-ref <ref> \
@@ -59,7 +64,7 @@ npx supabase secrets set --project-ref <ref> \
   VAPID_SUBJECT=https://<votre-site> PUSH_HOOK_SECRET=un-autre-code-a-vous
 npx supabase functions deploy push --project-ref <ref> --no-verify-jwt
 ```
-Puis dans Supabase → SQL Editor : lancer `supabase/migrations/20261106000000_push.sql` (active `pg_net` ; pour `pg_cron`, l'activer avant dans Database → Extensions), puis **une fois** :
+Puis dans Supabase → SQL Editor : lancer `supabase/migrations/20261106000000_push.sql` **puis `20261106010000_push_souhaits_resa.sql`** (souhaits et réservations ; redéployer aussi `assistant`, qui gagne l'action `compter` de la pastille) (active `pg_net` ; pour `pg_cron`, l'activer avant dans Database → Extensions), puis **une fois** :
 ```sql
 insert into public.push_config (cle, valeur) values
   ('url',    'https://<ref>.supabase.co/functions/v1/push'),

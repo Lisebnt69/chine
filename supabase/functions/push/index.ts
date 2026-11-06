@@ -90,6 +90,14 @@ async function envoyer(users: User[], notif: Notif, ttl: number): Promise<{ envo
   return bilan;
 }
 
+// Une seule notif par clé et par tranche de `secondes` : bloque le spam venant de la clé publique (chat, souhaits).
+async function laisserPasser(prefixe: string, auteur: string, secondes: number): Promise<boolean> {
+  const { error } = await sb.from("push_envoyes").insert({ cle: `${prefixe}:${auteur}:${Math.floor(Date.now() / (secondes * 1000))}` });
+  if (error) return false;
+  sb.from("push_envoyes").delete().like("cle", `${prefixe}:%`).lt("created_at", new Date(Date.now() - 86400e3).toISOString()).then(() => {});
+  return true;
+}
+
 // ── Chat ───────────────────────────────────────────────────────
 function resumeMessage(content: string): string {
   if (content.startsWith("IMG:")) return "📷 Photo";
@@ -104,9 +112,7 @@ async function handleChat(body: Json) {
   if (!USERS.includes(author as User)) return { ignore: "auteur" };
   const dest = USERS.filter((u) => u !== author);   // l'autre personne, jamais l'auteur
   // Au plus une notif toutes les 20 s par auteur : le chat reste inscriptible avec la clé publique, ça borne le spam.
-  const { error: dup } = await sb.from("push_envoyes").insert({ cle: `chat:${author}:${Math.floor(Date.now() / 20000)}` });
-  if (dup) return { ignore: "limite" };
-  sb.from("push_envoyes").delete().like("cle", "chat:%").lt("created_at", new Date(Date.now() - 86400e3).toISOString()).then(() => {});
+  if (!await laisserPasser("chat", author, 20)) return { ignore: "limite" };
   const r = await envoyer(dest, {
     titre: `💬 ${NOM[author as User]}`,
     corps: resumeMessage(String(body.content || "")),
@@ -114,6 +120,35 @@ async function handleChat(body: Json) {
     onglet: "chat",
   }, 6 * 3600);
   return r;
+}
+
+// ── Souhaits ───────────────────────────────────────────────────
+// Un visiteur peut envoyer un ticket sans compte : les deux sont prévenus. Si c'est Matis ou Lise, l'autre seulement.
+async function handleSouhait(body: Json) {
+  const auteur = String(body.auteur || "visiteur");
+  if (!await laisserPasser("souhait", auteur, 10)) return { ignore: "limite" };
+  const dest = USERS.filter((u) => u !== auteur);
+  const qui = auteur === "matis" || auteur === "lise" ? NOM[auteur] : "Un visiteur";
+  const personne = court(String(body.personne || ""), 40);
+  return await envoyer(dest, {
+    titre: `🎁 Nouveau souhait · ${qui}`,
+    corps: court(`${personne ? "Pour " + personne + " : " : ""}${String(body.envie || "")}`, 140),
+    tag: "souhait",
+    onglet: "souhaits",
+  }, 24 * 3600);
+}
+
+// ── Réservation faite ──────────────────────────────────────────
+async function handleResaFaite(body: Json) {
+  const par = String(body.par || "").toLowerCase();
+  const dest = USERS.filter((u) => u !== par);   // l'autre personne ; si on ne sait pas qui, les deux
+  const qui = par === "matis" || par === "lise" ? NOM[par as User] : "Quelqu'un";
+  return await envoyer(dest, {
+    titre: `✅ ${qui} a réservé`,
+    corps: court(String(body.titre || "Une réservation"), 140),
+    tag: "resa-faite",
+    onglet: "areserver",
+  }, 24 * 3600);
 }
 
 // ── Rappels de transport ───────────────────────────────────────
@@ -154,6 +189,39 @@ async function handleRappels(body: Json) {
     }, 12 * 3600);
     bilan.envoyes += r.envoyes;
   }
+  // Hôtel : le jour du check-in (la date est dans `adresse`, comme pour les transports).
+  if (moment === "jour") {
+    const { data: hotels } = await sb.from("items").select("id, nom, ville").eq("type", "hotel").eq("adresse", date).eq("fait", false);
+    for (const h of hotels || []) {
+      const { error: dup } = await sb.from("push_envoyes").insert({ cle: `hotel:${h.id}:${date}` });
+      if (dup) continue;
+      const r = await envoyer([...USERS], {
+        titre: "🏨 Check-in aujourd'hui",
+        corps: court(`${h.nom || "Hôtel"}${h.ville ? " · " + h.ville : ""}`, 120),
+        tag: `hotel-${h.id}`,
+        onglet: "hotels",
+      }, 12 * 3600);
+      bilan.envoyes += r.envoyes;
+    }
+  }
+
+  // À réserver : tout ce qui n'est pas fait et doit l'être avant ce jour-là, en UNE notif (pas dix d'un coup).
+  const { data: aResa } = await sb.from("a_reserver").select("id, titre").eq("fait", false).eq("avant", date).in("mode", ["resa", "verifier"]);
+  const neuves: { id: string; titre: string }[] = [];
+  for (const r of aResa || []) {
+    const { error: dup } = await sb.from("push_envoyes").insert({ cle: `resa:${moment}:${r.id}:${date}` });
+    if (!dup) neuves.push(r);
+  }
+  if (neuves.length) {
+    const noms = neuves.slice(0, 3).map((r) => r.titre).join(" · ") + (neuves.length > 3 ? ` · +${neuves.length - 3}` : "");
+    const r = await envoyer([...USERS], {
+      titre: `⏰ À réserver ${moment === "jour" ? "aujourd'hui" : "avant demain"}`,
+      corps: court(noms, 140),
+      tag: `resa-${moment}`,
+      onglet: "areserver",
+    }, 12 * 3600);
+    bilan.envoyes += r.envoyes;
+  }
   return bilan;
 }
 
@@ -177,10 +245,11 @@ Deno.serve(async (req) => {
   if (mode === "cle") return json({ key: VAPID_PUBLIC || null, pret: vapidPret });
 
   // Appels de la base : code PUSH_HOOK_SECRET.
-  if (mode === "chat" || mode === "rappels") {
+  if (mode === "chat" || mode === "rappels" || mode === "souhait" || mode === "resa_faite") {
     if (!memeCode(req.headers.get("x-push-secret"), Deno.env.get("PUSH_HOOK_SECRET"))) return json({ error: "Code invalide" }, 401);
     if (!vapidPret) return json({ error: "VAPID non configuré" }, 503);
-    return json(mode === "chat" ? await handleChat(body) : await handleRappels(body));
+    const gestionnaire = { chat: handleChat, rappels: handleRappels, souhait: handleSouhait, resa_faite: handleResaFaite }[mode]!;
+    return json(await gestionnaire(body));
   }
 
   // Appels de l'app : code de l'assistant, que seuls Matis et Lise ont. Sans secret configuré on refuse tout.

@@ -151,7 +151,15 @@ async function pushDemarrer() {
   if (!pushSupporte()) return;
 
   // Touche sur une notif alors que l'app est déjà ouverte : le service worker nous dit où aller.
-  navigator.serviceWorker.addEventListener('message', e => { if (e.data && e.data.type === 'goTab') pushAller(e.data.onglet); });
+  navigator.serviceWorker.addEventListener('message', e => {
+    if (!e.data) return;
+    if (e.data.type === 'goTab') pushAller(e.data.onglet);
+    // Une notif vient d'arriver pendant que l'app est ouverte : on met la pastille et les réservations à jour tout de suite.
+    if (e.data.type === 'push-recu') {
+      if (typeof shMajPastille === 'function') shMajPastille();
+      if (typeof rsCharger === 'function' && typeof RS !== 'undefined' && RS.charge && !RS.erreur) rsCharger(true);
+    }
+  });
   // App fermée : elle s'ouvre sur #tab=chat.
   const m = /^#tab=([a-z]+)$/.exec(location.hash);
   if (m && isEditorMode()) { pushAller(m[1]); history.replaceState(null, '', location.pathname + location.search); }

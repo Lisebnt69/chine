@@ -71,11 +71,42 @@ function shMsgErreur(err) {
   return "Aïe, ça n'a pas marché : " + err.message;
 }
 
+/* ───────────── Pastille : nombre de tickets pas encore trouvés ───────────── */
+// Sur le bouton Souhaits du tiroir et sur le bouton « Plus » (qui le cache). Réservée à Matis et Lise : un visiteur ne la voit jamais.
+function shPastille(nb) {
+  SH.nb = nb;
+  for (const id of ['nd-souhaits', 'nb-more']) {
+    const bouton = document.getElementById(id); if (!bouton) continue;
+    let p = bouton.querySelector('.sh-badge');
+    if (!nb || !isEditorMode()) { p?.remove(); continue; }
+    if (!p) { p = document.createElement('span'); p.className = 'sh-badge'; p.setAttribute('aria-hidden', 'true'); bouton.appendChild(p); }
+    p.textContent = nb > 99 ? '99+' : String(nb);
+    bouton.setAttribute('data-nb-souhaits', nb);
+  }
+}
+// Relit juste le nombre (pas les photos). Silencieux : jamais de fenêtre de saisie du code, un échec laisse la pastille telle quelle.
+async function shMajPastille() {
+  if (!isEditorMode() || document.hidden) return;
+  let code = ''; try { code = localStorage.getItem('ia_secret') || ''; } catch (e) { /* ignoré */ }
+  if (!code) return;
+  try {
+    const r = await fetch(IA_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY, 'x-app-secret': code },
+      body: JSON.stringify({ mode: 'souhaits', action: 'compter' }),
+    });
+    if (!r.ok) return;
+    const j = await r.json().catch(() => ({}));
+    if (typeof j.nb === 'number') shPastille(j.nb);
+  } catch (e) { /* hors ligne : tant pis */ }
+}
+window.shMajPastille = shMajPastille;
+
 async function loadSouhaits() {
   if (typeof sb === 'undefined' || !sb || !isEditorMode()) return; // le visiteur ne lit jamais la liste
   const { data, error } = await shAppel('lister');
   if (error) SH.erreur = error.code === 'code' || error.code === 'reseau' ? error.code : error.code === 'table' ? 'table' : (error.message || 'erreur');
-  else { SH.rows = data.rows || []; SH.erreur = ''; }
+  else { SH.rows = data.rows || []; SH.erreur = ''; shPastille(SH.rows.filter(r => !r.trouve).length); }
   SH.charge = true;
   renderSouhaits();
 }
@@ -442,8 +473,16 @@ ensureSouhaitsTab();
   };
 }
 
+// Au démarrage, puis toutes les 30 s quand l'écran est visible, et au retour dans l'app (pas de temps réel : la table est fermée).
+setTimeout(shMajPastille, 2500);
+setInterval(shMajPastille, 30000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) shMajPastille(); });
+
 /* ───────────── Styles ───────────── */
 document.head.insertAdjacentHTML('beforeend', `<style>
+#nd-souhaits,#nb-more{position:relative}
+.sh-badge{position:absolute;top:-3px;right:-3px;min-width:17px;height:17px;padding:0 4px;box-sizing:border-box;border-radius:999px;background:var(--laque,#c0392b);color:#fff;font-size:.56rem;font-weight:800;line-height:1;display:flex;align-items:center;justify-content:center;pointer-events:none;box-shadow:0 0 0 2px var(--bg,#fff)}
+#nd-souhaits .sh-badge{top:5px;right:calc(50% - 26px)}
 /* ── Roomy, partout ── */
 .mimi-img{display:block;width:112px;height:auto;flex:none;filter:drop-shadow(0 8px 10px rgba(31,20,17,.16));user-select:none;-webkit-user-drag:none}
 .mimi-img.sm{width:72px}
