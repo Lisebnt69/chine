@@ -3657,7 +3657,15 @@ function numeroVol(t){
 }
 
 function renderPlanning(){
-  const wrap=document.getElementById('tlWrap');wrap.innerHTML='';
+  const wrap=document.getElementById('tlWrap');
+  // On retient l'état avant de tout reconstruire : sinon une mise à jour temps réel referme les jours,
+  // la page raccourcit d'un coup et le navigateur renvoie le scroll en haut.
+  const ouverts=new Set([...wrap.querySelectorAll('.tl-day-card.open')].map(c=>c.dataset.id));
+  const meteoOuverte=document.getElementById('meteoBody')?.style.display==='flex';
+  const scrollY=window.scrollY;
+  const hauteur=wrap.offsetHeight;
+  if(hauteur) wrap.style.minHeight=hauteur+'px'; // empêche la page de se tasser pendant la reconstruction
+  wrap.innerHTML='';
   // Météo inline dans planning
   const meteoDiv=document.createElement('div');meteoDiv.className='meteo-card';
   meteoDiv.innerHTML=`<div class="meteo-header" onclick="toggleMeteo()"><h3>🌤 Météo novembre</h3><span id="meteo-arr" style="font-size:.7rem;color:var(--txt2);">▼</span></div><div class="meteo-body" id="meteoBody" style="display:none;"></div>`;
@@ -3736,9 +3744,13 @@ function renderPlanning(){
       </div>`;
     const dh=div.querySelector('#dh-'+day.id);
     setupDayDrag(dh,div,day.id);
+    if(ouverts.has(String(day.id)))div.classList.add('open');
     wrap.appendChild(div);
     renderDayTimeline(day,transportsDay,slotItems,hotel);
   });
+  if(meteoOuverte)toggleMeteo();
+  wrap.style.minHeight='';
+  if(Math.abs(window.scrollY-scrollY)>2)window.scrollTo({top:scrollY,behavior:'instant'});
 }
 
 function toggleTlDay(id){document.querySelector(`.tl-day-card[data-id="${id}"]`)?.classList.toggle('open');}
