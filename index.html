@@ -1967,6 +1967,8 @@ main::before{content:'';display:block;height:12px;margin-top:-6px;background:var
         <div id="editorModeLabel" class="mode-badge">Compte éditeur</div>
       </div>
 
+      <div id="pushBlock" style="background:var(--sand);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:14px;margin:14px 0;"></div>
+
       <div style="background:var(--sand);border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:14px;margin:14px 0;">
         <div style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--txt2);margin-bottom:10px;">🔐 Changer mon mot de passe</div>
         <div class="form-group" style="margin-bottom:8px;"><label class="form-label">MDP actuel</label><input class="form-input" id="pp-pin-old" type="password" placeholder="Mot de passe actuel"></div>
@@ -2716,7 +2718,7 @@ function renderBudget(){
 }
 
 function closeSheet(id){var el=document.getElementById(id);if(el)el.remove();}
-function openOverlay(id){document.getElementById(id).classList.add('on');}
+function openOverlay(id){document.getElementById(id).classList.add('on');if(id==='pp-sheet'&&typeof pushRendre==='function')pushRendre();}
 function closeOverlay(id){document.getElementById(id).classList.remove('on');}
 // Devise de saisie d'une dépense : en voyage on tape en yuans, la base garde toujours des euros
 let deviseDepense='EUR';
@@ -6787,27 +6789,18 @@ function renderPratique(){
 
 // ══ RAPPEL J-1 TRANSPORT ══
 function checkTransportRappels(){
+  if(!isEditorMode())return; // rappels réservés à Matis et Lise : un visiteur n'a ni toast ni demande de permission
   const tomorrow=new Date();tomorrow.setDate(tomorrow.getDate()+1);
   const tomorrowStr=tomorrow.toISOString().split('T')[0];
   const transports=D.items.filter(x=>x.type==='transport'&&x.adresse===tomorrowStr&&!x.fait);
   if(!transports.length)return;
-  // Demander permission notification
   const shown=localStorage.getItem('rappel_'+tomorrowStr);
   if(shown)return;
   localStorage.setItem('rappel_'+tomorrowStr,'1');
   transports.forEach(t=>{
     showToast('⚠️ Demain : '+t.nom+' ('+( t.prix_type||'transport')+')',5000);
   });
-  // Notification native si permission accordée
-  if('Notification' in window&&Notification.permission==='granted'){
-    transports.forEach(t=>{
-      new Notification('🚄 Rappel voyage',{body:'Demain : '+t.nom,icon:'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏮</text></svg>'});
-    });
-  }else if('Notification' in window&&Notification.permission!=='denied'){
-    Notification.requestPermission().then(p=>{
-      if(p==='granted')checkTransportRappels();
-    });
-  }
+  // La vraie notification (téléphone fermé) vient du serveur : voir push.js
 }
 
 function updateNextStep() {
@@ -6901,6 +6894,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const u = USERS[currentUser];
         if(u && currentUser !== 'visiteur') showToast(u.emoji + ' Re-bonjour ' + u.name + ' !');
         checkTransportRappels();
+        if(typeof pushDemarrer==='function')pushDemarrer();
       })
       .catch(err => {
         console.error(err);
@@ -7023,7 +7017,9 @@ function showWelcome(){
   }
 }
 
-function logout(){
+async function logout(){
+  // Le téléphone se désabonne des notifications avant de changer de compte (max 2 s, la déconnexion ne doit jamais rester bloquée)
+  try{ if(typeof pushQuitter==='function') await Promise.race([pushQuitter(), new Promise(r=>setTimeout(r,2000))]); }catch(e){}
   currentUser = null;
   localStorage.removeItem('chine_user');
   localStorage.removeItem('chine_editor');
@@ -7145,6 +7141,7 @@ if(loginPasswordEl){
 <script src="souhaits.js?v=4"></script>
 <script src="questions.js?v=1"></script>
 <script src="roomy.js?v=1"></script>
+<script src="push.js?v=1"></script>
 <script src="resa.js?v=1"></script>
 <script src="plats-img.js?v=1"></script>
 <script src="plats.js?v=2"></script>

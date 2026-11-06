@@ -50,7 +50,27 @@ npx supabase functions deploy assistant --project-ref <ref> --no-verify-jwt
 - `APP_SECRET` : un code que vous inventez. L'app le demande au premier `@ia` et le garde sur le téléphone. Sans lui, n'importe qui qui trouve l'URL pourrait consommer vos crédits
 - `--no-verify-jwt` est nécessaire parce que l'app utilise une clé `sb_publishable_…`, qui n'est pas un JWT
 
-### 4. Publier
+### 4. Notifications push (Matis et Lise seulement)
+Elles préviennent quand l'autre écrit dans le chat, et la veille (19 h) et le jour même (7 h, heure de Chine) de chaque transport, même app fermée. Un visiteur ne peut ni s'abonner ni rien recevoir : l'abonnement demande le code de l'assistant et les tables sont fermées à la clé publique.
+```bash
+npx web-push generate-vapid-keys            # affiche une clé publique et une clé privée
+npx supabase secrets set --project-ref <ref> \
+  VAPID_PUBLIC_KEY=... VAPID_PRIVATE_KEY=... \
+  VAPID_SUBJECT=https://<votre-site> PUSH_HOOK_SECRET=un-autre-code-a-vous
+npx supabase functions deploy push --project-ref <ref> --no-verify-jwt
+```
+Puis dans Supabase → SQL Editor : lancer `supabase/migrations/20261106000000_push.sql` (active `pg_net` ; pour `pg_cron`, l'activer avant dans Database → Extensions), puis **une fois** :
+```sql
+insert into public.push_config (cle, valeur) values
+  ('url',    'https://<ref>.supabase.co/functions/v1/push'),
+  ('secret', '<la même valeur que PUSH_HOOK_SECRET>')
+on conflict (cle) do update set valeur = excluded.valeur;
+```
+Enfin, sur chaque téléphone : Paramètres → Notifications → Activer. **iPhone** : il faut d'abord ajouter l'app à l'écran d'accueil (iOS 16.4 minimum), sinon le bouton l'explique. Tant que `push_config` est vide, rien ne part et rien ne casse.
+- La clé privée VAPID et `PUSH_HOOK_SECRET` ne vont jamais dans le repo ni dans l'app. La clé publique est lue par l'app depuis la fonction.
+- Se déconnecter (« Changer de compte ») désabonne le téléphone.
+
+### 5. Publier
 GitHub Pages sert la branche `main` : l'app ne change sur les téléphones qu'une fois le travail mergé dedans.
 
 ## Carte et positions
@@ -78,6 +98,8 @@ GitHub Pages sert la branche `main` : l'app ne change sur les téléphones qu'un
 - `tools/export_cerveau.py` : cerveau SQLite vers `cerveau.json` et Supabase
 - `supabase/migrations/…sql` : schéma complet
 - `supabase/functions/assistant/index.ts` : backend de l'assistant (Claude + web search + outils d'écriture ; `mode: "programme"` pour l'onglet Programme, outils limités au planning)
-- `sw.js` : cache hors-ligne (réseau d'abord, pour que les mises à jour arrivent)
+- `push.js` : notifications push (bouton dans Paramètres, abonnement, désabonnement à la déconnexion)
+- `supabase/functions/push/index.ts` : abonnements et envoi des notifications (chat, rappels de transport)
+- `sw.js` : cache hors-ligne (réseau d'abord, pour que les mises à jour arrivent) et réception des notifications
 
 Le cerveau complet n'est pas dans ce repo (voir `.gitignore`) : 2,7 Go, avec l'export TikTok.
