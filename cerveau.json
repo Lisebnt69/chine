@@ -6451,6 +6451,1309 @@
 "confiance": "basse"
 },
 {
+"cle": "pt-799",
+"source": "instagram",
+"url": "https://www.instagram.com/p/De_RA2ZHyBV/",
+"titre": "Da Hu Chun",
+"resume": "Noté 9/10, au guide Michelin. Brioches au porc très juteuses, environ 2 $.",
+"categorie": "restaurant",
+"rubrique": "Restaurants et street-food",
+"ville": "Shanghai",
+"lieu_nom": "Da Hu Chun (大壶春)",
+"adresse_cn": "大壶春",
+"prix_texte": "environ 2 $",
+"tags": [
+"brioches",
+"porc",
+"michelin"
+],
+"confiance": "haute",
+"lat": 31.208983,
+"lng": 121.402929,
+"geo": "nom"
+},
+{
+"cle": "pt-800",
+"source": "instagram",
+"url": "https://www.instagram.com/p/De_RA2ZHyBV/",
+"titre": "13 De Marzo",
+"resume": "Noté 6/10. Le thé glacé a déçu, mieux vaut prendre un café glacé. Ours en peluche mignon.",
+"categorie": "cafe",
+"rubrique": "Bars et cafés",
+"ville": "Shanghai",
+"lieu_nom": "13 De Marzo",
+"tags": [
+"café",
+"thé glacé"
+],
+"confiance": "haute"
+},
+{
+"cle": "pt-801",
+"source": "instagram",
+"url": "https://www.instagram.com/p/De_RA2ZHyBV/",
+"titre": "Li Bai Xie",
+"resume": "Noté 10/10. Nouilles au corail de crabe virales, « un must à Shanghai », parmi les meilleurs plats mangés. Vue sur le Bund.",
+"categorie": "restaurant",
+"rubrique": "Restaurants et street-food",
+"ville": "Shanghai",
+"lieu_nom": "Li Bai Xie (李白蟹)",
+"adresse_cn": "李白蟹",
+"tags": [
+"nouilles",
+"crabe",
+"vue sur le Bund"
+],
+"confiance": "moyenne"
+},
+{
+"cle": "pt-802",
+"source": "instagram",
+"url": "https://www.instagram.com/p/De_RA2ZHyBV/",
+"titre": "Mr Ye Ren (野人先生)",
+"resume": "Glaces artisanales : pistache et chocolat préférés. Beaucoup d'adresses dans les grandes villes, parfums différents selon la boutique. Après 21 h, un acheté, un offert.",
+"categorie": "restaurant",
+"rubrique": "Restaurants et street-food",
+"ville": "Shanghai",
+"lieu_nom": "Mr Ye Ren (野人先生)",
+"adresse_cn": "野人先生",
+"tags": [
+"glace",
+"gelato",
+"bon plan"
+],
+"confiance": "haute",
+"lat": 31.230366,
+"lng": 121.454455,
+"geo": "nom"
+},
+{
+"cle": "pt-803",
+"source": "instagram",
+"url": "https://www.instagram.com/p/De_RA2ZHyBV/",
+"titre": "Wei Xiang Zhai",
+"resume": "Noté 5/10, au guide Michelin. Nouilles au sésame virales jugées trop sèches, goût de beurre de cacahuète, il manquait de la sauce.",
+"categorie": "restaurant",
+"rubrique": "Restaurants et street-food",
+"ville": "Shanghai",
+"lieu_nom": "Wei Xiang Zhai (味香斋)",
+"adresse_cn": "味香斋",
+"tags": [
+"nouilles",
+"michelin",
+"déçu"
+],
+"confiance": "haute",
+"lat": 31.209694,
+"lng": 121.464628,
+"geo": "nom"
+},
+{
+"cle": "pt-804",
+"source": "instagram",
+"url": "https://www.instagram.com/p/De_RA2ZHyBV/",
+"titre": "Yifouka",
+"resume": "Thé au lait « Caramel Flan » viral, apprécié plus que prévu.",
+"categorie": "cafe",
+"rubrique": "Bars et cafés",
+"ville": "Shanghai",
+"lieu_nom": "Yifouka (一口发·手作奶茶)",
+"adresse_cn": "一口发·手作奶茶",
+"tags": [
+"thé au lait",
+"caramel"
+],
+"confiance": "moyenne"
+},
+{
+"cle": "pt-805",
+"source": "instagram",
+"url": "https://www.instagram.com/p/De_RA2ZHyBV/",
+"titre": "Pop Mart Bakery Twinkle Twinkle",
+"resume": "Noté 6,5/10. Glaces délicieuses et mignonnes : à prendre si on passe devant, sans faire de détour.",
+"categorie": "restaurant",
+"rubrique": "Restaurants et street-food",
+"ville": "Shanghai",
+"lieu_nom": "Pop Mart Bakery Twinkle Twinkle",
+"tags": [
+"glace",
+"mignon"
+],
+"confiance": "haute"
+},
+{
+"cle": "pt-806",
+"source": "instagram",
+"url": "https://www.instagram.com/p/De_RA2ZHyBV/",
+"titre": "Huang 'Ayi Pot Sticker King",
+"resume": "Peut-être les meilleurs raviolis mangés dans toute la Chine : très juteux, cuisson parfaite.",
+"categorie": "restaurant",
+"rubrique": "Restaurants et street-food",
+"ville": "Shanghai",
+"lieu_nom": "Huang 'Ayi Pot Sticker King",
+"tags": [
+"raviolis",
+"pot stickers"
+],
+"confiance": "haute"
+},
+{
+"cle": "pt-807",
+"source": "instagram",
+"url": "https://www.instagram.com/p/De_RA2ZHyBV/",
+"titre": "Nanxiang Steamed Bun",
+"resume": "Préféré : Lai Lai ou Li Bai Xie. Les plats commandés par d'autres clients avaient l'air meilleurs.",
+"categorie": "restaurant",
+"rubrique": "Restaurants et street-food",
+"ville": "Shanghai",
+"lieu_nom": "Nanxiang Steamed Bun",
+"tags": [
+"xiaolongbao",
+"mitigé"
+],
+"confiance": "moyenne",
+"lat": 31.326997,
+"lng": 121.527988,
+"geo": "nom"
+},
+{
+"cle": "pt-808",
+"source": "instagram",
+"url": "https://www.instagram.com/p/De_RA2ZHyBV/",
+"titre": "Warehouse No 3",
+"resume": "Noté 4/10, probablement le pire repas à Shanghai, mais retenu pour l'expérience : présentation et ambiance futuriste notées 10/10.",
+"categorie": "restaurant",
+"rubrique": "Restaurants et street-food",
+"ville": "Shanghai",
+"lieu_nom": "Warehouse No 3",
+"tags": [
+"expérience",
+"ambiance futuriste",
+"déçu"
+],
+"confiance": "moyenne",
+"lat": 31.236823,
+"lng": 121.468882,
+"geo": "nom"
+},
+{
+"cle": "pt-809",
+"source": "instagram",
+"url": "https://www.instagram.com/p/De_RA2ZHyBV/",
+"titre": "Fei Da Chu",
+"resume": "Délicieux mais trop épicé pour eux : prendre un thé glacé pour aller avec.",
+"categorie": "restaurant",
+"rubrique": "Restaurants et street-food",
+"ville": "Shanghai",
+"lieu_nom": "Fei Da Chu",
+"tags": [
+"épicé"
+],
+"confiance": "haute"
+},
+{
+"cle": "pt-810",
+"source": "instagram",
+"url": "https://www.instagram.com/p/De_RA2ZHyBV/",
+"titre": "Cubic 3",
+"resume": "Noté 8/10. Berceau du café viral « -83 degrés » : cher pour Shanghai mais l'expérience vaut le coup, et on garde les tasses.",
+"categorie": "cafe",
+"rubrique": "Bars et cafés",
+"ville": "Shanghai",
+"lieu_nom": "Cubic 3",
+"tags": [
+"café",
+"expérience",
+"cher"
+],
+"confiance": "moyenne"
+},
+{
+"cle": "pt-811",
+"source": "instagram",
+"url": "https://www.instagram.com/p/De_RA2ZHyBV/",
+"titre": "Corner Cone Gelato",
+"resume": "Noté 7/10. Goût de mousse au chocolat, mignon, à la hauteur du buzz.",
+"categorie": "restaurant",
+"rubrique": "Restaurants et street-food",
+"ville": "Shanghai",
+"lieu_nom": "Corner Cone Gelato",
+"tags": [
+"glace",
+"chocolat"
+],
+"confiance": "moyenne"
+},
+{
+"cle": "pt-812",
+"source": "instagram",
+"url": "https://www.instagram.com/p/De_RA2ZHyBV/",
+"titre": "Matcha Wang",
+"resume": "Le meilleur matcha qu'ils aient goûté, décoré de petits moutons ou de pandas. Prendre la saveur vanille. Y aller à l'ouverture ou en semaine pour éviter l'attente.",
+"categorie": "cafe",
+"rubrique": "Bars et cafés",
+"ville": "Shanghai",
+"lieu_nom": "Matcha Wang",
+"tags": [
+"matcha",
+"attente"
+],
+"confiance": "haute",
+"lat": 31.222744,
+"lng": 121.463858,
+"geo": "nom"
+},
+{
+"cle": "pt-813",
+"source": "instagram",
+"url": "https://www.instagram.com/p/De_RA2ZHyBV/",
+"titre": "Lai Lai XLB",
+"resume": "Noté 8,5/10. Pas cher, très bon. Bonne adresse aussi pour goûter les nouilles au corail de crabe.",
+"categorie": "restaurant",
+"rubrique": "Restaurants et street-food",
+"ville": "Shanghai",
+"lieu_nom": "Lai Lai XLB",
+"prix_texte": "bon marché",
+"tags": [
+"xiaolongbao",
+"nouilles",
+"pas cher"
+],
+"confiance": "haute"
+},
+{
+"cle": "pt-814",
+"source": "instagram",
+"url": "https://www.instagram.com/p/De_RA2ZHyBV/",
+"titre": "Apoli Itabakery",
+"resume": "Tout paraît incroyable et démesuré, mais la qualité des viennoiseries n'est pas la meilleure.",
+"categorie": "restaurant",
+"rubrique": "Restaurants et street-food",
+"ville": "Shanghai",
+"lieu_nom": "Apoli Itabakery",
+"tags": [
+"boulangerie",
+"mitigé"
+],
+"confiance": "moyenne"
+},
+{
+"cle": "pt-815",
+"source": "instagram",
+"url": "https://www.instagram.com/p/De_RA2ZHyBV/",
+"titre": "Danbing de Ding Xing Rd",
+"resume": "Crêpe de petit-déjeuner virale à 2 $, la meilleure de celles goûtées : entre omelette et banh mi. Y aller avant 9 h pour éviter la queue.",
+"categorie": "restaurant",
+"rubrique": "Restaurants et street-food",
+"ville": "Shanghai",
+"lieu_nom": "Ding Xing Rd Danbing",
+"prix_texte": "environ 2 $",
+"tags": [
+"petit-déjeuner",
+"crêpe",
+"pas cher"
+],
+"confiance": "haute"
+},
+{
+"cle": "pt-816",
+"source": "instagram",
+"url": "https://www.instagram.com/reel/DcycbjdS3fM/",
+"titre": "Desserts à 1 $ : neige glacée et mochis",
+"resume": "Sélection de desserts à environ 1 $ : Mangosteen Snow Ice, Lotus Flower Snow Ice, Purple Ube Mochi, Matcha Pudding Mochi, Osmanthus Milk Mochi. Le nom de la boutique n'est pas donné.",
+"categorie": "restaurant",
+"rubrique": "Restaurants et street-food",
+"ville": "Shanghai",
+"prix_texte": "environ 1 $",
+"tags": [
+"dessert",
+"mochi",
+"glace",
+"pas cher"
+],
+"confiance": "moyenne"
+},
+{
+"cle": "pt-817",
+"source": "instagram",
+"url": "https://www.instagram.com/reel/DfRikyZqoJk/",
+"titre": "Décor « Bikini Bottom » (Bob l'éponge)",
+"resume": "Le reel annonce que Bikini Bottom est à Shanghai. Texte à l'écran partiel : 东区商业, bâtiment de bureaux n°1 (办公楼一座). Nom du lieu non donné.",
+"categorie": "activite",
+"rubrique": "Visites et lieux",
+"ville": "Shanghai",
+"tags": [
+"Bob l'éponge",
+"insolite"
+],
+"confiance": "basse"
+},
+{
+"cle": "pt-818",
+"source": "instagram",
+"url": "https://www.instagram.com/reel/DeuE2XToNGQ/",
+"titre": "Apoli Itabakery",
+"resume": "Numéro 2 de la liste « 10 Places to Eat in Shanghai ».",
+"categorie": "restaurant",
+"rubrique": "Restaurants et street-food",
+"ville": "Shanghai",
+"lieu_nom": "Apoli Itabakery",
+"tags": [
+"boulangerie"
+],
+"confiance": "haute"
+},
+{
+"cle": "pt-819",
+"source": "instagram",
+"url": "https://www.instagram.com/reel/DeuE2XToNGQ/",
+"titre": "Jia Jia Tang Bao",
+"resume": "Numéro 3 de la liste « 10 Places to Eat in Shanghai ».",
+"categorie": "restaurant",
+"rubrique": "Restaurants et street-food",
+"ville": "Shanghai",
+"lieu_nom": "Jia Jia Tang Bao",
+"tags": [
+"xiaolongbao"
+],
+"confiance": "haute",
+"lat": 31.237007,
+"lng": 121.466048,
+"geo": "nom"
+},
+{
+"cle": "pt-820",
+"source": "instagram",
+"url": "https://www.instagram.com/reel/DeuE2XToNGQ/",
+"titre": "Dong Tai Xiang",
+"resume": "Numéro 5 de la liste. Dimsum de Shanghai, patrimoine culinaire immatériel protégé (非物质文化遗产保护单位).",
+"categorie": "restaurant",
+"rubrique": "Restaurants et street-food",
+"ville": "Shanghai",
+"lieu_nom": "Dong Tai Xiang (東泰祥)",
+"adresse_cn": "東泰祥",
+"tags": [
+"dimsum"
+],
+"confiance": "haute",
+"lat": 31.210793,
+"lng": 121.366927,
+"geo": "nom"
+},
+{
+"cle": "pt-821",
+"source": "instagram",
+"url": "https://www.instagram.com/reel/DeuE2XToNGQ/",
+"titre": "Ah Ma Handmade",
+"resume": "Numéro 7 de la liste « 10 Places to Eat in Shanghai ».",
+"categorie": "restaurant",
+"rubrique": "Restaurants et street-food",
+"ville": "Shanghai",
+"lieu_nom": "Ah Ma Handmade (阿嬤手作)",
+"adresse_cn": "阿嬤手作",
+"confiance": "haute"
+},
+{
+"cle": "pt-822",
+"source": "instagram",
+"url": "https://www.instagram.com/reel/DeuE2XToNGQ/",
+"titre": "Da Hu Chun",
+"resume": "Numéro 8 de la liste « 10 Places to Eat in Shanghai ».",
+"categorie": "restaurant",
+"rubrique": "Restaurants et street-food",
+"ville": "Shanghai",
+"lieu_nom": "Da Hu Chun (大壶春)",
+"adresse_cn": "大壶春",
+"tags": [
+"brioches"
+],
+"confiance": "haute",
+"lat": 31.208983,
+"lng": 121.402929,
+"geo": "nom"
+},
+{
+"cle": "pt-823",
+"source": "instagram",
+"url": "https://www.instagram.com/reel/DeuE2XToNGQ/",
+"titre": "Butterful & Creamorous",
+"resume": "Numéro 9 de la liste « 10 Places to Eat in Shanghai ».",
+"categorie": "restaurant",
+"rubrique": "Restaurants et street-food",
+"ville": "Shanghai",
+"lieu_nom": "Butterful & Creamorous",
+"confiance": "haute"
+},
+{
+"cle": "pt-824",
+"source": "instagram",
+"url": "https://www.instagram.com/p/DerlfhqoBSI/",
+"titre": "Shanghai en 3 jours (agence Olove Tour)",
+"resume": "Jour 1 classique : jardin Yu et bazar Yuyuan ; Lujiazui et Oriental Pearl Tower ; Bund et East Nanjing Road. Jour 2 balade : Wukang Mansion et Wukang Road ; Anfu Road et temple Jing'an ; West Nanjing Road et LV Ship ; Xintiandi. Jour 3 : Disneyland Shanghai, journée entière. Le post vient d'une agence qui vend des circuits privés.",
+"categorie": "itineraire",
+"rubrique": "Itinéraires",
+"ville": "Shanghai",
+"tags": [
+"itinéraire",
+"3 jours",
+"Bund",
+"Disneyland"
+],
+"confiance": "haute"
+},
+{
+"cle": "pt-825",
+"source": "instagram",
+"url": "https://www.instagram.com/p/DerlfhqoBSI/",
+"titre": "Tianzifang",
+"resume": "Quartier de ruelles vu dans le carrousel, entrée « Gate 1 », 泰康路210弄.",
+"categorie": "activite",
+"rubrique": "Visites et lieux",
+"ville": "Shanghai",
+"lieu_nom": "Tianzifang (田子坊)",
+"adresse": "泰康路210弄 1号门",
+"adresse_cn": "泰康路210弄",
+"tags": [
+"quartier",
+"ruelles"
+],
+"confiance": "moyenne",
+"lat": 31.21034,
+"lng": 121.464104,
+"geo": "nom"
+},
+{
+"cle": "pt-826",
+"source": "instagram",
+"url": "https://www.instagram.com/p/DerlfhqoBSI/",
+"titre": "Yang's Dumpling",
+"resume": "Enseigne 小杨生煎 vue dans le carrousel : « vieille maison de Shanghai » (上海老字号), brioches grillées.",
+"categorie": "restaurant",
+"rubrique": "Restaurants et street-food",
+"ville": "Shanghai",
+"lieu_nom": "Yang's Dumpling (小杨生煎)",
+"adresse_cn": "小杨生煎",
+"tags": [
+"shengjian",
+"enseigne historique"
+],
+"confiance": "moyenne",
+"lat": 31.121258,
+"lng": 121.451033,
+"geo": "nom"
+},
+{
+"cle": "pt-827",
+"source": "instagram",
+"url": "https://www.instagram.com/p/DfUMY9bCZIS/",
+"titre": "Ren He Guan",
+"resume": "Premier du classement affiché (TOP1) dans le post. Brioches grillées (煎馒头) citées sur les images.",
+"categorie": "restaurant",
+"rubrique": "Restaurants et street-food",
+"ville": "Shanghai",
+"lieu_nom": "Ren He Guan (人和馆)",
+"adresse_cn": "人和馆",
+"tags": [
+"classement",
+"brioches"
+],
+"confiance": "moyenne",
+"lat": 31.203662,
+"lng": 121.453736,
+"geo": "nom"
+},
+{
+"cle": "pt-828",
+"source": "instagram",
+"url": "https://www.instagram.com/p/DfUMY9bCZIS/",
+"titre": "Da Hu Chun",
+"resume": "Fondé en 1932, sélection Michelin (années listées 2018 à 2026), brioches grillées (煎馒头), « marque de petit snack ».",
+"categorie": "restaurant",
+"rubrique": "Restaurants et street-food",
+"ville": "Shanghai",
+"lieu_nom": "Da Hu Chun (大壶春)",
+"adresse_cn": "大壶春",
+"tags": [
+"michelin",
+"brioches",
+"1932"
+],
+"confiance": "haute",
+"lat": 31.208983,
+"lng": 121.402929,
+"geo": "nom"
+},
+{
+"cle": "pt-829",
+"source": "instagram",
+"url": "https://www.instagram.com/p/DfUMY9bCZIS/",
+"titre": "Lai Lai Xiao Long",
+"resume": "Depuis 1994. Crabe décortiqué à la main (纯手工鲜拆蟹粉), plat de saison « juin jaune ». Mention Michelin sur l'image.",
+"categorie": "restaurant",
+"rubrique": "Restaurants et street-food",
+"ville": "Shanghai",
+"lieu_nom": "Lai Lai Xiao Long (莱莱小笼)",
+"adresse_cn": "莱莱小笼",
+"tags": [
+"xiaolongbao",
+"crabe",
+"michelin"
+],
+"confiance": "moyenne",
+"lat": 31.227125,
+"lng": 121.438651,
+"geo": "nom"
+},
+{
+"cle": "pt-830",
+"source": "instagram",
+"url": "https://www.instagram.com/p/DfUMY9bCZIS/",
+"titre": "Wei Xiang Zhai",
+"resume": "Depuis 1937, « quatre-vingts ans, un bol de nouilles » (八十年一碗面). Succursale « 东路店 » vue sur un ticket.",
+"categorie": "restaurant",
+"rubrique": "Restaurants et street-food",
+"ville": "Shanghai",
+"lieu_nom": "Wei Xiang Zhai (味香斋)",
+"adresse_cn": "味香斋",
+"tags": [
+"nouilles",
+"1937"
+],
+"confiance": "moyenne",
+"lat": 31.209694,
+"lng": 121.464628,
+"geo": "nom"
+},
+{
+"cle": "pt-831",
+"source": "instagram",
+"url": "https://www.instagram.com/p/DfUMY9bCZIS/",
+"titre": "Ding Te Le",
+"resume": "Adresse citée avec du porc braisé taïwanais (台湾卤肉飯). Texte partiel, à vérifier.",
+"categorie": "restaurant",
+"rubrique": "Restaurants et street-food",
+"ville": "Shanghai",
+"lieu_nom": "Ding Te Le (顶特勒)",
+"adresse_cn": "顶特勒",
+"tags": [
+"taïwanais",
+"porc braisé"
+],
+"confiance": "basse",
+"lat": 31.223285,
+"lng": 121.465067,
+"geo": "nom"
+},
+{
+"cle": "pt-832",
+"source": "instagram",
+"url": "https://www.instagram.com/p/DfUMY9bCZIS/",
+"titre": "A Yuan Lai Le",
+"resume": "Adresse citée avec une nouvelle boutique (新店) ouverte de 10 h à 22 h. Texte partiel, à vérifier.",
+"categorie": "restaurant",
+"rubrique": "Restaurants et street-food",
+"ville": "Shanghai",
+"lieu_nom": "A Yuan (阿元来了)",
+"adresse_cn": "阿元来了",
+"confiance": "basse"
+},
+{
+"cle": "pt-833",
+"source": "tiktok",
+"url": "https://www.tiktok.com/@localchinatrips/video/7701348514655128839",
+"auteur": "localchinatrips",
+"titre": "Qipu Road Clothing Market",
+"resume": "Marché de vêtements en gros (七浦路服装批发市场). Stands vus à l'écran : A373, B187-188. Prix affichés : 79 ¥ la pièce ou 2 pour 150 ¥.",
+"categorie": "activite",
+"rubrique": "Shopping",
+"ville": "Shanghai",
+"lieu_nom": "Qipu Road Clothing Market (上海七浦路服装批发市场)",
+"adresse_cn": "上海七浦路服装批发市场",
+"prix_texte": "79 ¥ la pièce, 2 pour 150 ¥",
+"tags": [
+"vêtements",
+"marché de gros",
+"pas cher"
+],
+"confiance": "moyenne"
+},
+{
+"cle": "pt-834",
+"source": "tiktok",
+"url": "https://www.tiktok.com/@localchinatrips/video/7701348514655128839",
+"auteur": "localchinatrips",
+"titre": "Xingwang International Fashion City",
+"resume": "Centre de mode (上海兴旺国际服饰城), avec une zone mode coréenne (ZONE, 兴旺欧韩). Plusieurs étages, restauration au rez.",
+"categorie": "activite",
+"rubrique": "Shopping",
+"ville": "Shanghai",
+"lieu_nom": "Xingwang International Fashion City (上海兴旺国际服饰城)",
+"adresse_cn": "上海兴旺国际服饰城",
+"tags": [
+"vêtements",
+"mode coréenne",
+"centre commercial"
+],
+"confiance": "moyenne",
+"lat": 31.247235,
+"lng": 121.478295,
+"geo": "nom"
+},
+{
+"cle": "pt-835",
+"source": "tiktok",
+"url": "https://www.tiktok.com/@localchinatrips/video/7701348514655128839",
+"auteur": "localchinatrips",
+"titre": "Parkson NewCore (soldes de marques)",
+"resume": "Centre commercial (百盛优客城市广场) avec ventes privées : remises à partir de 30 % (3折起), articles dès 99 ¥. Marques vues : E·Land Kids, Adidas, Coccinelle.",
+"categorie": "activite",
+"rubrique": "Shopping",
+"ville": "Shanghai",
+"lieu_nom": "Parkson NewCore (百盛优客城市广场)",
+"adresse_cn": "百盛优客城市广场",
+"prix_texte": "dès 99 ¥",
+"tags": [
+"soldes",
+"marques",
+"centre commercial"
+],
+"confiance": "basse",
+"lat": 31.212461,
+"lng": 121.398464,
+"geo": "nom"
+},
+{
+"cle": "pt-836",
+"source": "tiktok",
+"url": "https://www.tiktok.com/@localchinatrips/video/7701348514655128839",
+"auteur": "localchinatrips",
+"titre": "ZZER : sacs de luxe de seconde main",
+"resume": "Plateforme de revente de luxe d'occasion (只二, ZZER Luxury Release Store). On scanne le code avec l'appli 只二 pour voir le prix et le détail de l'article. Sacs vus à l'écran.",
+"categorie": "activite",
+"rubrique": "Shopping",
+"ville": "Shanghai",
+"lieu_nom": "ZZER (只二)",
+"adresse_cn": "只二",
+"tags": [
+"luxe",
+"seconde main",
+"sacs"
+],
+"confiance": "moyenne"
+},
+{
+"cle": "pt-837",
+"source": "tiktok",
+"url": "https://www.tiktok.com/@localchinatrips/video/7701348514655128839",
+"auteur": "localchinatrips",
+"titre": "Marché aux puces vintage (HAI550)",
+"resume": "Marché de seconde main et vintage (跳蚤二手市集, HAI550 Vintage Market), avec des dizaines de stands numérotés (friperies, appareils photo anciens, créateurs). Étage 8F cité pour le marché N次方市集 (« un premier échange, un second achat »).",
+"categorie": "activite",
+"rubrique": "Shopping",
+"ville": "Shanghai",
+"lieu_nom": "HAI550 Vintage Market (跳蚤二手市集)",
+"adresse_cn": "跳蚤二手市集",
+"tags": [
+"vintage",
+"friperie",
+"seconde main"
+],
+"confiance": "basse"
+},
+{
+"cle": "pt-838",
+"source": "tiktok",
+"url": "https://www.tiktok.com/@dodododo.21/video/7619775386779405590",
+"auteur": "dodododo.21",
+"titre": "Rue Qipu : vêtements tendance pas chers",
+"resume": "Une rue (七浦路) qui regroupe plusieurs centres commerciaux, dont un de style coréen. Chaussures, vêtements du quotidien et habillés, jupes, robes, sous-vêtements, pyjamas. Un haut trouvé à environ 6 € sans négocier ; on peut négocier et faire des lots. Qualité à l'équivalent de Taobao, sauf dans les boutiques plus chères. Peu de choses pour les hommes.",
+"categorie": "activite",
+"rubrique": "Shopping",
+"ville": "Shanghai",
+"lieu_nom": "Rue Qipu (七浦路)",
+"adresse_cn": "七浦路",
+"prix_texte": "environ 6 € pour un vêtement",
+"tags": [
+"vêtements",
+"négocier",
+"mode coréenne",
+"femmes"
+],
+"confiance": "haute"
+},
+{
+"cle": "pt-839",
+"source": "tiktok",
+"url": "https://www.tiktok.com/@colzvidal/video/7613007170455620882",
+"auteur": "colzvidal",
+"titre": "Outlet de marques à Shanghai (Himaxx ?)",
+"resume": "Outlet découvert par hasard avec beaucoup de bonnes affaires. Prix vus : doudoune Jeep 329 ¥ ; Louis Royer 339 ¥ barré puis 179 ¥ ; Skechers. Le nom « Himaxx Shanghai outlet » n'apparaît que dans les mots-clés de la légende.",
+"categorie": "activite",
+"rubrique": "Shopping",
+"ville": "Shanghai",
+"lieu_nom": "Himaxx Shanghai outlet",
+"prix_texte": "doudoune Jeep 329 ¥, Louis Royer 179 ¥",
+"tags": [
+"outlet",
+"marques",
+"pas cher"
+],
+"confiance": "basse"
+},
+{
+"cle": "pt-840",
+"source": "tiktok",
+"url": "https://www.tiktok.com/@sophiamrk/video/7702209667073723681",
+"auteur": "sophiamrk",
+"titre": "Spao",
+"resume": "Large choix de vêtements, jeans bien coupés pour les petites tailles.",
+"categorie": "activite",
+"rubrique": "Shopping",
+"lieu_nom": "Spao",
+"tags": [
+"vêtements",
+"jeans",
+"petites tailles"
+],
+"confiance": "haute"
+},
+{
+"cle": "pt-841",
+"source": "tiktok",
+"url": "https://www.tiktok.com/@sophiamrk/video/7702209667073723681",
+"auteur": "sophiamrk",
+"titre": "Robes traditionnelles chinoises à Suzhou",
+"resume": "Large choix de robes traditionnelles chinoises, de 7 à 10 euros. Le nom exact du magasin n'est pas donné (l'adresse est dite en description, absente de la fiche). Accueil très sympa.",
+"categorie": "activite",
+"rubrique": "Shopping",
+"ville": "Suzhou",
+"prix_texte": "7 à 10 €",
+"tags": [
+"robes",
+"tenue traditionnelle",
+"pas cher"
+],
+"confiance": "moyenne"
+},
+{
+"cle": "pt-842",
+"source": "tiktok",
+"url": "https://www.tiktok.com/@sophiamrk/video/7702209667073723681",
+"auteur": "sophiamrk",
+"titre": "Magasin Coq",
+"resume": "Trouvé par hasard : large choix de vêtements, prix abordables, pas mal de promotions au moment du passage.",
+"categorie": "activite",
+"rubrique": "Shopping",
+"lieu_nom": "Coq",
+"tags": [
+"vêtements",
+"promotions"
+],
+"confiance": "basse"
+},
+{
+"cle": "pt-843",
+"source": "tiktok",
+"url": "https://www.tiktok.com/@sophiamrk/video/7702209667073723681",
+"auteur": "sophiamrk",
+"titre": "Les tailles chinoises taillent petit",
+"resume": "En Chine les vêtements taillent très petit : un 34-36 en France faisait un L sur place. Toujours essayer.",
+"categorie": "astuce",
+"rubrique": "Budget et astuces",
+"tags": [
+"tailles",
+"essayage"
+],
+"confiance": "haute"
+},
+{
+"cle": "pt-844",
+"source": "tiktok",
+"url": "https://www.tiktok.com/@thelifeofkaren/video/7531015523794963717",
+"auteur": "thelifeofkaren",
+"titre": "Cipulet Full Clothing Plaza (nom tel que transcrit)",
+"resume": "Tenues tendance (hauts, robes, jupes, jeans) à prix de gros, négociables. Une boutique où les vêtements sont posés au sol, façon chasse au trésor, tout à 15 ¥ pièce. Sur Tiantong Road, sortie 5 du métro. Le nom vient de la transcription audio et est peut-être approximatif.",
+"categorie": "activite",
+"rubrique": "Shopping",
+"ville": "Shanghai",
+"lieu_nom": "Cipulet Full Clothing Plaza",
+"adresse": "Tiantong Road, sortie 5 du métro",
+"prix_texte": "15 ¥ la pièce",
+"tags": [
+"vêtements",
+"prix de gros",
+"négocier"
+],
+"confiance": "moyenne",
+"lat": 31.246805,
+"lng": 121.487365,
+"geo": "rue"
+},
+{
+"cle": "pt-845",
+"source": "tiktok",
+"url": "https://www.tiktok.com/@anaelle_dmg/video/7557407618256473366",
+"auteur": "anaelle_dmg",
+"titre": "WManagement",
+"resume": "Marque ultra-tendance vue partout sur Xiaohongshu (RedNote). Vêtements très stylés, magasin pensé comme un spot instagrammable. La ville n'est pas précisée.",
+"categorie": "activite",
+"rubrique": "Shopping",
+"lieu_nom": "WManagement",
+"tags": [
+"mode",
+"instagrammable",
+"xiaohongshu"
+],
+"confiance": "haute"
+},
+{
+"cle": "pt-846",
+"source": "tiktok",
+"url": "https://www.tiktok.com/@viletele/video/7667641173565099296",
+"auteur": "viletele",
+"titre": "Maison Prince (nom tel que transcrit)",
+"resume": "Beaucoup de streetwear, magasin amusant mais prix assez chers. Départ conseillé vers la rue Huaihai, où il y a plein de magasins différents. Orthographe du nom incertaine (« Mason Prince » à l'audio).",
+"categorie": "activite",
+"rubrique": "Shopping",
+"ville": "Shanghai",
+"lieu_nom": "Maison Prince",
+"adresse": "vers la rue Huaihai",
+"tags": [
+"streetwear",
+"cher",
+"rue Huaihai"
+],
+"confiance": "basse"
+},
+{
+"cle": "pt-847",
+"source": "tiktok",
+"url": "https://www.tiktok.com/@viletele/video/7667641173565099296",
+"auteur": "viletele",
+"titre": "Youth Energy Center",
+"resume": "Juste à côté de Maison Prince. Centre (年轻力中心) avec des marques jolies, un peu moins cher. Pièces plutôt à 200 € dans certains magasins.",
+"categorie": "activite",
+"rubrique": "Shopping",
+"ville": "Shanghai",
+"lieu_nom": "Youth Energy Center (年轻力中心)",
+"adresse_cn": "年轻力中心",
+"tags": [
+"vêtements",
+"centre commercial"
+],
+"confiance": "moyenne",
+"lat": 31.22535,
+"lng": 121.446689,
+"geo": "nom"
+},
+{
+"cle": "pt-848",
+"source": "tiktok",
+"url": "https://www.tiktok.com/@viletele/video/7667641173565099296",
+"auteur": "viletele",
+"titre": "Négocier en montrant le prix Taobao",
+"resume": "En magasin, montrer au vendeur le prix du même article sur Taobao : il a accepté ce prix. Les vêtements sont plus chers en physique qu'en ligne, sauf dans les marchés. L'intérêt des malls : essayer, puis chercher en ligne.",
+"categorie": "astuce",
+"rubrique": "Budget et astuces",
+"ville": "Shanghai",
+"tags": [
+"négocier",
+"taobao",
+"astuce"
+],
+"confiance": "haute"
+},
+{
+"cle": "pt-849",
+"source": "tiktok",
+"url": "https://www.tiktok.com/@alyontheroad_/video/7680508858170756373",
+"auteur": "alyontheroad_",
+"titre": "Outlet de marques à Chongqing",
+"resume": "Nike, Adidas et autres marques à prix d'outlet, deux ou trois pièces pour le prix d'une en dehors, surtout pendant les soldes. Le nom du centre est « dans la description » : absent de la fiche. L'audio situe l'endroit à « Zhongxiang », ce qui ne colle pas avec Chongqing de la légende : à vérifier.",
+"categorie": "activite",
+"rubrique": "Shopping",
+"ville": "Chongqing",
+"tags": [
+"outlet",
+"baskets",
+"marques"
+],
+"confiance": "basse"
+},
+{
+"cle": "pt-850",
+"source": "tiktok",
+"url": "https://www.tiktok.com/@quatre.off/video/7668272179041111329",
+"auteur": "quatre.off",
+"titre": "Plus grand marché de seconde main de Chongqing",
+"resume": "On y trouve de tout et c'est très peu cher : pantalon négocié à 8 €, caméras, jouets, petits objets, tenues pour femmes, du Evisu. Marchandage à faire (réduction annoncée de 50 %). Adresse donnée en description, absente de la fiche.",
+"categorie": "activite",
+"rubrique": "Shopping",
+"ville": "Chongqing",
+"prix_texte": "pantalon à 8 €",
+"tags": [
+"seconde main",
+"friperie",
+"négocier",
+"marché"
+],
+"confiance": "haute"
+},
+{
+"cle": "pt-851",
+"source": "tiktok",
+"url": "https://www.tiktok.com/@jms.walsh/video/7666133928708771074",
+"auteur": "jms.walsh",
+"titre": "Marché aux puces de Chongqing",
+"resume": "Marché d'antiquités et d'objets rétro (TV, montres, peintures), un rayon entier de vestes en cuir, baskets (dont des Jordan 4). Tout est très peu cher, on peut y passer la journée. Nom et adresse non donnés.",
+"categorie": "activite",
+"rubrique": "Shopping",
+"ville": "Chongqing",
+"tags": [
+"marché aux puces",
+"antiquités",
+"vestes en cuir",
+"vintage"
+],
+"confiance": "haute"
+},
+{
+"cle": "pt-852",
+"source": "tiktok",
+"url": "https://www.tiktok.com/@llisy_assn/video/7694374463701306657",
+"auteur": "llisy_assn",
+"titre": "Wankelai",
+"resume": "Sous-sol de vêtements (万客来) à Chongqing. Prix vus à l'écran : 34, 69, 89 et 99, sans la devise.",
+"categorie": "activite",
+"rubrique": "Shopping",
+"ville": "Chongqing",
+"lieu_nom": "Wankelai (万客来)",
+"adresse_cn": "万客来",
+"prix_texte": "34 à 99 (devise non précisée)",
+"tags": [
+"vêtements",
+"sous-sol"
+],
+"confiance": "moyenne"
+},
+{
+"cle": "pt-853",
+"source": "tiktok",
+"url": "https://www.tiktok.com/@shishi_diary/video/7511923945403125010",
+"auteur": "shishi_diary",
+"titre": "DL SALE",
+"resume": "5e étage, juste à côté de l'immeuble 观音桥好吃街. Très abordable, bonne qualité, vêtements pour filles, garçons et sacs. Haut rembourré à 29 ¥.",
+"categorie": "activite",
+"rubrique": "Shopping",
+"ville": "Chongqing",
+"lieu_nom": "DL SALE",
+"adresse": "重庆市江北区观音桥东环路59号附6号3-54至3-61",
+"adresse_cn": "重庆市江北区观音桥东环路59号附6号3",
+"prix_texte": "29 ¥ le haut rembourré",
+"tags": [
+"vêtements",
+"pas cher",
+"Guanyinqiao"
+],
+"confiance": "haute"
+},
+{
+"cle": "pt-854",
+"source": "tiktok",
+"url": "https://www.tiktok.com/@shishi_diary/video/7511923945403125010",
+"auteur": "shishi_diary",
+"titre": "BIMO",
+"resume": "Boutique uniquement pour femmes (比茉自助女装) : beaucoup de crop tops et de pantalons à petits prix. Crop top à 39 ¥. Même étage que DL SALE.",
+"categorie": "activite",
+"rubrique": "Shopping",
+"ville": "Chongqing",
+"lieu_nom": "BIMO (比茉)",
+"adresse": "重庆市江北区观音桥东环路59号附6号3-54至3-61",
+"adresse_cn": "重庆市江北区观音桥东环路59号附6号3",
+"prix_texte": "39 ¥ le crop top",
+"tags": [
+"vêtements",
+"femmes",
+"pas cher"
+],
+"confiance": "haute"
+},
+{
+"cle": "pt-855",
+"source": "tiktok",
+"url": "https://www.tiktok.com/@shishi_diary/video/7511923945403125010",
+"auteur": "shishi_diary",
+"titre": "YOONA",
+"resume": "Mode femme à l'allure plus haut de gamme (优奈自助女装). Prix un peu plus élevés, avec un rayon abordable de caracos et de mini-jupes. Même étage que DL SALE.",
+"categorie": "activite",
+"rubrique": "Shopping",
+"ville": "Chongqing",
+"lieu_nom": "YOONA (优奈)",
+"adresse": "重庆市江北区观音桥东环路59号附6号3-54至3-61",
+"adresse_cn": "重庆市江北区观音桥东环路59号附6号3",
+"tags": [
+"vêtements",
+"femmes",
+"tendance"
+],
+"confiance": "haute"
+},
+{
+"cle": "pt-856",
+"source": "tiktok",
+"url": "https://www.tiktok.com/@jasminechng/video/7692036072393461013",
+"auteur": "jasminechng",
+"titre": "Basement FG",
+"resume": "« Magasin de vêtements le plus sous-estimé » : 2 étages immenses de vêtements, on peut y passer plusieurs heures. Le magasin montré est leur outlet de Chongqing.",
+"categorie": "activite",
+"rubrique": "Shopping",
+"ville": "Chongqing",
+"lieu_nom": "Basement FG",
+"tags": [
+"vêtements",
+"outlet",
+"tendance"
+],
+"confiance": "haute"
+},
+{
+"cle": "pt-857",
+"source": "tiktok",
+"url": "https://www.tiktok.com/@jasminechng/video/7692036072393461013",
+"auteur": "jasminechng",
+"titre": "W.Management",
+"resume": "« Le lieu de shopping IT girl le plus populaire » : styles du mignon au cool.",
+"categorie": "activite",
+"rubrique": "Shopping",
+"lieu_nom": "W.Management",
+"tags": [
+"mode",
+"it girl"
+],
+"confiance": "haute"
+},
+{
+"cle": "pt-858",
+"source": "tiktok",
+"url": "https://www.tiktok.com/@jasminechng/video/7692036072393461013",
+"auteur": "jasminechng",
+"titre": "Asian Power",
+"resume": "Boutique avec beaucoup de pièces mignonnes, rayons classés par couleur pour s'y retrouver. L'enseigne Ariseism apparaît dans la même séquence.",
+"categorie": "activite",
+"rubrique": "Shopping",
+"lieu_nom": "Asian Power",
+"tags": [
+"vêtements",
+"tendance"
+],
+"confiance": "moyenne"
+},
+{
+"cle": "pt-859",
+"source": "tiktok",
+"url": "https://www.tiktok.com/@jasminechng/video/7692036072393461013",
+"auteur": "jasminechng",
+"titre": "Yescci",
+"resume": "Jolis vêtements à prix abordables : T-shirts de 59 à 169 ¥, robes de 89 à 299 ¥ (prix lus à l'écran).",
+"categorie": "activite",
+"rubrique": "Shopping",
+"lieu_nom": "Yescci",
+"prix_texte": "T-shirts 59-169 ¥, robes 89-299 ¥",
+"tags": [
+"vêtements",
+"abordable"
+],
+"confiance": "moyenne"
+},
+{
+"cle": "pt-860",
+"source": "tiktok",
+"url": "https://www.tiktok.com/@jasminechng/video/7692036072393461013",
+"auteur": "jasminechng",
+"titre": "Chuu",
+"resume": "Style coréen chic avec beaucoup de pièces « it girl » et de jeans, soutenu par Zhao Lusi.",
+"categorie": "activite",
+"rubrique": "Shopping",
+"lieu_nom": "Chuu",
+"tags": [
+"mode coréenne",
+"jeans"
+],
+"confiance": "haute"
+},
+{
+"cle": "pt-861",
+"source": "tiktok",
+"url": "https://www.tiktok.com/@jasminechng/video/7692036072393461013",
+"auteur": "jasminechng",
+"titre": "APE NOW (Bathing Ape)",
+"resume": "Mode coréenne cool, prix plus élevés, avec des marques comme Bathing Ape. Remises à partir de 2 articles (affichage chinois). Nom lu en OCR, à vérifier.",
+"categorie": "activite",
+"rubrique": "Shopping",
+"lieu_nom": "APE NOW",
+"tags": [
+"streetwear",
+"mode coréenne",
+"cher"
+],
+"confiance": "basse"
+},
+{
+"cle": "pt-862",
+"source": "tiktok",
+"url": "https://www.tiktok.com/@jasminechng/video/7692036072393461013",
+"auteur": "jasminechng",
+"titre": "Mmlg",
+"resume": "Mode minimaliste simple, rayons classés par couleur.",
+"categorie": "activite",
+"rubrique": "Shopping",
+"lieu_nom": "Mmlg",
+"tags": [
+"minimaliste",
+"vêtements"
+],
+"confiance": "moyenne"
+},
+{
+"cle": "pt-863",
+"source": "tiktok",
+"url": "https://www.tiktok.com/@maeeyi/video/7453788855200779538",
+"auteur": "maeeyi",
+"titre": "Marchés de gros de Chaotianmen",
+"resume": "Rue avec plus de 6 centres de vente en gros : femmes jeunes, enfants, femmes plus âgées, hommes, accessoires et articles du Nouvel An chinois. À 10 minutes à pied du centre (Jiefangbei), on peut y passer la journée. Texte à l'écran : 朝天门批发市场.",
+"categorie": "activite",
+"rubrique": "Shopping",
+"ville": "Chongqing",
+"lieu_nom": "Marché de gros de Chaotianmen (朝天门批发市场)",
+"adresse_cn": "朝天门批发市场",
+"tags": [
+"vêtements",
+"prix de gros",
+"Jiefangbei"
+],
+"confiance": "haute"
+},
+{
+"cle": "pt-864",
+"source": "tiktok",
+"url": "https://www.tiktok.com/@cheryl.chx/video/7379563342186188048",
+"auteur": "cheryl.chx",
+"titre": "Basement FG",
+"resume": "Numéro 1 de la liste de 8 boutiques de mode de Chengdu et Chongqing. Aucun détail dans la vidéo.",
+"categorie": "activite",
+"rubrique": "Shopping",
+"lieu_nom": "Basement FG",
+"tags": [
+"vêtements"
+],
+"confiance": "moyenne"
+},
+{
+"cle": "pt-865",
+"source": "tiktok",
+"url": "https://www.tiktok.com/@cheryl.chx/video/7379563342186188048",
+"auteur": "cheryl.chx",
+"titre": "Yescci",
+"resume": "Numéro 2 de la liste de 8 boutiques de mode de Chengdu et Chongqing.",
+"categorie": "activite",
+"rubrique": "Shopping",
+"lieu_nom": "Yescci",
+"tags": [
+"vêtements"
+],
+"confiance": "moyenne"
+},
+{
+"cle": "pt-866",
+"source": "tiktok",
+"url": "https://www.tiktok.com/@cheryl.chx/video/7379563342186188048",
+"auteur": "cheryl.chx",
+"titre": "Wén mò",
+"resume": "Numéro 3 de la liste de 8 boutiques de mode de Chengdu et Chongqing.",
+"categorie": "activite",
+"rubrique": "Shopping",
+"lieu_nom": "Wén mò",
+"tags": [
+"vêtements"
+],
+"confiance": "moyenne"
+},
+{
+"cle": "pt-867",
+"source": "tiktok",
+"url": "https://www.tiktok.com/@cheryl.chx/video/7379563342186188048",
+"auteur": "cheryl.chx",
+"titre": "Ariseism",
+"resume": "Numéro 4 de la liste de 8 boutiques de mode de Chengdu et Chongqing.",
+"categorie": "activite",
+"rubrique": "Shopping",
+"lieu_nom": "Ariseism",
+"tags": [
+"vêtements"
+],
+"confiance": "moyenne"
+},
+{
+"cle": "pt-868",
+"source": "tiktok",
+"url": "https://www.tiktok.com/@cheryl.chx/video/7379563342186188048",
+"auteur": "cheryl.chx",
+"titre": "Weekend Hub",
+"resume": "Numéro 5 de la liste de 8 boutiques de mode de Chengdu et Chongqing.",
+"categorie": "activite",
+"rubrique": "Shopping",
+"lieu_nom": "Weekend Hub",
+"tags": [
+"vêtements"
+],
+"confiance": "moyenne"
+},
+{
+"cle": "pt-869",
+"source": "tiktok",
+"url": "https://www.tiktok.com/@cheryl.chx/video/7379563342186188048",
+"auteur": "cheryl.chx",
+"titre": "Brandy Melville",
+"resume": "Numéro 6 de la liste de 8 boutiques de mode de Chengdu et Chongqing.",
+"categorie": "activite",
+"rubrique": "Shopping",
+"lieu_nom": "Brandy Melville",
+"tags": [
+"vêtements"
+],
+"confiance": "moyenne"
+},
+{
+"cle": "pt-870",
+"source": "tiktok",
+"url": "https://www.tiktok.com/@cheryl.chx/video/7379563342186188048",
+"auteur": "cheryl.chx",
+"titre": "Wow Colour",
+"resume": "Numéro 7 de la liste de 8 boutiques de mode de Chengdu et Chongqing.",
+"categorie": "activite",
+"rubrique": "Shopping",
+"lieu_nom": "Wow Colour",
+"tags": [
+"vêtements"
+],
+"confiance": "moyenne"
+},
+{
+"cle": "pt-871",
+"source": "tiktok",
+"url": "https://www.tiktok.com/@cheryl.chx/video/7379563342186188048",
+"auteur": "cheryl.chx",
+"titre": "Chic Park",
+"resume": "Numéro 8 de la liste de 8 boutiques de mode de Chengdu et Chongqing.",
+"categorie": "activite",
+"rubrique": "Shopping",
+"lieu_nom": "Chic Park",
+"tags": [
+"vêtements"
+],
+"confiance": "moyenne"
+},
+{
 "cle": "post-DXe2OeCjPOh",
 "source": "instagram",
 "url": "https://www.instagram.com/reel/DXe2OeCjPOh/",

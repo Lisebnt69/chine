@@ -54,6 +54,11 @@ Tes sources, par ordre de priorité :
    - Si rien ne correspond, dis « rien trouvé dans le cerveau » et propose d'autres mots-clés.
    - Ce qui vient du web ou de tes connaissances générales est signalé à part, comme tel, jamais mélangé.
    - categorie 'piste' = post pas encore analysé, présente-le comme une piste. confiance 'basse' = à vérifier.
+   - Un point dont la cle commence par « lien: » est un lien envoyé depuis l'app et PAS ENCORE LU : ce n'est
+     pas du contenu, n'en tire aucune idée. Tu ne peux ni regarder ni transcrire une vidéo.
+   - Quand on te colle un lien Instagram, TikTok, YouTube ou une page web à ajouter au cerveau, appelle
+     ajouter_lien_cerveau : il met le lien en attente, il sera lu et rangé sur le PC de Matis. Dis-le tel quel
+     (« en attente, pas encore lu »), et ne devine jamais ce que contient la vidéo d'après son lien.
    - Circuits et programmes : construis-les d'abord avec des points trouvés dans le cerveau.
 2. L'ÉTAT DU VOYAGE fourni dans le message (planning, hôtels, transports, lieux, budget).
 3. Le WEB (web_search) pour vérifier horaires, prix, fermetures, météo, trajets, ou compléter.
@@ -134,6 +139,38 @@ const PROG_DAY_FIELDS = ["matin_lieu", "matin_h", "aprem_lieu", "aprem_h", "soir
 // ───────────────────────── Outils ─────────────────────────
 type Json = Record<string, unknown>;
 
+// Mêmes règles que classeLienCerveau (ia.js) et que `cerveau.cmd ajouter` : lien normalisé, ou refus expliqué.
+const PARAMS_SUIVI = /^(utm_.*|fbclid|gclid|igshid|igsh|si|feature|ref|ref_src|mc_cid|mc_eid)$/i;
+function classeLien(brut: string): { url: string; source: string } | { refus: string } {
+  let u: URL;
+  try { u = new URL(brut.trim().replace(/[)\].,;!?»”"']+$/, "")); } catch { return { refus: "lien illisible" }; }
+  if (!/^https?:$/.test(u.protocol)) return { refus: "pas un lien web" };
+  const h = u.hostname.toLowerCase().replace(/^(www|m|music)\./, "");
+  if (h === "instagram.com" || h.endsWith(".instagram.com")) {
+    const m = u.pathname.match(/\/(reels?|p|tv)\/([A-Za-z0-9_-]+)/i);
+    if (!m) return { refus: "profil, story ou page Instagram : il faut le lien d'un reel ou d'un post" };
+    return { source: "instagram", url: `https://www.instagram.com/${m[1].toLowerCase() === "p" ? "p" : "reel"}/${m[2]}/` };
+  }
+  if (h === "tiktok.com" || h.endsWith(".tiktok.com") || h === "tiktokv.com") {
+    if (!/^(vm|vt)\./.test(h) && !/^\/t\//.test(u.pathname) && !/\/(video|photo)\/\d+/.test(u.pathname)) {
+      return { refus: "profil ou page TikTok : il faut le lien d'une vidéo" };
+    }
+    u.search = ""; u.hash = "";
+    return { source: "tiktok", url: u.toString().replace(/\/$/, "") };
+  }
+  if (h === "youtu.be" || h === "youtube.com") {
+    const id = h === "youtu.be" ? u.pathname.split("/")[1] : u.searchParams.get("v") || u.pathname.match(/^\/(?:shorts|live|embed)\/([^/?]+)/)?.[1];
+    return id ? { source: "youtube", url: `https://www.youtube.com/watch?v=${id}` } : { refus: "chaîne ou page YouTube : il faut le lien d'une vidéo" };
+  }
+  if (/(^|\.)vimeo\.com$/.test(h)) {
+    const m = u.pathname.match(/(\d{6,})/);
+    return m ? { source: "vimeo", url: `https://vimeo.com/${m[1]}` } : { refus: "lien Vimeo incomplet" };
+  }
+  [...u.searchParams.keys()].forEach((k) => PARAMS_SUIVI.test(k) && u.searchParams.delete(k));
+  u.hash = "";
+  return { source: "web", url: u.toString().replace(/\/$/, "") };
+}
+
 const tools: Anthropic.Beta.BetaToolUnion[] = [
   { type: "web_search_20260209", name: "web_search", max_uses: 5 } as Anthropic.Beta.BetaToolUnion,
   {
@@ -148,6 +185,16 @@ const tools: Anthropic.Beta.BetaToolUnion[] = [
         limite: { type: "integer", description: "nombre max de résultats (défaut 12)" },
       },
       required: ["q"],
+    },
+  },
+  {
+    name: "ajouter_lien_cerveau",
+    description:
+      "Met un ou plusieurs liens (reel Instagram, vidéo TikTok ou YouTube, page web) en attente d'être ajoutés au cerveau. Tu ne lis PAS la vidéo : elle sera transcrite et rangée plus tard sur le PC de Matis. Renvoie ce qui est mis en attente, déjà connu ou refusé.",
+    input_schema: {
+      type: "object",
+      properties: { liens: { type: "array", items: { type: "string" }, description: "les liens tels que collés" } },
+      required: ["liens"],
     },
   },
   {
@@ -451,6 +498,32 @@ async function runTool(name: string, input: Json, changes: string[], mode = "lib
       changes.push(`${trouve ? "🎁 Trouvé" : "↩️ À retrouver"} : ${String(cur.personne).slice(0, 40)}`);
       // Le texte du ticket n'est pas renvoyé au modèle : il est déjà dans le bloc balisé « non fiable ».
       return `OK, ticket ${trouve ? "coché : trouvé" : "décoché : à trouver"}.`;
+    }
+    case "ajouter_lien_cerveau": {
+      const liens = (Array.isArray(input.liens) ? input.liens : []).map(String).slice(0, 10);
+      const attente: string[] = [], connus: string[] = [], refuses: string[] = [], rows: Json[] = [], vus = new Set<string>();
+      for (const brut of liens) {
+        const c = classeLien(brut);
+        if ("refus" in c) { refuses.push(`${brut} : ${c.refus}`); continue; }
+        if (vus.has(c.url)) continue;
+        vus.add(c.url);
+        const { data: deja } = await sb.from("cerveau").select("id").eq("url", c.url).not("cle", "like", "lien:%").limit(1);
+        if (deja?.length) { connus.push(c.url); continue; }
+        rows.push({
+          cle: "lien:" + c.url, url: c.url, source: c.source, categorie: "piste", confiance: "basse",
+          titre: `Lien à lire (${c.source})`,
+          resume: `Envoyé par l'assistant le ${new Date().toISOString().slice(0, 10)}. Pas encore lu : il sera transcrit et rangé au prochain passage sur le PC de Matis.`,
+        });
+        attente.push(c.url);
+      }
+      if (rows.length) {
+        const { error } = await sb.from("cerveau").upsert(rows, { onConflict: "cle" });
+        if (error) throw error;
+      }
+      return JSON.stringify({
+        en_attente: attente, deja_dans_le_cerveau: connus, refuses,
+        note: "Rien n'a été lu : les liens en attente seront transcrits sur le PC de Matis.",
+      });
     }
     case "ajouter_lieu": {
       const row: Json = {

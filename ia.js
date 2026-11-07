@@ -305,7 +305,7 @@ function contientMots(texte, q) {
 }
 // Le fiable et déjà sur la carte d'abord : c'est le plus exploitable sur le terrain.
 function cerveauTri(a, b) {
-  const rang = c => ({ haute: 0, moyenne: 1 }[c.confiance] ?? 2) + (c.lat ? 0 : 0.5);
+  const rang = c => cerEstLien(c) ? -1 : ({ haute: 0, moyenne: 1 }[c.confiance] ?? 2) + (c.lat ? 0 : 0.5);   // les liens envoyés d'abord : on veut les voir
   return rang(a) - rang(b);
 }
 function listeCerveau(list) {
@@ -330,7 +330,7 @@ function cerveauCard(c) {
       ${c.resume ? `<div class="prog-card-s">${esc(c.resume)}</div>` : ''}
       ${c.prix_texte ? `<div class="prog-card-s">💰 ${esc(c.prix_texte)}</div>` : ''}
       ${c.adresse ? `<div class="prog-card-s">📍 ${esc(c.adresse)}</div>` : ''}
-      ${c.categorie === 'piste' ? '<div class="prog-tl-w">Piste : ce post n\'a pas encore été analysé.</div>' : c.confiance === 'basse' ? '<div class="prog-tl-w">Info peu sûre : à vérifier.</div>' : ''}
+      ${cerEstLien(c) ? '<div class="prog-tl-w">⏳ En attente de lecture : la vidéo sera transcrite sur le PC de Matis, puis rangée ici.</div>' : c.categorie === 'piste' ? '<div class="prog-tl-w">Piste : ce post n\'a pas encore été analysé.</div>' : c.confiance === 'basse' ? '<div class="prog-tl-w">Info peu sûre : à vérifier.</div>' : ''}
       ${(c.tags || []).length ? `<div class="prog-tags">${c.tags.slice(0, 5).map(t => `<span>#${esc(t)}</span>`).join('')}</div>` : ''}
     </div>
     <div class="prog-card-r" style="gap:6px;">
@@ -353,7 +353,8 @@ function renderCerveau() {
     .filter(c => !q.trim() || contientMots(sansAccent([c.titre, c.lieu_nom, c.ville, c.resume, c.rubrique, c.adresse, (c.tags || []).join(' ')].join(' ')), q))
     .sort(cerveauTri);
   const places = D.cerveau.filter(c => CER_A_PLACER.includes(c.categorie));
-  body.innerHTML = `<div class="prog-kpis"><div><b>${D.cerveau.length}</b><span>points</span></div><div><b>${places.filter(c => c.lat).length}/${places.length}</b><span>sur la carte</span></div><div><b>${D.cerveau.filter(c => c.item_id).length}</b><span>dans l'app</span></div></div>
+  const attente = D.cerveau.filter(cerEstLien).length;
+  body.innerHTML = `<div class="prog-kpis"><div><b>${D.cerveau.length - attente}</b><span>points</span></div>${attente ? `<div><b>${attente}</b><span>lien${attente > 1 ? 's' : ''} en attente</span></div>` : ''}<div><b>${places.filter(c => c.lat).length}/${places.length}</b><span>sur la carte</span></div><div><b>${D.cerveau.filter(c => c.item_id).length}</b><span>dans l'app</span></div></div>
     <div class="prog-chips flush">${[['', 'Toutes'], ...villes.map(v => [v, `${VILLE_IC[v] || ''} ${v} ${compte[v]}`])].map(([v, l]) => `<button class="${cerVille === v ? 'on' : ''}" data-v="${esc(v)}" onclick="cerVille=this.dataset.v;cerLimite=CER_PAGE;renderCerveau()">${esc(l)}</button>`).join('')}</div>
     <div class="prog-chips flush">${CER_FILTRES.map(([k, l]) => `<button class="${cerCat === k ? 'on' : ''}" onclick="cerCat='${k}';cerLimite=CER_PAGE;renderCerveau()">${l}</button>`).join('')}</div>`
     + (list.length ? listeCerveau(list) : emptyBox('🧠', D.cerveau.length ? 'Rien trouvé dans le cerveau.' : 'Cerveau vide. Clique « Importer » pour ajouter tes reels.'));
@@ -384,8 +385,8 @@ function openCerveauImport() {
   sh.className = 'overlay on'; sh.id = 'cer-import';
   sh.onclick = e => { if (e.target === sh) sh.remove(); };
   sh.innerHTML = `<div class="sheet"><div class="sheet-handle"></div><div class="sheet-title">Importer le cerveau</div>
-    <div class="prog-hint">Colle un JSON (liste de reels) ou un CSV avec en-têtes. Champs : cle, url, source, auteur, titre, transcription, resume, categorie, ville, lieu_nom, adresse, adresse_cn, prix_texte, duree, meilleur_moment, tags. Une entrée déjà présente (même cle, ou même url et même lieu) est mise à jour.</div>
-    <textarea class="form-input" id="cer-raw" rows="9" placeholder='[{"url":"https://www.tiktok.com/@x/video/1","titre":"Hot pot caché","ville":"Chongqing","lieu_nom":"...","transcription":"..."}]'></textarea>
+    <div class="prog-hint"><b>Colle un ou plusieurs liens</b> (reel Instagram, vidéo TikTok ou YouTube, page web), un par ligne : ils sont mis en attente, puis lus et rangés sur le PC de Matis. Ou bien un JSON (liste de reels) ou un CSV avec en-têtes. Champs : cle, url, source, auteur, titre, transcription, resume, categorie, ville, lieu_nom, adresse, adresse_cn, prix_texte, duree, meilleur_moment, tags. Une entrée déjà présente (même cle, ou même url et même lieu) est mise à jour.</div>
+    <textarea class="form-input" id="cer-raw" rows="9" placeholder='https://www.instagram.com/reel/XXXX/&#10;https://www.tiktok.com/@x/video/123&#10;ou un JSON : [{"url":"…","titre":"Hot pot caché","ville":"Chongqing"}]'></textarea>
     <input type="file" accept=".json,.csv,.txt" style="margin:8px 0;" onchange="this.files[0]&&this.files[0].text().then(t=>document.getElementById('cer-raw').value=t)">
     <label style="display:flex;gap:8px;align-items:center;font-size:.8rem;margin:6px 0 12px;"><input type="checkbox" id="cer-geo" checked> Placer les adresses sur la carte (≈1 s par lieu)</label>
     <button class="btn-primary" style="width:100%;" onclick="importCerveau()">⬆️ Importer</button>
@@ -420,8 +421,83 @@ function normaliseReel(o) {
   return r;
 }
 
+/* Liens à lire : l'app ne sait ni télécharger ni transcrire une vidéo (Instagram demande une session
+   connectée, et la transcription tourne sur le PC de Matis). Un lien collé ici est donc rangé dans la
+   table `cerveau` comme une « piste » en attente (cle « lien:<url> ») ; au prochain passage sur le PC,
+   tools/recuperer_liens.py les récupère, le cerveau les lit, et les vrais points les remplacent. */
+const CER_SUIVI = /^(utm_.*|fbclid|gclid|igshid|igsh|si|feature|ref|ref_src|mc_cid|mc_eid)$/i;
+const CER_PLATEFORMES = { instagram: 'Instagram', tiktok: 'TikTok', youtube: 'YouTube', vimeo: 'Vimeo', web: 'Page web' };
+// → { url, source } si le lien est lisible, { refus } sinon. Mêmes règles que `cerveau.cmd ajouter`.
+function classeLienCerveau(brut) {
+  let u;
+  try { u = new URL(String(brut).trim().replace(/[)\].,;!?»”"']+$/, '')); } catch (e) { return { refus: 'lien illisible' }; }
+  if (!/^https?:$/.test(u.protocol)) return { refus: 'pas un lien web' };
+  const h = u.hostname.toLowerCase().replace(/^(www|m|music)\./, '');
+  const nettoie = () => { [...u.searchParams.keys()].forEach(k => CER_SUIVI.test(k) && u.searchParams.delete(k)); u.hash = ''; return u.toString().replace(/\/$/, ''); };
+  if (h === 'instagram.com' || h.endsWith('.instagram.com')) {
+    const m = u.pathname.match(/\/(reels?|p|tv)\/([A-Za-z0-9_-]+)/i);
+    if (!m) return { refus: 'profil, story ou page Instagram : colle le lien d\'un reel ou d\'un post' };
+    return { source: 'instagram', url: `https://www.instagram.com/${m[1].toLowerCase() === 'p' ? 'p' : 'reel'}/${m[2]}/` };
+  }
+  if (h === 'tiktok.com' || h.endsWith('.tiktok.com') || h === 'tiktokv.com') {
+    const court = /^(vm|vt)\./.test(h) || /^\/t\//.test(u.pathname);
+    if (!court && !/\/(video|photo)\/\d+/.test(u.pathname)) return { refus: 'profil ou page TikTok : colle le lien d\'une vidéo' };
+    u.search = ''; u.hash = '';
+    return { source: 'tiktok', url: u.toString().replace(/\/$/, '') };
+  }
+  if (h === 'youtu.be') { const id = u.pathname.split('/')[1]; return id ? { source: 'youtube', url: `https://www.youtube.com/watch?v=${id}` } : { refus: 'lien YouTube incomplet' }; }
+  if (h === 'youtube.com') {
+    const id = u.searchParams.get('v') || (u.pathname.match(/^\/(?:shorts|live|embed)\/([^/?]+)/) || [])[1];
+    return id ? { source: 'youtube', url: `https://www.youtube.com/watch?v=${id}` } : { refus: 'chaîne ou page YouTube : colle le lien d\'une vidéo' };
+  }
+  if (/(^|\.)vimeo\.com$/.test(h)) { const m = u.pathname.match(/(\d{6,})/); return m ? { source: 'vimeo', url: `https://vimeo.com/${m[1]}` } : { refus: 'lien Vimeo incomplet' }; }
+  return { source: 'web', url: nettoie() };
+}
+const cerEstLien = c => String(c.cle || '').startsWith('lien:');
+const memeLien = (a, b) => String(a || '').replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '') === String(b || '').replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '');
+
+// Un texte qui contient des liens sans être du JSON ni un CSV. Le texte de partage d'une appli (« Regarde ça https://… »)
+// compte : il est accepté tel quel. Un CSV se reconnaît à son en-tête (ligne à colonnes avec url/lien/link, sans lien).
+const CER_RE_LIEN = /https?:\/\/[^\s<>"“”]+/gi;
+const cerSontDesLiens = raw => {
+  if (/^[\[{]/.test(raw) || !/https?:\/\//i.test(raw)) return false;
+  const tete = raw.split(/\r?\n/).find(l => l.trim()) || '';
+  return !(/[,;]/.test(tete) && /\b(url|lien|link)\b/i.test(tete) && !/https?:\/\//i.test(tete));
+};
+
+async function envoyerLiensCerveau(liens, st) {
+  const vus = new Set(), rows = [], refus = [], deja = [];
+  for (const brut of liens) {
+    const c = classeLienCerveau(brut);
+    if (c.refus) { refus.push(`${brut} : ${c.refus}`); continue; }
+    if (vus.has(c.url)) continue; vus.add(c.url);
+    const connu = D.cerveau.filter(x => !cerEstLien(x) && memeLien(x.url, c.url));
+    if (connu.length) { deja.push(`${c.url} (${connu.length} point${connu.length > 1 ? 's' : ''})`); continue; }
+    rows.push({ cle: 'lien:' + c.url, url: c.url, source: c.source, categorie: 'piste', confiance: 'basse',
+      titre: `Lien à lire (${CER_PLATEFORMES[c.source]})`,
+      resume: `Envoyé depuis l'app le ${new Date().toLocaleDateString('fr-FR')}. Pas encore lu : il sera transcrit et rangé au prochain passage sur le PC de Matis.` });
+  }
+  if (rows.length) {
+    st.textContent = '⬆️ Envoi…';
+    const { error } = await sb.from('cerveau').upsert(rows, { onConflict: 'cle' });
+    if (error) { st.textContent = '❌ ' + error.message; return false; }
+    await loadCerveau();
+  }
+  st.innerHTML = [
+    rows.length && `✅ ${rows.length} lien${rows.length > 1 ? 's' : ''} en attente de lecture. Ils sont lus sur le PC de Matis, pas dans l'app : les points apparaîtront après son prochain passage.`,
+    deja.length && `ℹ️ Déjà dans le cerveau : ${deja.map(esc).join(', ')}`,
+    refus.length && `⚠️ Refusé : ${refus.map(esc).join(' ; ')}`,   // esc partout : le texte collé n'est pas de confiance
+  ].filter(Boolean).join('<br>') || '❌ Aucun lien reconnu.';
+  return rows.length > 0 && !refus.length && !deja.length;
+}
+
 async function importCerveau() {
   const raw = document.getElementById('cer-raw').value.trim(); const st = document.getElementById('cer-status');
+  if (cerSontDesLiens(raw)) {
+    const feuille = document.getElementById('cer-import');   // celle-ci seulement : si on en rouvre une entre-temps, on n'y touche pas
+    if (await envoyerLiensCerveau(raw.match(CER_RE_LIEN) || [], st)) setTimeout(() => feuille?.remove(), 2500);
+    return;
+  }
   let arr;
   try { arr = raw.startsWith('[') || raw.startsWith('{') ? JSON.parse(raw) : parseCSV(raw); } catch (e) { st.textContent = '❌ Format illisible : ' + e.message; return; }
   if (!Array.isArray(arr)) arr = arr.reels || arr.items || arr.data || [arr];
