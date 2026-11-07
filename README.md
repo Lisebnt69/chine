@@ -53,7 +53,9 @@ npx supabase functions deploy assistant --project-ref <ref> --no-verify-jwt
 ### 4. Notifications push (Matis et Lise seulement)
 Même app fermée, elles préviennent de :
 - **l'essentiel du voyage** : chaque transport la veille (19 h) et le jour même (7 h, heure de Chine), l'hôtel le jour du check-in, et ce qui est **à réserver** avant le jour J (une seule notif groupée) ;
-- **l'escale d'Helsinki**, à l'heure près, aller (8 nov.) et retour (22 nov.) : à l'atterrissage (ville ou aéroport ?), quand repartir vers la gare, à la gare, dernier train, passeport et sécurité, porte, embarquement. Les heures viennent des vols de l'onglet Transports (`supabase/functions/push/horaires.ts`, le même plan que `escalePlan` dans `prog.js`) ;
+- **l'escale d'Helsinki**, à l'heure près, aller (8 nov.) et retour (22 nov.) : à l'atterrissage (ville ou aéroport ?), quand repartir vers la gare, à la gare, dernier train, passeport et sécurité, porte, embarquement. Les heures viennent des transports de l'onglet Transports, dans le fuseau de la ville de départ (Paris, Helsinki ou Chine ; ville inconnue = rien d'envoyé) (`supabase/functions/push/horaires.ts`, le même plan que `escalePlan` dans `prog.js`) ;
+- **chaque vol** (hors départs d'Helsinki, déjà dans le plan d'escale) : « on se prépare » 4 h avant (3 h en vol intérieur), à l'aéroport 3 h avant (2 h en intérieur), direction la porte, embarquement ;
+- **chaque train** : départ pour la gare 1 h 30 avant en Chine (1 h en France), à la gare, direction le quai. Un transport n'est un vol ou un train que s'il porte une icône ou un mot qui le dit (métro et taxi sont ignorés) ;
 - **l'heure d'une résa qui approche** (un spectacle…) : 2 h puis 30 min avant, heure de Chine, pour les lignes de « À réserver » qui ont un jour et une heure (les vols et trains ont leurs propres rappels) ;
 - **une réservation cochée** dans « À réserver » (« Lise a réservé … ») ;
 - **un nouveau souhait** (d'un visiteur ou de l'autre) ;

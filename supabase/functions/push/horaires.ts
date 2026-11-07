@@ -9,6 +9,7 @@
 
 export const TZ_HELSINKI = "Europe/Helsinki";
 export const TZ_CHINE = "Asia/Shanghai";
+export const TZ_PARIS = "Europe/Paris";
 export const ESCALE_LONGUE_MIN = 330;   // comme dans prog.js
 
 export type Evt = { ts: number; cle: string; titre: string; corps: string; tag: string; onglet: string };
@@ -44,7 +45,10 @@ export function murVersUtc(murMs: number, tz: string): number {
 const jourMs = (iso: string) => { const [y, m, d] = iso.split("-").map(Number); return Date.UTC(y, m - 1, d); };
 
 // ── Vols → escales d'Helsinki ───────────────────────────────────
-export type Transport = { nom?: string | null; adresse?: string | null; quartier?: string | null; description?: string | null };
+export type Transport = {
+  nom?: string | null; adresse?: string | null; quartier?: string | null; description?: string | null;
+  prix_type?: string | null; notes?: string | null;
+};
 type Leg = { dep: number; arr: number; depNom: string; arrNom: string };   // minutes « naïves » (jours depuis 1970 × 1440 + minutes)
 
 function noms(nom: string | null | undefined) {
@@ -121,4 +125,80 @@ export function evenementsResa(r: Resa): Evt[] {
     { ts: debut - 120 * 60000, cle: `resa:${r.id}:${r.jour}:${r.heure}:2h`, titre: "🎟️ Dans 2 h", corps: quoi, tag: `resa-${r.id}`, onglet: "areserver" },
     { ts: debut - 30 * 60000, cle: `resa:${r.id}:${r.jour}:${r.heure}:30`, titre: "🎟️ Dans 30 min", corps: quoi, tag: `resa-${r.id}`, onglet: "areserver" },
   ];
+}
+
+// ── Vols : partir, être à l'aéroport, la porte, l'embarquement ──
+// Fuseau de la ville de départ, deviné d'après son nom. Inconnu = on ne dit rien plutôt que de se tromper d'heure.
+const VILLES_CN = /shanghai|chongqing|chengdu|wulong|furong|zhangjiajie|beijing|p[ée]kin|xi.?an|hong.?kong|guilin|hangzhou|suzhou/i;
+const VILLES_FR = /paris|lyon|marseille|nice|bordeaux|toulouse|lille|nantes|strasbourg|montpellier|orly|\bcdg\b/i;
+export function fuseauDeVille(ville: string): string | null {
+  if (/helsinki/i.test(ville)) return TZ_HELSINKI;
+  if (VILLES_CN.test(ville)) return TZ_CHINE;
+  if (VILLES_FR.test(ville)) return TZ_PARIS;
+  return null;
+}
+// Même test que l'app pour savoir si un transport est un vol (icône ✈ ou « vol » dans le type, ou un numéro de vol dans les notes).
+export const estUnVol = (t: Transport) => /vol|✈|🛫|avion/i.test(t.prix_type || "") || /(?:^|\|)\s*VOL:/i.test(t.notes || "");
+
+// `escalesA` : les départs d'Helsinki déjà couverts par le plan d'escale (minutes naïves de legsDe) : pas de doublon.
+export function evenementsVols(items: Transport[], escalesA: number[] = []): Evt[] {
+  const out: Evt[] = [];
+  for (const t of items) {
+    if (!estUnVol(t) || !/^\d{4}-\d\d-\d\d$/.test(t.adresse || "")) continue;
+    const min = toMin(t.quartier);
+    if (min == null) continue;
+    const n = noms(t.nom);
+    const tz = fuseauDeVille(n.dep);
+    if (!tz) continue;
+    const dep = jourMs(t.adresse!) / 60000 + min;
+    if (/helsinki/i.test(n.dep) && escalesA.includes(dep)) continue;
+    const interieur = VILLES_CN.test(n.dep) && VILLES_CN.test(n.arr);
+    const avance = interieur ? 120 : 180;   // comme l'onglet Pratique : 3 h en international, 2 h en intérieur
+    const nom = t.nom || "Vol";
+    const e = (avantMin: number, k: string, titre: string, corps: string): Evt => ({
+      ts: murVersUtc((dep - avantMin) * 60000, tz), cle: `vol:${dep}:${k}`, titre, corps, tag: `vol-${k}-${dep}`, onglet: "transport",
+    });
+    out.push(
+      e(avance + 60, "partir", `✈️ Dans ${(avance + 60) / 60} h : on se prépare`,
+        `${nom} à ${hm(min)}. Soyez à l'aéroport à ${hm(min - avance)} : partez à temps pour y être.`),
+      e(avance, "aeroport", "🧳 À l'aéroport maintenant",
+        `Dépôt des bagages et enregistrement. ${nom} à ${hm(min)}. Passeport et carte d'embarquement en main.`),
+      e(95, "porte", "🚪 Direction la porte d'embarquement",
+        `Passeport et sécurité passés ? Repérez la porte sur les écrans. Embarquement à ${hm(min - 45)}.`),
+      e(45, "embarquement", "✈️ Embarquement",
+        `La porte ferme à ${hm(min - 15)}. Vol à ${hm(min)}.`),
+    );
+  }
+  return out;
+}
+
+// ── Trains : partir pour la gare, la gare, le quai ──
+// Un positif est exigé (icône ou mot de train) : l'app met 🚄 par défaut, donc un métro ou un taxi sans type ne doit pas passer.
+export const estUnTrain = (t: Transport) =>
+  !estUnVol(t) && /🚄|🚅|🚆|🚂|train|tgv|ouigo|\bTER\b|grande vitesse|high.?speed/i.test(`${t.prix_type || ""} ${t.nom || ""}`);
+
+export function evenementsTrains(items: Transport[]): Evt[] {
+  const out: Evt[] = [];
+  for (const t of items) {
+    if (!estUnTrain(t) || !/^\d{4}-\d\d-\d\d$/.test(t.adresse || "")) continue;
+    const min = toMin(t.quartier);
+    if (min == null) continue;
+    const tz = fuseauDeVille(noms(t.nom).dep);
+    if (!tz) continue;
+    const dep = jourMs(t.adresse!) / 60000 + min;
+    const avance = tz === TZ_CHINE ? 60 : 30;   // grandes gares chinoises : contrôle des papiers et sécurité ; en France, le quai s'affiche vers -20 min
+    const nom = t.nom || "Train";
+    const e = (avantMin: number, k: string, titre: string, corps: string): Evt => ({
+      ts: murVersUtc((dep - avantMin) * 60000, tz), cle: `train:${dep}:${k}`, titre, corps, tag: `train-${k}-${dep}`, onglet: "transport",
+    });
+    out.push(
+      e(avance + 30, "partir", "🚄 Départ pour la gare",
+        `${nom} à ${hm(min)}. Soyez à la gare à ${hm(min - avance)} : partez à temps pour y être.`),
+      e(avance, "gare", "🚉 À la gare maintenant",
+        `${tz === TZ_CHINE ? "Contrôle des papiers et sécurité, puis repérez votre salle d'attente. Passeport et billet prêts. " : "Repérez la voie sur les écrans. "}${nom} à ${hm(min)}.`),
+      e(15, "quai", "🚪 Direction le quai",
+        `${nom} à ${hm(min)}. Les portiques ferment peu avant le départ ; voiture et place sont sur votre billet.`),
+    );
+  }
+  return out;
 }

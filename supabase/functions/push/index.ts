@@ -19,7 +19,7 @@
 
 import webpush from "npm:web-push@3.6.7";
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { escalesHelsinki, evenementsEscale, evenementsResa, type Evt } from "./horaires.ts";
+import { escalesHelsinki, evenementsEscale, evenementsResa, evenementsTrains, evenementsVols, type Evt } from "./horaires.ts";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -238,8 +238,12 @@ async function handleEcheances() {
   const maintenant = Date.now();
   const evenements: Evt[] = [];
 
-  const { data: transports } = await sb.from("items").select("nom, adresse, quartier, description").eq("type", "transport");
-  for (const e of escalesHelsinki(transports || [])) evenements.push(...evenementsEscale(e.de, e.a));
+  const { data: transports } = await sb.from("items").select("nom, adresse, quartier, description, prix_type, notes").eq("type", "transport");
+  const escales = escalesHelsinki(transports || []);
+  for (const e of escales) evenements.push(...evenementsEscale(e.de, e.a));
+  // Les vols : le départ d'Helsinki après une escale est déjà dans le plan d'escale, on ne le redit pas.
+  evenements.push(...evenementsVols(transports || [], escales.map((e) => e.a)));
+  evenements.push(...evenementsTrains(transports || []));
 
   const { data: resas } = await sb.from("a_reserver").select("id, titre, jour, heure, ou, item:item_id(type)")
     .not("heure", "is", null).not("jour", "is", null).gte("jour", CHINE_DU).lte("jour", CHINE_AU);
