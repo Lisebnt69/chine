@@ -16,7 +16,7 @@ PWA de voyage (`index.html` + `ia.js`), données dans Supabase, temps réel entr
 - **🎁 Souhaits** (menu *Plus*) : la liste de ce que les proches veulent qu'on leur rapporte, en tickets. **Ouvert au mode visiteur** : c'est le seul endroit où il peut écrire. Une personne et un souhait obligatoires, une photo facultative (réduite à ~900 px, stockée dans la ligne). Matis et Lise cochent *trouvé* ; un visiteur ne peut supprimer que ses propres tickets. Un mini tuto, raconté par Roomy, s'affiche à la première visite. Table `souhaits` : lancer `supabase/migrations/20261105010000_souhaits.sql`
 - **Roomy, l'IA, est réservée à Matis et Lise** : il faut le code de l'assistant, y compris dans la fonction. Les visiteurs n'ont ni chat, ni vue Claude, ni bouton Roomy. L'onglet Questions (visiteurs qui parlent à Roomy) est débranché : `questions.js` reste chargé mais ne crée plus rien, et la table `questions_visiteurs` existe toujours, fermée à la clé publique
 - **🐱 Roomy** : la chatte mascotte (`mascotte/`). Elle est l'assistante IA : le chat, l'onglet Programme et la connexion lui donnent son visage, et `@roomy …` (ou `@ia …`) lui parle. Redéployer la fonction `assistant` pour qu'elle prenne son nom et connaisse la liste des souhaits
-- **🧠 Cerveau** (menu *Plus*) : les points tirés des reels Insta / TikTok, à filtrer par ville et par type. *＋ Idée* ajoute un lieu à l'app. Un lieu sans position a un bouton *🔎 Amap*
+- **🧠 Cerveau** (menu *Plus*) : les points tirés des reels Insta / TikTok, à filtrer par ville et par type. *＋ Idée* ajoute un lieu à l'app. *⬆️ Importer* accepte aussi des **liens** (reel Instagram, vidéo TikTok/YouTube, page web) : ils attendent, ⏳, d'être lus sur le PC de Matis (voir `tools/recuperer_liens.py`). Un lieu sans position a un bouton *🔎 Amap*
 - **🤖 Assistant IA** dans le chat : écris `@ia …`. Il lit le cerveau, l'état du voyage et cherche sur le web. Il **modifie l'app lui-même** : planning, lieux, dépenses, carte. La réponse arrive dans le chat pour vous deux
 - **🗺️ Carte Amap** : labels en anglais par défaut, le bouton 🗺️ passe en chinois (pour montrer au chauffeur), en satellite ou sur OSM
 - L'existant : budget, checklist, notes, phrasebook, galerie, stats, mode terrain…
@@ -106,6 +106,7 @@ GitHub Pages sert la branche `main` : l'app ne change sur les téléphones qu'un
 - `prog.js` : les 4 vues du Programme et la conversation Claude
 - `cerveau.json` : la partie voyage du cerveau, générée par le script
 - `tools/export_cerveau.py` : cerveau SQLite vers `cerveau.json` et Supabase
+- `tools/recuperer_liens.py` : récupère les liens envoyés depuis l'app, les passe à `cerveau.cmd ajouter`, puis les retire de l'attente
 - `supabase/migrations/…sql` : schéma complet
 - `supabase/functions/assistant/index.ts` : backend de l'assistant (Claude + web search + outils d'écriture ; `mode: "programme"` pour l'onglet Programme, outils limités au planning)
 - `depense.js` : dépense rapide (montant, un tap sur la catégorie ; remplace le formulaire sur les boutons « ＋ Dépense », qui reste dispo par le lien en bas)

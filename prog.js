@@ -424,7 +424,7 @@ function suggestions(ref, ville, gap, kinds, n, used) {
         score: (km ?? 5) + (PRIO_PEN[x.priorite || ''] ?? 1.6), resume: x.description, prix: prixBadge(prixDeLieu(x), x.type) }; })
     .sort((a, b) => a.score - b.score);
   const cats = kinds.includes('restaurant') ? ['restaurant'] : ['activite', 'cafe'];
-  const C = (D.cerveau || []).filter(c => !c.item_id && !used.has('c' + c.cle) && cats.includes(c.categorie) && momentOk(c.meilleur_moment)
+  const C = (D.cerveau || []).filter(c => !c.item_id && !cerEstLien(c) && !used.has('c' + c.cle) && cats.includes(c.categorie) && momentOk(c.meilleur_moment)
       && notTooFar(c.lat && c.lng ? [parseFloat(c.lat), parseFloat(c.lng)] : null, c.ville))
     .map(c => { const pos = c.lat && c.lng ? [parseFloat(c.lat), parseFloat(c.lng)] : null, km = pos && ref ? kmBetween(ref, pos) : null;
       return { src: 'cerveau', cle: c.cle, nom: c.titre || c.lieu_nom, ville: c.ville, quartier: c.lieu_nom && c.lieu_nom !== c.titre ? c.lieu_nom : '', pos, km, cn: c.adresse_cn, url: c.url,
