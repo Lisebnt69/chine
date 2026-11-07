@@ -59,7 +59,8 @@ Même app fermée, elles préviennent de :
 - **l'heure d'une résa qui approche** (un spectacle…) : 2 h puis 30 min avant, heure de Chine, pour les lignes de « À réserver » qui ont un jour et une heure (les vols et trains ont leurs propres rappels) ;
 - **une réservation cochée** dans « À réserver » (« Lise a réservé … ») ;
 - **un nouveau souhait** (d'un visiteur ou de l'autre) ;
-- le chat.
+- **le récap du soir** (21 h, heure de Chine, du 9 au 21 nov.) : dépenses du jour (détail par personne), lieux faits, et ce qui attend le lendemain, transports en premier ;
+- le chat (une position partagée arrive en « 📍 Position partagée »).
 Les souhaits pas encore trouvés ont aussi une **pastille** (bouton Souhaits du tiroir et bouton Plus). Un visiteur ne peut ni s'abonner ni rien recevoir : l'abonnement demande le code de l'assistant et les tables sont fermées à la clé publique.
 ```bash
 npx web-push generate-vapid-keys            # affiche une clé publique et une clé privée
@@ -68,7 +69,7 @@ npx supabase secrets set --project-ref <ref> \
   VAPID_SUBJECT=https://<votre-site> PUSH_HOOK_SECRET=un-autre-code-a-vous
 npx supabase functions deploy push --project-ref <ref> --no-verify-jwt
 ```
-Puis dans Supabase → SQL Editor : lancer `supabase/migrations/20261106000000_push.sql` **puis `20261106010000_push_souhaits_resa.sql` et `20261106020000_push_echeances.sql`** (contrôle chaque minute) (souhaits et réservations ; redéployer aussi `assistant`, qui gagne l'action `compter` de la pastille) (active `pg_net` ; pour `pg_cron`, l'activer avant dans Database → Extensions), puis **une fois** :
+Puis dans Supabase → SQL Editor : lancer `supabase/migrations/20261106000000_push.sql` **puis `20261106010000_push_souhaits_resa.sql`, `20261106020000_push_echeances.sql` (contrôle chaque minute) et `20261106030000_push_recap.sql` (récap de 21 h)** (souhaits et réservations ; redéployer aussi `assistant`, qui gagne l'action `compter` de la pastille) (active `pg_net` ; pour `pg_cron`, l'activer avant dans Database → Extensions), puis **une fois** :
 ```sql
 insert into public.push_config (cle, valeur) values
   ('url',    'https://<ref>.supabase.co/functions/v1/push'),
@@ -107,8 +108,9 @@ GitHub Pages sert la branche `main` : l'app ne change sur les téléphones qu'un
 - `tools/export_cerveau.py` : cerveau SQLite vers `cerveau.json` et Supabase
 - `supabase/migrations/…sql` : schéma complet
 - `supabase/functions/assistant/index.ts` : backend de l'assistant (Claude + web search + outils d'écriture ; `mode: "programme"` pour l'onglet Programme, outils limités au planning)
+- `depense.js` : dépense rapide (montant, un tap sur la catégorie ; remplace le formulaire sur les boutons « ＋ Dépense », qui reste dispo par le lien en bas)
 - `push.js` : notifications push (bouton dans Paramètres, abonnement, désabonnement à la déconnexion)
-- `supabase/functions/push/index.ts` : abonnements et envoi des notifications ; `horaires.ts` : les horaires à l'heure près (testés par `horaires.test.ts`)
+- `supabase/functions/push/index.ts` : abonnements et envoi des notifications ; `horaires.ts` : les horaires à l'heure près (testés par `horaires.test.ts`) ; `recap.ts` : le texte du récap (testé par `recap.test.ts`)
 - `sw.js` : cache hors-ligne (réseau d'abord, pour que les mises à jour arrivent) et réception des notifications
 
 Le cerveau complet n'est pas dans ce repo (voir `.gitignore`) : 2,7 Go, avec l'export TikTok.

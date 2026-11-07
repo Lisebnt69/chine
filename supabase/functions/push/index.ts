@@ -19,6 +19,7 @@
 
 import webpush from "npm:web-push@3.6.7";
 import { createClient } from "npm:@supabase/supabase-js@2";
+import { composerRecap, type Plan } from "./recap.ts";
 import { escalesHelsinki, evenementsEscale, evenementsResa, evenementsTrains, evenementsVols, type Evt } from "./horaires.ts";
 
 const CORS = {
@@ -105,6 +106,7 @@ function resumeMessage(content: string): string {
   if (content.startsWith("VIDEO:")) return "🎥 Vidéo";
   if (content.startsWith("SNAP:")) return "📸 Snap";
   if (content.startsWith("POLL:")) return "📊 Sondage";
+  if (content.startsWith("LOC:")) return "📍 Position partagée : ouvre le chat pour y aller";
   return court(content.replace(/ ✏️$/, ""), 140) || "Nouveau message";
 }
 
@@ -265,6 +267,60 @@ async function handleEcheances() {
   return bilan;
 }
 
+// ── Récap du soir (21 h en Chine, appelé par pg_cron) ─────────
+// Dépenses du jour, lieux faits, et ce qui attend le lendemain (transports d'abord, c'est le vital).
+async function handleRecap() {
+  const jour = dateChine(0);   // le cron tourne à 13 h UTC = 21 h en Chine : même date
+  if (jour < CHINE_DU || jour > CHINE_AU) return { ignore: "hors voyage en Chine" };
+  const cle = `recap:${jour}`;
+  const { error: dup } = await sb.from("push_envoyes").insert({ cle });
+  if (dup) return { ignore: "déjà envoyé" };
+  try {
+    const demain = dateChine(1);
+    const debut = new Date(`${jour}T00:00:00+08:00`), fin = new Date(debut.getTime() + 86400e3);
+
+    const [{ data: budget }, { data: jours }, { data: transports }] = await Promise.all([
+      sb.from("budget").select("total, personne").gte("created_at", debut.toISOString()).lt("created_at", fin.toISOString()),
+      sb.from("planning").select("id, date_voyage, matin_lieu, aprem_lieu, soir_lieu").in("date_voyage", [jour, demain]),
+      sb.from("items").select("nom, quartier").eq("type", "transport").eq("adresse", demain),
+    ]);
+
+    const d = { total: 0, matis: 0, lise: 0, deux: 0, nb: 0 };
+    for (const b of budget || []) {
+      const t = Number(b.total) || 0;
+      d.total += t; d.nb++;
+      if (b.personne === "matis") d.matis += t; else if (b.personne === "lise") d.lise += t; else d.deux += t;
+    }
+
+    const idJour = (jours || []).find((j) => j.date_voyage === jour)?.id;
+    const jourDemain = (jours || []).find((j) => j.date_voyage === demain);
+    const ids = [idJour, jourDemain?.id].filter(Boolean) as string[];
+    type Slot = { planning_id: string; heure: string | null; item: { nom: string; type: string; fait: boolean } | null };
+    const { data: slots } = ids.length
+      ? await sb.from("planning_slots").select("planning_id, heure, item:item_id(nom, type, fait)").in("planning_id", ids)
+      : { data: [] };
+    const sorties = (id?: string) => ((slots || []) as unknown as Slot[])
+      .filter((x) => x.planning_id === id && x.item && ["activite", "restaurant", "cafe"].includes(x.item.type));
+    const duJour = sorties(idJour);
+    const lieuxDemain: Plan[] = sorties(jourDemain?.id).map((x) => ({ heure: x.heure, nom: x.item!.nom }));
+
+    const villes = jourDemain
+      ? [...new Set([jourDemain.matin_lieu, jourDemain.aprem_lieu, jourDemain.soir_lieu].filter((v) => v && v !== "—"))].join(" → ")
+      : "";
+    const recap = composerRecap({
+      depenses: d,
+      aujourdhui: { faits: duJour.filter((x) => x.item!.fait).length, total: duJour.length },
+      demain: { villes, transports: (transports || []).map((t) => ({ heure: t.quartier, nom: t.nom || "Transport" })), lieux: lieuxDemain },
+    });
+    if (!recap) return { ignore: "rien à dire" };
+    const r = await envoyer([...USERS], { titre: recap.titre, corps: recap.corps, tag: "recap", onglet: "budget" }, 6 * 3600);
+    return { ...r, corps: recap.corps };
+  } catch (e) {
+    await sb.from("push_envoyes").delete().eq("cle", cle);   // permet de relancer à la main
+    return { erreur: (e as Error).message };
+  }
+}
+
 // ── Abonnements (depuis l'app) ─────────────────────────────────
 function abonnementValide(s: unknown): s is { endpoint: string; keys: { p256dh: string; auth: string } } {
   const x = s as { endpoint?: unknown; keys?: { p256dh?: unknown; auth?: unknown } } | null;
@@ -285,10 +341,10 @@ Deno.serve(async (req) => {
   if (mode === "cle") return json({ key: VAPID_PUBLIC || null, pret: vapidPret });
 
   // Appels de la base : code PUSH_HOOK_SECRET.
-  if (mode === "chat" || mode === "rappels" || mode === "souhait" || mode === "resa_faite" || mode === "echeances") {
+  if (mode === "chat" || mode === "rappels" || mode === "souhait" || mode === "resa_faite" || mode === "echeances" || mode === "recap") {
     if (!memeCode(req.headers.get("x-push-secret"), Deno.env.get("PUSH_HOOK_SECRET"))) return json({ error: "Code invalide" }, 401);
     if (!vapidPret) return json({ error: "VAPID non configuré" }, 503);
-    const gestionnaire = { chat: handleChat, rappels: handleRappels, souhait: handleSouhait, resa_faite: handleResaFaite, echeances: handleEcheances }[mode]!;
+    const gestionnaire = { chat: handleChat, rappels: handleRappels, souhait: handleSouhait, resa_faite: handleResaFaite, echeances: handleEcheances, recap: handleRecap }[mode]!;
     return json(await gestionnaire(body));
   }
 

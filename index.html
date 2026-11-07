@@ -1786,6 +1786,7 @@ main::before{content:'';display:block;height:12px;margin-top:-6px;background:var
       <button class="chat-media-btn" onclick="openSnapCamera()" title="Snap — photo immédiate">📸</button>
       <button class="chat-media-btn" onclick="openGallery()" title="Galerie photo/vidéo">🖼️</button>
       <button class="chat-media-btn" onclick="openPollSheet()" title="Sondage">📊</button>
+      <button class="chat-media-btn" onclick="sendPosition()" title="Envoyer ma position">📍</button>
       <input type="file" id="chatFileInput" accept="image/*,video/*" style="display:none" onchange="sendMedia(this)">
       <input type="file" id="chatSnapInput" accept="image/*" capture="environment" style="display:none" onchange="sendSnapMedia(this)">
     </div>
@@ -5352,6 +5353,9 @@ function updateChatMsg(msg){
         +'<div style="font-size:.6rem;color:var(--txt3);margin-top:4px;">'+tv2+' vote'+(tv2>1?'s':'')+'</div>'
         +'</div>';
     }catch(e){}
+  }else if(displayContent.startsWith('LOC:')){
+    const h=locHtml(displayContent,msg.author||el.dataset.msgAuthor);
+    if(h)bubble.innerHTML=h;
   }else if(displayContent.startsWith('SNAP:')){
     const src=displayContent.slice(5);
     bubble.innerHTML=`<img class="chat-media-img" src="${src}" onclick="this.requestFullscreen&&this.requestFullscreen()">`;
@@ -5391,6 +5395,7 @@ function appendChatMsg(msg,animate=true){
   d.className='chat-msg '+(isBot?'bot':isMe?'me':'other');
   d.dataset.msgId=msg.id||'';
   d.dataset.msgContent=content;
+  d.dataset.msgAuthor=msg.author||'';
   if(animate)d.style.animationDelay='0s';
 
   let displayContent=content;
@@ -5443,6 +5448,8 @@ function appendChatMsg(msg,animate=true){
   }else if(displayContent.startsWith('VIDEO:')){
     const src=displayContent.slice(6);
     bubbleInner=`<video class="chat-media-video" src="${src}" controls playsinline></video>`;
+  }else if(displayContent.startsWith('LOC:')){
+    bubbleInner=locHtml(displayContent,msg.author)||esc(displayContent);
   }else if(displayContent.startsWith('POLL:')){
     try{
       const poll=JSON.parse(displayContent.slice(5));
@@ -5474,7 +5481,7 @@ function appendChatMsg(msg,animate=true){
   }
 
   const msgId=msg.id&&!msg.id.startsWith('temp_')?msg.id:null;
-  const isTextMsg=!displayContent.startsWith('IMG:')&&!displayContent.startsWith('VIDEO:')&&!displayContent.startsWith('SNAP:')&&!displayContent.startsWith('POLL:');
+  const isTextMsg=!displayContent.startsWith('IMG:')&&!displayContent.startsWith('VIDEO:')&&!displayContent.startsWith('SNAP:')&&!displayContent.startsWith('POLL:')&&!displayContent.startsWith('LOC:');
   const actionsHtml=isEditorMode()&&msgId?`<div class="chat-msg-actions" style="position:relative;">${isTextMsg&&isMe?`<button class="chat-act-btn" aria-label="Modifier le message" onclick="editMsgById('${msgId}')">✏️</button>`:''}<button class="chat-act-btn" aria-label="Réagir au message" onclick="showReactionPicker('${msgId}',this)">😊</button>${isMe?`<button class="chat-act-btn" aria-label="Supprimer le message" style="color:#8b1d2c;" onclick="deleteMsgById('${msgId}')">🗑</button>`:''}</div>`:'';
 
   const isPoll=displayContent.startsWith('POLL:');
@@ -5495,6 +5502,47 @@ function appendChatMsg(msg,animate=true){
       }
     }
   }
+}
+
+// ── POSITION PARTAGÉE ── message « LOC:{lat,lng,acc} » : un bouton pour y aller (Amap) et un pour copier les coordonnées.
+// Le contenu vient du chat, donc on le revalide (nombres bornés) avant de le mettre dans la page.
+function locHtml(raw,auteur){
+  let p;try{p=JSON.parse(String(raw).slice(4));}catch(e){return null;}
+  if(!p||typeof p.lat!=='number'||typeof p.lng!=='number')return null; // de vrais nombres : Number(null) vaut 0 et pointerait sur l'équateur
+  const lat=p.lat,lng=p.lng;
+  if(!isFinite(lat)||!isFinite(lng)||Math.abs(lat)>90||Math.abs(lng)>180)return null;
+  const acc=Number(p.acc)>0?Math.round(Number(p.acc)):0;
+  const nom='Position de '+(USERS[auteur]?USERS[auteur].name:'quelqu\'un');
+  const bt='border:none;border-radius:10px;padding:8px 12px;font-family:inherit;font-size:.76rem;font-weight:700;cursor:pointer;';
+  const data=' data-lat="'+lat+'" data-lng="'+lng+'" data-nom="'+esc(nom)+'"';
+  return '<div style="min-width:210px;"><div style="font-weight:700;font-size:.84rem;margin-bottom:3px;">📍 '+esc(nom)+'</div>'
+    +'<div style="font-size:.66rem;color:var(--txt3);margin-bottom:9px;">'+lat.toFixed(5)+', '+lng.toFixed(5)+(acc?' · à ±'+acc+' m':'')+'</div>'
+    +'<div style="display:flex;gap:6px;flex-wrap:wrap;">'
+    +'<button'+data+' style="'+bt+'background:var(--accent);color:#fff;" onclick="ouvrirPosition(this)">🧭 Y aller</button>'
+    +'<button'+data+' style="'+bt+'background:var(--bg);color:var(--txt);border:1px solid var(--border);" onclick="copierPosition(this)">📋 Copier</button>'
+    +'</div></div>';
+}
+function ouvrirPosition(b){navigateToItem({nom:b.dataset.nom,lat:parseFloat(b.dataset.lat),lng:parseFloat(b.dataset.lng)});}
+async function copierPosition(b){
+  const t=b.dataset.lat+', '+b.dataset.lng;
+  try{await navigator.clipboard.writeText(t);showToast('📋 Coordonnées copiées');}
+  catch(e){showToast('📍 '+t);}
+}
+function sendPosition(){
+  if(!isEditorMode()){showToast('👁️ Lecture seule');return;}
+  if(!navigator.geolocation){showToast('❌ Position indisponible sur ce téléphone');return;}
+  showToast('📍 Recherche de ta position…');
+  navigator.geolocation.getCurrentPosition(async pos=>{
+    const c=pos.coords;
+    const content='LOC:'+JSON.stringify({lat:+c.latitude.toFixed(6),lng:+c.longitude.toFixed(6),acc:Math.round(c.accuracy||0)});
+    appendChatMsg({id:'temp_'+Date.now(),author:currentUser,content,created_at:new Date().toISOString()},true);scrollChat();
+    try{
+      const{error}=await sb.from('chat_messages').insert({author:currentUser,content});
+      showToast(error?'❌ Position non envoyée : '+error.message:'📍 Position envoyée');
+    }catch(e){showToast('❌ Position non envoyée (réseau)');}
+  },err=>{
+    showToast(err&&err.code===1?'❌ Position refusée : autorise-la dans les réglages du téléphone':'❌ Position introuvable, essaie dehors ou réessaie');
+  },{enableHighAccuracy:true,timeout:15000,maximumAge:30000});
 }
 
 function scrollChat(){
@@ -7142,6 +7190,7 @@ if(loginPasswordEl){
 <script src="questions.js?v=1"></script>
 <script src="roomy.js?v=1"></script>
 <script src="push.js?v=2"></script>
+<script src="depense.js?v=1"></script>
 <script src="resa.js?v=1"></script>
 <script src="plats-img.js?v=1"></script>
 <script src="plats.js?v=2"></script>
