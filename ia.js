@@ -494,7 +494,8 @@ async function envoyerLiensCerveau(liens, st) {
 async function importCerveau() {
   const raw = document.getElementById('cer-raw').value.trim(); const st = document.getElementById('cer-status');
   if (cerSontDesLiens(raw)) {
-    if (await envoyerLiensCerveau(raw.match(CER_RE_LIEN) || [], st)) setTimeout(() => document.getElementById('cer-import')?.remove(), 2500);
+    const feuille = document.getElementById('cer-import');   // celle-ci seulement : si on en rouvre une entre-temps, on n'y touche pas
+    if (await envoyerLiensCerveau(raw.match(CER_RE_LIEN) || [], st)) setTimeout(() => feuille?.remove(), 2500);
     return;
   }
   let arr;

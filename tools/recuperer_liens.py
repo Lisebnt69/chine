@@ -66,14 +66,23 @@ def refus_lien(u):
     """None si le lien peut être confié au cerveau, sinon la raison du refus.
 
     La table `cerveau` est ouverte en écriture à la clé publique de l'app : n'importe qui peut y déposer une ligne
-    `lien:…`. On ne fait donc pas confiance à son contenu. Un lien qui commence par « - » serait pris pour une option,
-    et le cerveau lit les pages web depuis ce PC : une adresse locale ou privée (box, routeur, localhost) est refusée.
+    `lien:…`. On ne fait donc pas confiance à son contenu. Un lien qui commence par « - » serait pris pour une option ;
+    le cerveau lit les pages web depuis ce PC, donc une adresse locale ou privée (box, routeur, localhost) est refusée.
+    Mêmes règles que cerveau.pageweb.refus_adresse, qui les refait à chaque redirection au moment du téléchargement.
     """
-    if not isinstance(u, str) or u != u.strip() or u.startswith("-") or any(c.isspace() or ord(c) < 32 for c in u):
+    if not isinstance(u, str) or u != u.strip() or u.startswith("-") or not u.isascii() or "\\" in u             or any(c.isspace() or ord(c) < 32 for c in u):
         return "lien mal formé"
-    p = urllib.parse.urlparse(u)
+    try:
+        p = urllib.parse.urlparse(u)
+        port = p.port
+    except ValueError:
+        return "lien mal formé"
     if p.scheme not in ("http", "https") or not p.hostname:
         return "pas un lien http(s)"
+    if p.username or p.password or "@" in p.netloc:
+        return "identifiants dans le lien"
+    if port not in (None, 80, 443):
+        return "port non standard"
     hote = p.hostname.lower()
     if hote == "localhost" or hote.endswith((".local", ".localhost", ".internal", ".lan")):
         return "adresse locale"
@@ -84,8 +93,7 @@ def refus_lien(u):
             adresses = {ipaddress.ip_address(i[4][0]) for i in socket.getaddrinfo(hote, None)}
         except (socket.gaierror, ValueError):
             return "nom de domaine introuvable"
-    if any(a.is_private or a.is_loopback or a.is_link_local or a.is_reserved or a.is_multicast or a.is_unspecified
-           for a in adresses):
+    if not adresses or not all(a.is_global for a in adresses):
         return "adresse locale ou privée"
     return None
 
