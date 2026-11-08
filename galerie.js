@@ -20,7 +20,7 @@
 
   /* ── Lecture ── */
   async function charger() {
-    var req = sb.from('photos').select('id,created_at,auteur,lot,album,ville,prive,mini').order('created_at', { ascending: false }).limit(400);
+    var req = sb.from('photos').select('id,created_at,auteur,lot,album,ville,prive,mini,image').order('created_at', { ascending: false }).limit(2000);
     if (!editeur()) req = req.eq('prive', false);
     var r = await req;
     if (r.error) throw r.error;
@@ -117,7 +117,7 @@
     var files = Array.prototype.filter.call(inp.files || [], function (f) { return /^image\//.test(f.type) || /\.(heic|heif)$/i.test(f.name); });
     inp.value = '';
     if (!files.length) return;
-    if (files.length > 40) { showToast('📷 40 photos max par album, les 40 premières sont gardées'); files = files.slice(0, 40); }
+    if (files.length > 100) { showToast('📷 100 photos max par envoi, les 100 premières sont gardées'); files = files.slice(0, 100); }
     villeEnvoi = filtre || '';
     envoi = { files: files, prive: files.map(function () { return false; }), busy: false, urls: files.map(function (f) { return URL.createObjectURL(f); }) };
     feuille();
@@ -164,13 +164,19 @@
     for (var i = 0; i < n; i++) {
       if (go) { go.disabled = true; go.textContent = 'Envoi ' + (i + 1) + ' / ' + n + '…'; }
       try {
-        var grande = await compressImage(envoi.files[i], 1400, 0.78);
-        var mini = await compressImage(envoi.files[i], 400, 0.7);
+        var grande = await (await fetch(await compressImage(envoi.files[i], 1600, 0.8))).blob();
+        var mini = await (await fetch(await compressImage(envoi.files[i], 400, 0.7))).blob();
+        var nom = lot + '/' + Date.now().toString(36) + i;
+        var st = sb.storage.from('photos'), opt = { contentType: 'image/jpeg', cacheControl: '31536000' };
+        var u1 = await st.upload(nom + '.jpg', grande, opt);
+        var u2 = await st.upload(nom + '-m.jpg', mini, opt);
+        if (u1.error || u2.error) { await st.remove([nom + '.jpg', nom + '-m.jpg']); throw (u1.error || u2.error); }
         var r = await sb.from('photos').insert({
-          auteur: currentUser, lot: lot, album: titreAlbum, ville: villeEnvoi || null, prive: envoi.prive[i], mini: mini, image: grande,
+          auteur: currentUser, lot: lot, album: titreAlbum, ville: villeEnvoi || null, prive: envoi.prive[i],
+          mini: st.getPublicUrl(nom + '-m.jpg').data.publicUrl, image: st.getPublicUrl(nom + '.jpg').data.publicUrl,
           created_at: new Date(base + i).toISOString() // garde l'ordre choisi dans l'album
         });
-        if (r.error) throw r.error;
+        if (r.error) { await st.remove([nom + '.jpg', nom + '-m.jpg']); throw r.error; }
         ok++;
       } catch (e) { rate++; }
     }
@@ -223,9 +229,10 @@
     var img = q('galVueImg'); img.src = p.mini; img.classList.add('flou');
     q('galVueN').textContent = (vue.i + 1) + ' / ' + vue.liste.length;
     var lk = q('galVueLock'); if (lk) lk.textContent = p.prive ? '🔒 Privée' : '🌐 Publique';
-    var mon = ++jeton;
-    var r = await sb.from('photos').select('image').eq('id', p.id).single();
-    if (mon === jeton && r.data && q('galVueImg')) { img.src = r.data.image; img.classList.remove('flou'); }
+    var mon = ++jeton, gros = new Image();
+    gros.onload = function () { if (mon === jeton && q('galVueImg')) { img.src = p.image; img.classList.remove('flou'); } };
+    gros.src = p.image;
+    var suiv = vue.liste[(vue.i + 1) % vue.liste.length]; if (suiv) new Image().src = suiv.image; // la suivante charge pendant qu'on regarde
   }
 
   function aller(d) {
@@ -241,6 +248,8 @@
     if (!confirm('Supprimer cette photo pour de bon ?')) return;
     var r = await sb.from('photos').delete().eq('id', p.id);
     if (r.error) { showToast('❌ Suppression impossible'); return; }
+    var chemins = [p.image, p.mini].map(function (u) { var m = /\/photos\/(.+)$/.exec(u || ''); return m && decodeURIComponent(m[1]); }).filter(Boolean);
+    if (chemins.length) sb.storage.from('photos').remove(chemins);
     photos = photos.filter(function (x) { return x.id !== p.id; });
     vue.liste.splice(vue.i, 1);
     if (!vue.liste.length) fermerVue(); else { vue.i = Math.min(vue.i, vue.liste.length - 1); majVue(); }
