@@ -11,14 +11,16 @@
 (function () {
   var photos = [];        // vignettes visibles pour moi : {id, created_at, auteur, lot, album, prive, mini}
   var envoi = null;       // brouillon d'envoi : {files, prive:[bool], busy}
-  var vue = null;         // visionneuse : {liste, i}
+  var vue = null;
+  var filtre = '';        // ville filtrée dans la galerie ('' = toutes)
+  var villeEnvoi = '';    // ville choisie dans la feuille d'envoi         // visionneuse : {liste, i}
 
   function editeur() { return isEditorMode(); }
   function q(id) { return document.getElementById(id); }
 
   /* ── Lecture ── */
   async function charger() {
-    var req = sb.from('photos').select('id,created_at,auteur,lot,album,prive,mini').order('created_at', { ascending: false }).limit(400);
+    var req = sb.from('photos').select('id,created_at,auteur,lot,album,ville,prive,mini').order('created_at', { ascending: false }).limit(400);
     if (!editeur()) req = req.eq('prive', false);
     var r = await req;
     if (r.error) throw r.error;
@@ -28,7 +30,7 @@
   function albums() {
     var map = {}, ordre = [];
     photos.forEach(function (p) {
-      if (!map[p.lot]) { map[p.lot] = { lot: p.lot, album: p.album, date: p.created_at, items: [] }; ordre.push(map[p.lot]); }
+      if (!map[p.lot]) { map[p.lot] = { lot: p.lot, album: p.album, ville: p.ville, date: p.created_at, items: [] }; ordre.push(map[p.lot]); }
       map[p.lot].items.push(p);
     });
     ordre.forEach(function (a) { a.items.sort(function (x, y) { return x.created_at < y.created_at ? -1 : 1; }); });
@@ -37,6 +39,7 @@
 
   function titre(a) {
     if (a.album) return a.album;
+    if (a.ville) return a.ville;
     var d = new Date(a.date);
     return 'Photos du ' + d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
   }
@@ -56,7 +59,16 @@
       html += '<div class="gal-actions"><button type="button" class="gal-add" data-g="ajouter">＋ Ajouter des photos</button>'
         + '<span>Choisis-en plusieurs d\'un coup : elles forment un album.</span></div>';
     }
-    var liste = albums();
+    var tous = albums();
+    var villes = [];
+    tous.forEach(function (a) { if (a.ville && villes.indexOf(a.ville) < 0) villes.push(a.ville); });
+    if (filtre && villes.indexOf(filtre) < 0) filtre = '';
+    if (villes.length) {
+      html += '<div class="gal-villes"><button type="button" class="gal-chip' + (!filtre ? ' on' : '') + '" data-g="ville" data-v="">Toutes</button>';
+      villes.forEach(function (v) { html += '<button type="button" class="gal-chip' + (filtre === v ? ' on' : '') + '" data-g="ville" data-v="' + esc(v) + '">📍 ' + esc(v) + '</button>'; });
+      html += '</div>';
+    }
+    var liste = tous.filter(function (a) { return !filtre || a.ville === filtre; });
     if (!liste.length) {
       html += '<div class="gal-vide">📷 Aucune photo pour l\'instant.<br><span>'
         + (editeur() ? 'Ajoute les premières avec le bouton ci-dessus.' : 'Matis et Lise en partageront bientôt.') + '</span></div>';
@@ -64,7 +76,7 @@
     liste.forEach(function (a) {
       var nbPriv = a.items.filter(function (p) { return p.prive; }).length;
       html += '<section class="gal-album"><header><div><h2>' + esc(titre(a)) + '</h2><p>'
-        + a.items.length + ' photo' + (a.items.length > 1 ? 's' : '')
+        + (a.ville && titre(a) !== a.ville ? '📍 ' + esc(a.ville) + ' · ' : '') + a.items.length + ' photo' + (a.items.length > 1 ? 's' : '')
         + (editeur() && nbPriv ? ' · ' + nbPriv + ' privée' + (nbPriv > 1 ? 's' : '') : '') + '</p></div>';
       if (editeur()) {
         html += '<button type="button" class="gal-lien" data-g="tout" data-lot="' + esc(a.lot) + '" data-prive="' + (nbPriv < a.items.length ? 1 : 0) + '">'
@@ -106,6 +118,7 @@
     inp.value = '';
     if (!files.length) return;
     if (files.length > 40) { showToast('📷 40 photos max par album, les 40 premières sont gardées'); files = files.slice(0, 40); }
+    villeEnvoi = filtre || '';
     envoi = { files: files, prive: files.map(function () { return false; }), busy: false, urls: files.map(function (f) { return URL.createObjectURL(f); }) };
     feuille();
   }
@@ -116,7 +129,11 @@
     var s = document.createElement('div'); s.id = 'galSheet'; s.className = 'gal-sheet';
     var h = '<div class="gal-sheet-in"><div class="gal-poignee"></div>'
       + '<h3>' + n + ' photo' + (n > 1 ? 's' : '') + ' à ajouter</h3>'
-      + '<input class="form-input" id="galTitre" maxlength="60" placeholder="Titre de l\'album (facultatif) : Shanghai, Jour 3…">'
+      + '<input class="form-input" id="galTitre" maxlength="60" placeholder="Titre de l\'album (facultatif) : Jour 3, Le Bund…">'
+      + '<div class="gal-villes gal-choix"><span>📍 Ville</span>' + (typeof VILLES !== 'undefined' ? VILLES : []).concat(['Autre']).map(function (v) {
+          var val = v === 'Autre' ? '' : v;
+          return '<button type="button" class="gal-chip' + ((v === 'Autre' ? villeEnvoi === '' : villeEnvoi === v) ? ' on' : '') + '" data-g="env-ville" data-v="' + esc(val) + '">' + esc(v) + '</button>';
+        }).join('') + '</div>'
       + '<div class="gal-barre"><span>Touche une photo pour la passer en <b>🔒 privée</b> ou <b>🌐 publique</b>.</span>'
       + '<button type="button" class="gal-lien" data-g="env-tout">' + (nbPriv < n ? '🔒 Tout privé' : '🌐 Tout public') + '</button></div>'
       + '<div class="gal-prev">';
@@ -150,7 +167,7 @@
         var grande = await compressImage(envoi.files[i], 1400, 0.78);
         var mini = await compressImage(envoi.files[i], 400, 0.7);
         var r = await sb.from('photos').insert({
-          auteur: currentUser, lot: lot, album: titreAlbum, prive: envoi.prive[i], mini: mini, image: grande,
+          auteur: currentUser, lot: lot, album: titreAlbum, ville: villeEnvoi || null, prive: envoi.prive[i], mini: mini, image: grande,
           created_at: new Date(base + i).toISOString() // garde l'ordre choisi dans l'album
         });
         if (r.error) throw r.error;
@@ -246,6 +263,8 @@
     }
     else if (g === 'env-bascule') { var i = +el.dataset.i; envoi.prive[i] = !envoi.prive[i]; var t = q('galTitre') && q('galTitre').value; feuille(); if (t) q('galTitre').value = t; }
     else if (g === 'env-tout') { var tout = envoi.prive.some(function (x) { return !x; }); envoi.prive = envoi.prive.map(function () { return tout; }); var t2 = q('galTitre') && q('galTitre').value; feuille(); if (t2) q('galTitre').value = t2; }
+    else if (g === 'ville') { filtre = el.dataset.v; renderGalerie(); }
+    else if (g === 'env-ville') { villeEnvoi = el.dataset.v; var t3 = q('galTitre') && q('galTitre').value; feuille(); if (t3) q('galTitre').value = t3; }
     else if (g === 'env-go') publier();
     else if (g === 'env-annuler') fermerFeuille();
     else if (g === 'v-fermer') fermerVue();
@@ -263,6 +282,8 @@
     '.gal-add{padding:12px 18px;border:none;border-radius:var(--radius-sm);background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font:700 .88rem var(--font);cursor:pointer;min-height:44px}',
     '.gal-vide{text-align:center;padding:40px 20px;color:var(--txt2);font-size:.88rem}.gal-vide span{font-size:.74rem;color:var(--txt3)}',
     '.gal-album{margin-bottom:18px}',
+    '.gal-villes{display:flex;gap:6px;overflow-x:auto;padding:0 16px 12px;align-items:center;scrollbar-width:none}.gal-choix{padding:10px 0 0}.gal-choix>span{font-size:.74rem;color:var(--txt2);white-space:nowrap}',
+    '.gal-chip{flex:none;border:1px solid var(--border);background:#fff;border-radius:999px;padding:8px 13px;font:600 .76rem var(--font);color:var(--txt2);cursor:pointer;min-height:36px}.gal-chip.on{background:var(--txt);border-color:var(--txt);color:#fff}',
     '.gal-album header{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;padding:0 16px 8px}',
     '.gal-album h2{font-size:1rem;font-weight:700;margin:0;font-family:var(--font-title)}',
     '.gal-album header p{margin:2px 0 0;font-size:.72rem;color:var(--txt2)}',
