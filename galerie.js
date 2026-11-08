@@ -15,8 +15,13 @@
   var filtre = '';        // ville filtrée dans la galerie ('' = toutes)
   var villeEnvoi = '';
   var cible = null;       // album existant auquel on ajoute des photos : {lot, album, ville}
+  var sel = null;         // mode sélection : liste d'ids cochés, ou null
+  var dep = null;         // déplacement en cours : {ids, nouveau, ville}
   var edit = null;        // album en cours de modification : {lot, ville}    // ville choisie dans la feuille d'envoi         // visionneuse : {liste, i}
 
+  function nouveauLot() {
+    return (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) { var r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 3 | 8)).toString(16); });
+  }
   function editeur() { return isEditorMode(); }
   function q(id) { return document.getElementById(id); }
 
@@ -59,6 +64,7 @@
     var html = '';
     if (editeur()) {
       html += '<div class="gal-actions"><button type="button" class="gal-add" data-g="ajouter">＋ Ajouter des photos</button>'
+        + '<button type="button" class="gal-lien" data-g="choisir">' + (sel ? '✕ Annuler la sélection' : '☑ Sélectionner') + '</button>'
         + '<span>Choisis-en plusieurs d\'un coup : elles forment un album.</span></div>';
     }
     var tous = albums();
@@ -88,14 +94,17 @@
       }
       html += '</header><div class="gallery-grid">';
       a.items.forEach(function (p) {
-        html += '<div class="gallery-item" data-g="voir" data-id="' + esc(p.id) + '"><img src="' + p.mini + '" loading="lazy" alt="Photo">'
-          + (editeur() ? '<button type="button" class="gal-lock' + (p.prive ? ' priv' : '') + '" data-g="bascule" data-id="' + esc(p.id)
+        var coche = sel && sel.indexOf(p.id) >= 0;
+        html += '<div class="gallery-item' + (coche ? ' gal-coche' : '') + '" data-g="voir" data-id="' + esc(p.id) + '"><img src="' + p.mini + '" loading="lazy" alt="Photo">'
+          + (sel ? '<span class="gal-case">' + (coche ? '✓' : '') + '</span>' : '')
+          + (editeur() && !sel ? '<button type="button" class="gal-lock' + (p.prive ? ' priv' : '') + '" data-g="bascule" data-id="' + esc(p.id)
             + '" aria-label="' + (p.prive ? 'Privée : la rendre publique' : 'Publique : la rendre privée') + '">' + (p.prive ? '🔒' : '🌐') + '</button>' : '')
           + '</div>';
       });
       html += '</div></section>';
     });
     cont.innerHTML = html;
+    barreSel();
   };
 
   /* ── Ajout de plusieurs photos ── */
@@ -166,7 +175,7 @@
     envoi.busy = true;
     var titreAlbum = cible ? cible.album : ((q('galTitre') && q('galTitre').value.trim()) || null);
     var villePub = cible ? cible.ville : (villeEnvoi || null);
-    var lot = cible ? cible.lot : (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) { var r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 3 | 8)).toString(16); });
+    var lot = cible ? cible.lot : nouveauLot();
     var go = q('galGo'), n = envoi.files.length, ok = 0, rate = 0;
     var base = Date.now();
     for (var i = 0; i < n; i++) {
@@ -191,6 +200,65 @@
     fermerFeuille();
     showToast(rate ? '⚠️ ' + ok + ' envoyée' + (ok > 1 ? 's' : '') + ', ' + rate + ' en échec' : '✅ ' + ok + ' photo' + (ok > 1 ? 's' : '') + ' ajoutée' + (ok > 1 ? 's' : ''));
     renderGalerie();
+  }
+
+  /* ── Déplacer des photos vers un autre album ── */
+  function barreSel() {
+    var b = q('galSelBar'); if (b) b.remove();
+    if (!sel) return;
+    b = document.createElement('div'); b.id = 'galSelBar'; b.className = 'gal-selbar';
+    b.innerHTML = '<span>' + sel.length + ' sélectionnée' + (sel.length > 1 ? 's' : '') + '</span>'
+      + '<button type="button" data-g="sel-dep"' + (sel.length ? '' : ' disabled') + '>📁 Déplacer vers…</button>'
+      + '<button type="button" data-g="choisir">Annuler</button>';
+    (q('tab-galerie') || document.body).appendChild(b); // dans l'onglet : la barre disparaît avec lui
+  }
+
+  function deplacer(ids) {
+    dep = { ids: ids, nouveau: false, ville: '' };
+    feuilleDep();
+  }
+
+  function feuilleDep() {
+    var old = q('galDep'); if (old) old.remove();
+    var s = document.createElement('div'); s.id = 'galDep'; s.className = 'gal-sheet'; s.style.zIndex = 5000;
+    var n = dep.ids.length, h = '<div class="gal-sheet-in"><div class="gal-poignee"></div><h3>Déplacer ' + n + ' photo' + (n > 1 ? 's' : '') + ' vers…</h3>';
+    if (!dep.nouveau) {
+      h += '<div class="gal-dest">';
+      albums().forEach(function (a) {
+        h += '<button type="button" data-g="dep-vers" data-lot="' + esc(a.lot) + '"><b>' + esc(titre(a)) + '</b><span>' + (a.ville ? '📍 ' + esc(a.ville) + ' · ' : '') + a.items.length + ' photo' + (a.items.length > 1 ? 's' : '') + '</span></button>';
+      });
+      h += '<button type="button" class="neuf" data-g="dep-nouveau">＋ Nouvel album</button></div>';
+    } else {
+      h += '<input class="form-input" id="galDepTitre" maxlength="60" placeholder="Titre du nouvel album">'
+        + '<div class="gal-villes gal-choix"><span>📍 Ville</span>' + (typeof VILLES !== 'undefined' ? VILLES : []).concat(['Autre']).map(function (v) {
+          var val = v === 'Autre' ? '' : v;
+          return '<button type="button" class="gal-chip' + ((v === 'Autre' ? dep.ville === '' : dep.ville === v) ? ' on' : '') + '" data-g="dep-ville" data-v="' + esc(val) + '">' + esc(v) + '</button>';
+        }).join('') + '</div><button type="button" class="gal-go" data-g="dep-ok" style="margin-top:14px">Créer et déplacer</button>';
+    }
+    h += '<button type="button" class="gal-annuler" data-g="dep-annuler">Annuler</button></div>';
+    s.innerHTML = h;
+    document.body.appendChild(s);
+  }
+
+  async function fairePasser(champs) {
+    var ids = dep.ids;
+    var r = await sb.from('photos').update(champs).in('id', ids);
+    if (r.error) { showToast('❌ Déplacement impossible'); return; }
+    dep = null; q('galDep').remove(); sel = null;
+    fermerVue();
+    showToast('📁 ' + ids.length + ' photo' + (ids.length > 1 ? 's' : '') + ' déplacée' + (ids.length > 1 ? 's' : ''));
+    renderGalerie();
+  }
+
+  function choisirDest(lot) {
+    var a = albums().filter(function (x) { return x.lot === lot; })[0];
+    if (a) fairePasser({ lot: a.lot, album: a.album || null, ville: a.ville || null });
+  }
+
+  function confirmerNouveau() {
+    var t = q('galDepTitre').value.trim();
+    if (!t) { showToast('✏️ Donne un titre au nouvel album'); return; }
+    fairePasser({ lot: nouveauLot(), album: t, ville: dep.ville || null });
   }
 
   /* ── Modifier un album déjà publié ── */
@@ -261,7 +329,7 @@
     vue = { liste: liste, i: Math.max(0, liste.findIndex(function (p) { return p.id === id; })), x: null };
     var v = document.createElement('div'); v.id = 'galVue'; v.className = 'gal-vue';
     v.innerHTML = '<div class="gal-vue-top"><span id="galVueN"></span><div>'
-      + (editeur() ? '<button type="button" data-g="v-lock" id="galVueLock"></button><button type="button" data-g="v-suppr" aria-label="Supprimer">🗑️</button>' : '')
+      + (editeur() ? '<button type="button" data-g="v-dep">📁 Déplacer</button><button type="button" data-g="v-lock" id="galVueLock"></button><button type="button" data-g="v-suppr" aria-label="Supprimer">🗑️</button>' : '')
       + '<button type="button" data-g="v-fermer" aria-label="Fermer">✕</button></div></div>'
       + '<button type="button" class="gal-nav g" data-g="v-prec" aria-label="Précédente">‹</button>'
       + '<img id="galVueImg" alt="Photo">'
@@ -317,7 +385,18 @@
     if (!el) return;
     var g = el.dataset.g;
     if (g === 'ajouter') ajouter();
-    else if (g === 'voir') voir(el.dataset.id);
+    else if (g === 'voir') {
+      if (sel) { var k = sel.indexOf(el.dataset.id); if (k >= 0) sel.splice(k, 1); else sel.push(el.dataset.id); renderGalerie(); }
+      else voir(el.dataset.id);
+    }
+    else if (g === 'choisir') { sel = sel ? null : []; renderGalerie(); }
+    else if (g === 'sel-dep') { if (sel && sel.length) deplacer(sel.slice()); }
+    else if (g === 'v-dep') { var pv = vue && vue.liste[vue.i]; if (pv) deplacer([pv.id]); }
+    else if (g === 'dep-vers') choisirDest(el.dataset.lot);
+    else if (g === 'dep-nouveau') { dep.nouveau = true; feuilleDep(); }
+    else if (g === 'dep-ville') { dep.ville = el.dataset.v; var t5 = q('galDepTitre') && q('galDepTitre').value; feuilleDep(); if (t5) q('galDepTitre').value = t5; }
+    else if (g === 'dep-ok') confirmerNouveau();
+    else if (g === 'dep-annuler') { dep = null; var d0 = q('galDep'); if (d0) d0.remove(); }
     else if (g === 'bascule') { e.stopPropagation(); bascule(el.dataset.id); }
     else if (g === 'tout') {
       var ids = photos.filter(function (p) { return p.lot === el.dataset.lot; }).map(function (p) { return p.id; });
@@ -351,6 +430,9 @@
     '.gal-add{padding:12px 18px;border:none;border-radius:var(--radius-sm);background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font:700 .88rem var(--font);cursor:pointer;min-height:44px}',
     '.gal-vide{text-align:center;padding:40px 20px;color:var(--txt2);font-size:.88rem}.gal-vide span{font-size:.74rem;color:var(--txt3)}',
     '.gal-album{margin-bottom:18px}',
+    '.gal-case{position:absolute;top:5px;right:5px;width:24px;height:24px;border-radius:50%;border:2px solid #fff;background:rgba(0,0,0,.35);color:#fff;font-size:.8rem;display:grid;place-items:center}.gal-coche{outline:3px solid var(--accent);outline-offset:-3px}.gal-coche .gal-case{background:var(--accent)}',
+    '.gal-selbar{position:fixed;left:12px;right:12px;bottom:calc(var(--nav,68px) + 10px + env(safe-area-inset-bottom));z-index:2500;display:flex;align-items:center;gap:8px;background:var(--txt);color:#fff;border-radius:16px;padding:10px 12px;box-shadow:var(--shadow-lg)}.gal-selbar span{flex:1;font-size:.8rem}.gal-selbar button{border:none;border-radius:999px;padding:9px 13px;font:700 .78rem var(--font);cursor:pointer;min-height:40px;background:rgba(255,255,255,.18);color:#fff}.gal-selbar button:first-of-type{background:var(--accent)}.gal-selbar button:disabled{opacity:.4}',
+    '.gal-dest{display:flex;flex-direction:column;gap:8px}.gal-dest button{display:flex;justify-content:space-between;align-items:center;gap:10px;text-align:left;padding:13px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);background:#fff;font:600 .86rem var(--font);color:var(--txt);cursor:pointer;min-height:48px}.gal-dest span{font-size:.72rem;color:var(--txt2);font-weight:500}.gal-dest .neuf{justify-content:center;border-style:dashed;color:var(--accent)}',
     '.gal-hbtn{display:flex;gap:6px;margin-left:auto}.gal-cible{margin:0 0 4px;font-size:.84rem;color:var(--txt2)}.gal-danger{color:var(--accent);margin-top:10px}',
     '.gal-villes{display:flex;gap:6px;overflow-x:auto;padding:0 16px 12px;align-items:center;scrollbar-width:none}.gal-choix{padding:10px 0 0}.gal-choix>span{font-size:.74rem;color:var(--txt2);white-space:nowrap}',
     '.gal-chip{flex:none;border:1px solid var(--border);background:#fff;border-radius:999px;padding:8px 13px;font:600 .76rem var(--font);color:var(--txt2);cursor:pointer;min-height:36px}.gal-chip.on{background:var(--txt);border-color:var(--txt);color:#fff}',
