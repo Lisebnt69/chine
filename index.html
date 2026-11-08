@@ -1784,7 +1784,7 @@ main::before{content:'';display:block;height:12px;margin-top:-6px;background:var
     <div class="chat-messages" id="chatMessages"></div>
     <div class="chat-media-row">
       <button class="chat-media-btn" onclick="openSnapCamera()" title="Snap — photo immédiate">📸</button>
-      <button class="chat-media-btn" onclick="openGallery()" title="Galerie photo/vidéo">🖼️</button>
+      <button class="chat-media-btn" onclick="openGallery()" title="Ajouter des photos à la galerie">🖼️</button>
       <button class="chat-media-btn" onclick="openPollSheet()" title="Sondage">📊</button>
       <button class="chat-media-btn" onclick="sendPosition()" title="Envoyer ma position">📍</button>
       <input type="file" id="chatFileInput" accept="image/*,video/*" style="display:none" onchange="sendMedia(this)">
@@ -1840,7 +1840,7 @@ main::before{content:'';display:block;height:12px;margin-top:-6px;background:var
 
 <!-- GALERIE -->
 <div class="tab" id="tab-galerie">
-  <div class="ph"><h1>Galerie</h1><p>Toutes vos photos</p></div>
+  <div class="ph"><h1>Galerie</h1><p>Les albums de Matis et Lise</p></div>
   <div id="galerieCont"></div>
 </div>
 
@@ -5859,10 +5859,7 @@ function selectSnapColor(el){
   document.querySelectorAll('.snap-color').forEach(c=>c.classList.remove('active'));
   el.classList.add('active');
 }
-function openGallery(){
-  if(!isEditorMode()){showToast('👁️ Lecture seule');return;}
-  document.getElementById('chatFileInput').click();
-}
+// openGallery() : voir galerie.js (ajout de plusieurs photos d'un coup)
 
 async function geocodeTransportPoint(which){
   const nameEl=document.getElementById('if-'+which+'-addr');
@@ -6207,71 +6204,6 @@ function generateBotReply(question){
   // Défaut
   const tips=['budget','planning','activités','restos','hôtels','transports','checklist'];
   return `Je ne suis pas sûr de comprendre ta question 🤔\nEssaie de me demander sur : ${tips.join(', ')}.\n\nTu peux aussi utiliser les boutons rapides ci-dessus !`;
-}
-
-// ══ GALERIE PHOTO ══
-// Clés privées en localStorage : 'galerie_private_<hash>'
-function getPhotoKey(src){ return 'gp_'+btoa(src.slice(0,40)).replace(/[^a-zA-Z0-9]/g,'').slice(0,16); }
-function isPhotoPrivate(src){ return localStorage.getItem(getPhotoKey(src))==='1'; }
-function togglePhotoPrivacy(src){
-  const k=getPhotoKey(src);
-  const isPriv=localStorage.getItem(k)==='1';
-  localStorage.setItem(k,isPriv?'0':'1');
-  renderGalerie();
-  showToast(isPriv?'🌐 Photo visible par tous':'🔒 Photo privée');
-}
-
-function renderGalerie(){
-  const cont=document.getElementById('galerieCont');
-  if(!cont)return;
-  const canEdit=isEditorMode();
-  const photos=[];
-  // Photos du chat
-  document.querySelectorAll('[data-msg-id]').forEach(el=>{
-    const c=el.dataset.msgContent||'';
-    if(c.startsWith('IMG:')){
-      const src=c.slice(4);
-      const priv=isPhotoPrivate(src);
-      if(!canEdit&&priv)return; // visiteur ne voit pas les photos privées
-      const author=el.querySelector('.chat-sender-name')?.textContent||'';
-      const msgId=el.dataset.msgId||'';
-      photos.push({src,label:author||'Photo',type:'chat',priv,msgId});
-    }
-  });
-  if(!photos.length){
-    cont.innerHTML='<div class="gallery-empty">📷 Aucune photo<br><span style="font-size:.72rem;">Les photos envoyées dans le chat apparaîtront ici</span></div>';
-    return;
-  }
-  const grid=document.createElement('div');grid.className='gallery-grid';
-  photos.forEach(p=>{
-    const div=document.createElement('div');div.className='gallery-item';
-    div.innerHTML='<img src="'+p.src+'" loading="lazy" alt="'+esc(p.label)+'">'
-      +'<div class="gallery-badge">'+esc(p.label.slice(0,10))+'</div>'
-      +(p.priv?'<div style="position:absolute;bottom:4px;left:4px;background:rgba(0,0,0,.6);color:#fff;font-size:.55rem;padding:1px 5px;border-radius:4px;">🔒</div>':'')
-      +(canEdit?'<div class="gallery-privacy-btn" style="position:absolute;top:5px;left:5px;background:rgba(0,0,0,.55);color:#fff;font-size:.65rem;padding:2px 6px;border-radius:6px;cursor:pointer;">'+(p.priv?'🔒':'🌐')+'</div>':'');
-    div.querySelector('img')?.addEventListener('click',()=>{
-      const img=div.querySelector('img');
-      if(img&&document.fullscreenEnabled)img.requestFullscreen().catch(()=>{});
-    });
-    // fix toggle using full src
-    if(canEdit){
-      const btn=div.querySelector('.gallery-privacy-btn');
-      if(btn)btn.onclick=e=>{e.stopPropagation();togglePhotoPrivacy(p.src);};
-    }
-    grid.appendChild(div);
-  });
-  cont.innerHTML='';
-  if(canEdit){
-    const banner=document.createElement('div');
-    banner.style.cssText='margin:0 16px 10px;padding:10px 14px;background:#fffbeb;border:1px solid #fde68a;border-radius:12px;font-size:.72rem;color:#92400e;display:flex;align-items:center;gap:8px;';
-    banner.innerHTML='<span style="font-size:1rem;">🔒</span><span><b>Contrôle de visibilité</b> — Appuie sur 🌐/🔒 pour rendre une photo privée ou publique. Les visiteurs ne voient pas les photos 🔒.</span>';
-    cont.appendChild(banner);
-  }
-  const info=document.createElement('div');
-  info.style.cssText='padding:0 16px 6px;font-size:.72rem;color:var(--txt2);';
-  info.textContent=photos.length+' photo'+(photos.length>1?'s':'')+' · tap pour agrandir';
-  cont.appendChild(info);
-  cont.appendChild(grid);
 }
 
 // ══ RÉACTIONS EMOJI ══
@@ -7197,5 +7129,6 @@ if(loginPasswordEl){
 <script src="meteo.js?v=1"></script>
 <script src="accueil.js?v=6"></script>
 <script src="visiteur.js?v=1"></script>
+<script src="galerie.js?v=1"></script>
 </body>
 </html>
