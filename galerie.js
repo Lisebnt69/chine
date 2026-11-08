@@ -13,7 +13,9 @@
   var envoi = null;       // brouillon d'envoi : {files, prive:[bool], busy}
   var vue = null;
   var filtre = '';        // ville filtrée dans la galerie ('' = toutes)
-  var villeEnvoi = '';    // ville choisie dans la feuille d'envoi         // visionneuse : {liste, i}
+  var villeEnvoi = '';
+  var cible = null;       // album existant auquel on ajoute des photos : {lot, album, ville}
+  var edit = null;        // album en cours de modification : {lot, ville}    // ville choisie dans la feuille d'envoi         // visionneuse : {liste, i}
 
   function editeur() { return isEditorMode(); }
   function q(id) { return document.getElementById(id); }
@@ -79,6 +81,8 @@
         + (a.ville && titre(a) !== a.ville ? '📍 ' + esc(a.ville) + ' · ' : '') + a.items.length + ' photo' + (a.items.length > 1 ? 's' : '')
         + (editeur() && nbPriv ? ' · ' + nbPriv + ' privée' + (nbPriv > 1 ? 's' : '') : '') + '</p></div>';
       if (editeur()) {
+        html += '<div class="gal-hbtn"><button type="button" class="gal-lien" data-g="plus" data-lot="' + esc(a.lot) + '">＋ Photos</button>'
+          + '<button type="button" class="gal-lien" data-g="modif" data-lot="' + esc(a.lot) + '" aria-label="Modifier l\'album">✏️</button></div>';
         html += '<button type="button" class="gal-lien" data-g="tout" data-lot="' + esc(a.lot) + '" data-prive="' + (nbPriv < a.items.length ? 1 : 0) + '">'
           + (nbPriv < a.items.length ? '🔒 Tout privé' : '🌐 Tout public') + '</button>';
       }
@@ -101,8 +105,10 @@
     ajouter();
   };
 
-  function ajouter() {
+  function ajouter(lot) {
     if (!editeur()) return;
+    var a = lot && albums().filter(function (x) { return x.lot === lot; })[0];
+    cible = a ? { lot: a.lot, album: a.album || null, ville: a.ville || null, nom: titre(a) } : null;
     var inp = q('galFiles');
     if (!inp) {
       inp = document.createElement('input');
@@ -118,7 +124,7 @@
     inp.value = '';
     if (!files.length) return;
     if (files.length > 100) { showToast('📷 100 photos max par envoi, les 100 premières sont gardées'); files = files.slice(0, 100); }
-    villeEnvoi = filtre || '';
+    villeEnvoi = cible ? (cible.ville || '') : (filtre || '');
     envoi = { files: files, prive: files.map(function () { return false; }), busy: false, urls: files.map(function (f) { return URL.createObjectURL(f); }) };
     feuille();
   }
@@ -129,11 +135,11 @@
     var s = document.createElement('div'); s.id = 'galSheet'; s.className = 'gal-sheet';
     var h = '<div class="gal-sheet-in"><div class="gal-poignee"></div>'
       + '<h3>' + n + ' photo' + (n > 1 ? 's' : '') + ' à ajouter</h3>'
-      + '<input class="form-input" id="galTitre" maxlength="60" placeholder="Titre de l\'album (facultatif) : Jour 3, Le Bund…">'
-      + '<div class="gal-villes gal-choix"><span>📍 Ville</span>' + (typeof VILLES !== 'undefined' ? VILLES : []).concat(['Autre']).map(function (v) {
+      + (cible ? '<p class="gal-cible">Ajout à l\'album <b>' + esc(cible.nom) + '</b></p>' : '<input class="form-input" id="galTitre" maxlength="60" placeholder="Titre de l\'album (facultatif) : Jour 3, Le Bund…">'
+        + '<div class="gal-villes gal-choix"><span>📍 Ville</span>' + (typeof VILLES !== 'undefined' ? VILLES : []).concat(['Autre']).map(function (v) {
           var val = v === 'Autre' ? '' : v;
           return '<button type="button" class="gal-chip' + ((v === 'Autre' ? villeEnvoi === '' : villeEnvoi === v) ? ' on' : '') + '" data-g="env-ville" data-v="' + esc(val) + '">' + esc(v) + '</button>';
-        }).join('') + '</div>'
+        }).join('') + '</div>')
       + '<div class="gal-barre"><span>Touche une photo pour la passer en <b>🔒 privée</b> ou <b>🌐 publique</b>.</span>'
       + '<button type="button" class="gal-lien" data-g="env-tout">' + (nbPriv < n ? '🔒 Tout privé' : '🌐 Tout public') + '</button></div>'
       + '<div class="gal-prev">';
@@ -142,13 +148,14 @@
         + '<img src="' + u + '" alt=""><span>' + (envoi.prive[i] ? '🔒' : '🌐') + '</span></button>';
     });
     h += '</div><div class="gal-resume">' + (n - nbPriv) + ' publique' + (n - nbPriv > 1 ? 's' : '') + ' · ' + nbPriv + ' privée' + (nbPriv > 1 ? 's' : '') + '</div>'
-      + '<button type="button" class="gal-go" id="galGo" data-g="env-go">Publier l\'album</button>'
+      + '<button type="button" class="gal-go" id="galGo" data-g="env-go">' + (cible ? 'Ajouter à l\'album' : 'Publier l\'album') + '</button>'
       + '<button type="button" class="gal-annuler" data-g="env-annuler">Annuler</button></div>';
     s.innerHTML = h;
     document.body.appendChild(s);
   }
 
   function fermerFeuille() {
+    cible = null;
     if (envoi) envoi.urls.forEach(function (u) { URL.revokeObjectURL(u); });
     envoi = null;
     var s = q('galSheet'); if (s) s.remove();
@@ -157,8 +164,9 @@
   async function publier() {
     if (!envoi || envoi.busy) return;
     envoi.busy = true;
-    var titreAlbum = (q('galTitre') && q('galTitre').value.trim()) || null;
-    var lot = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) { var r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 3 | 8)).toString(16); });
+    var titreAlbum = cible ? cible.album : ((q('galTitre') && q('galTitre').value.trim()) || null);
+    var villePub = cible ? cible.ville : (villeEnvoi || null);
+    var lot = cible ? cible.lot : (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) { var r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 3 | 8)).toString(16); });
     var go = q('galGo'), n = envoi.files.length, ok = 0, rate = 0;
     var base = Date.now();
     for (var i = 0; i < n; i++) {
@@ -172,7 +180,7 @@
         var u2 = await st.upload(nom + '-m.jpg', mini, opt);
         if (u1.error || u2.error) { await st.remove([nom + '.jpg', nom + '-m.jpg']); throw (u1.error || u2.error); }
         var r = await sb.from('photos').insert({
-          auteur: currentUser, lot: lot, album: titreAlbum, ville: villeEnvoi || null, prive: envoi.prive[i],
+          auteur: currentUser, lot: lot, album: titreAlbum, ville: villePub, prive: envoi.prive[i],
           mini: st.getPublicUrl(nom + '-m.jpg').data.publicUrl, image: st.getPublicUrl(nom + '.jpg').data.publicUrl,
           created_at: new Date(base + i).toISOString() // garde l'ordre choisi dans l'album
         });
@@ -182,6 +190,52 @@
     }
     fermerFeuille();
     showToast(rate ? '⚠️ ' + ok + ' envoyée' + (ok > 1 ? 's' : '') + ', ' + rate + ' en échec' : '✅ ' + ok + ' photo' + (ok > 1 ? 's' : '') + ' ajoutée' + (ok > 1 ? 's' : ''));
+    renderGalerie();
+  }
+
+  /* ── Modifier un album déjà publié ── */
+  function modifier(lot) {
+    var a = albums().filter(function (x) { return x.lot === lot; })[0];
+    if (!a) return;
+    edit = { lot: lot, ville: a.ville || '', n: a.items.length, items: a.items };
+    feuilleEdit(a.album || '');
+  }
+
+  function feuilleEdit(titreVal) {
+    var old = q('galEdit'); if (old) old.remove();
+    var s = document.createElement('div'); s.id = 'galEdit'; s.className = 'gal-sheet';
+    s.innerHTML = '<div class="gal-sheet-in"><div class="gal-poignee"></div><h3>Modifier l\'album</h3>'
+      + '<input class="form-input" id="galEdTitre" maxlength="60" placeholder="Titre de l\'album" value="' + esc(titreVal) + '">'
+      + '<div class="gal-villes gal-choix"><span>📍 Ville</span>' + (typeof VILLES !== 'undefined' ? VILLES : []).concat(['Autre']).map(function (v) {
+          var val = v === 'Autre' ? '' : v;
+          return '<button type="button" class="gal-chip' + ((v === 'Autre' ? edit.ville === '' : edit.ville === v) ? ' on' : '') + '" data-g="ed-ville" data-v="' + esc(val) + '">' + esc(v) + '</button>';
+        }).join('') + '</div>'
+      + '<button type="button" class="gal-go" data-g="ed-ok" style="margin-top:14px">Enregistrer</button>'
+      + '<button type="button" class="gal-annuler" data-g="ed-annuler">Annuler</button>'
+      + '<button type="button" class="gal-annuler gal-danger" data-g="ed-suppr">🗑️ Supprimer tout l\'album (' + edit.n + ' photo' + (edit.n > 1 ? 's' : '') + ')</button></div>';
+    document.body.appendChild(s);
+  }
+
+  async function enregistrer() {
+    if (!edit) return;
+    var t = q('galEdTitre').value.trim() || null;
+    var r = await sb.from('photos').update({ album: t, ville: edit.ville || null }).eq('lot', edit.lot);
+    if (r.error) { showToast('❌ Modification impossible'); return; }
+    edit = null; q('galEdit').remove();
+    showToast('✅ Album modifié');
+    renderGalerie();
+  }
+
+  async function supprimerAlbum() {
+    if (!edit) return;
+    if (!confirm('Supprimer l\'album et ses ' + edit.n + ' photos pour de bon ?')) return;
+    var chemins = [];
+    edit.items.forEach(function (p) { [p.image, p.mini].forEach(function (u) { var m = /\/photos\/(.+)$/.exec(u || ''); if (m) chemins.push(decodeURIComponent(m[1])); }); });
+    var r = await sb.from('photos').delete().eq('lot', edit.lot);
+    if (r.error) { showToast('❌ Suppression impossible'); return; }
+    if (chemins.length) sb.storage.from('photos').remove(chemins);
+    edit = null; q('galEdit').remove();
+    showToast('🗑️ Album supprimé');
     renderGalerie();
   }
 
@@ -272,6 +326,12 @@
     }
     else if (g === 'env-bascule') { var i = +el.dataset.i; envoi.prive[i] = !envoi.prive[i]; var t = q('galTitre') && q('galTitre').value; feuille(); if (t) q('galTitre').value = t; }
     else if (g === 'env-tout') { var tout = envoi.prive.some(function (x) { return !x; }); envoi.prive = envoi.prive.map(function () { return tout; }); var t2 = q('galTitre') && q('galTitre').value; feuille(); if (t2) q('galTitre').value = t2; }
+    else if (g === 'plus') ajouter(el.dataset.lot);
+    else if (g === 'modif') modifier(el.dataset.lot);
+    else if (g === 'ed-ville') { edit.ville = el.dataset.v; var t4 = q('galEdTitre').value; feuilleEdit(t4); }
+    else if (g === 'ed-ok') enregistrer();
+    else if (g === 'ed-annuler') { edit = null; var e0 = q('galEdit'); if (e0) e0.remove(); }
+    else if (g === 'ed-suppr') supprimerAlbum();
     else if (g === 'ville') { filtre = el.dataset.v; renderGalerie(); }
     else if (g === 'env-ville') { villeEnvoi = el.dataset.v; var t3 = q('galTitre') && q('galTitre').value; feuille(); if (t3) q('galTitre').value = t3; }
     else if (g === 'env-go') publier();
@@ -291,9 +351,10 @@
     '.gal-add{padding:12px 18px;border:none;border-radius:var(--radius-sm);background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font:700 .88rem var(--font);cursor:pointer;min-height:44px}',
     '.gal-vide{text-align:center;padding:40px 20px;color:var(--txt2);font-size:.88rem}.gal-vide span{font-size:.74rem;color:var(--txt3)}',
     '.gal-album{margin-bottom:18px}',
+    '.gal-hbtn{display:flex;gap:6px;margin-left:auto}.gal-cible{margin:0 0 4px;font-size:.84rem;color:var(--txt2)}.gal-danger{color:var(--accent);margin-top:10px}',
     '.gal-villes{display:flex;gap:6px;overflow-x:auto;padding:0 16px 12px;align-items:center;scrollbar-width:none}.gal-choix{padding:10px 0 0}.gal-choix>span{font-size:.74rem;color:var(--txt2);white-space:nowrap}',
     '.gal-chip{flex:none;border:1px solid var(--border);background:#fff;border-radius:999px;padding:8px 13px;font:600 .76rem var(--font);color:var(--txt2);cursor:pointer;min-height:36px}.gal-chip.on{background:var(--txt);border-color:var(--txt);color:#fff}',
-    '.gal-album header{display:flex;align-items:flex-end;justify-content:space-between;gap:10px;padding:0 16px 8px}',
+    '.gal-album header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:10px;padding:0 16px 8px}',
     '.gal-album h2{font-size:1rem;font-weight:700;margin:0;font-family:var(--font-title)}',
     '.gal-album header p{margin:2px 0 0;font-size:.72rem;color:var(--txt2)}',
     '.gal-lien{border:1px solid var(--border);background:#fff;border-radius:999px;padding:8px 12px;font:600 .72rem var(--font);color:var(--txt2);cursor:pointer;min-height:36px;white-space:nowrap}',
