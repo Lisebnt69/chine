@@ -17,6 +17,8 @@
   var cible = null;       // album existant auquel on ajoute des photos : {lot, album, ville}
   var sel = null;         // mode sélection : liste d'ids cochés, ou null
   var dep = null;         // déplacement en cours : {ids, nouveau, ville}
+  var likes = {};         // id photo -> nombre de likes
+  var mesLikes = {};      // id photo -> true si CET appareil a liké
   var edit = null;        // album en cours de modification : {lot, ville}    // ville choisie dans la feuille d'envoi         // visionneuse : {liste, i}
 
   function nouveauLot() {
@@ -24,6 +26,49 @@
   }
   function editeur() { return isEditorMode(); }
   function q(id) { return document.getElementById(id); }
+
+  /* ── Likes : le visiteur est reconnu par un identifiant aléatoire gardé sur son appareil ── */
+  function monId() {
+    try {
+      var id = localStorage.getItem('gal_client');
+      if (!id || id.length < 8) { id = nouveauLot(); localStorage.setItem('gal_client', id); }
+      return id;
+    } catch (e) { return window.__galId || (window.__galId = nouveauLot()); }
+  }
+  async function chargerLikes() {
+    try {
+      var r = await sb.from('photo_likes').select('photo_id,client_id').limit(20000);
+      if (r.error) throw r.error;
+      likes = {}; mesLikes = {};
+      var moi = monId();
+      (r.data || []).forEach(function (l) { likes[l.photo_id] = (likes[l.photo_id] || 0) + 1; if (l.client_id === moi) mesLikes[l.photo_id] = true; });
+    } catch (e) { /* table pas encore créée : la galerie marche sans likes */ }
+  }
+  function coeur(p) {
+    var n = likes[p.id] || 0, moi = !!mesLikes[p.id];
+    if (editeur()) return n ? '<span class="gal-like lu" aria-label="' + n + ' like' + (n > 1 ? 's' : '') + '">❤️ ' + n + '</span>' : '';
+    return '<button type="button" class="gal-like' + (moi ? ' on' : '') + '" data-g="like" data-id="' + esc(p.id) + '" aria-pressed="' + moi + '" aria-label="' + (moi ? 'Retirer mon like' : 'Liker la photo') + '">'
+      + (moi ? '❤️' : '🤍') + (n ? ' ' + n : '') + '</button>';
+  }
+  async function aime(id) {
+    var moi = !!mesLikes[id], cid = monId();
+    // affichage immédiat, annulé si la base refuse
+    if (moi) { delete mesLikes[id]; likes[id] = Math.max(0, (likes[id] || 1) - 1); } else { mesLikes[id] = true; likes[id] = (likes[id] || 0) + 1; }
+    rafraichirLikes(id);
+    var r = moi ? await sb.from('photo_likes').delete().eq('photo_id', id).eq('client_id', cid)
+                : await sb.from('photo_likes').insert({ photo_id: id, client_id: cid });
+    if (r.error && r.error.code !== '23505') {
+      if (moi) { mesLikes[id] = true; likes[id] = (likes[id] || 0) + 1; } else { delete mesLikes[id]; likes[id] = Math.max(0, (likes[id] || 1) - 1); }
+      rafraichirLikes(id);
+      showToast('❌ Like impossible');
+    }
+  }
+  function rafraichirLikes(id) {
+    var p = photos.find(function (x) { return x.id === id; }); if (!p) return;
+    document.querySelectorAll('.gal-like[data-id="' + id + '"]').forEach(function (b) {
+      var t = document.createElement('div'); t.innerHTML = coeur(p); if (t.firstChild) b.replaceWith(t.firstChild);
+    });
+  }
 
   /* ── Lecture ── */
   async function charger() {
@@ -56,7 +101,7 @@
     var cont = q('galerieCont');
     if (!cont) return;
     if (!photos.length) cont.innerHTML = '<div class="gal-vide">Chargement…</div>';
-    try { await charger(); }
+    try { await charger(); await chargerLikes(); }
     catch (e) {
       cont.innerHTML = '<div class="gal-vide">📷 La galerie n\'est pas encore prête.<br><span>Il manque la table <b>photos</b> dans Supabase (migration 20261108000000_photos.sql).</span></div>';
       return;
@@ -95,7 +140,7 @@
       html += '</header><div class="gallery-grid">';
       a.items.forEach(function (p) {
         var coche = sel && sel.indexOf(p.id) >= 0;
-        html += '<div class="gallery-item' + (coche ? ' gal-coche' : '') + '" data-g="voir" data-id="' + esc(p.id) + '"><img src="' + p.mini + '" loading="lazy" alt="Photo">'
+        html += '<div class="gallery-item' + (coche ? ' gal-coche' : '') + '" data-g="voir" data-id="' + esc(p.id) + '"><img src="' + p.mini + '" loading="lazy" alt="Photo">' + coeur(p)
           + (sel ? '<span class="gal-case">' + (coche ? '✓' : '') + '</span>' : '')
           + (editeur() && !sel ? '<button type="button" class="gal-lock' + (p.prive ? ' priv' : '') + '" data-g="bascule" data-id="' + esc(p.id)
             + '" aria-label="' + (p.prive ? 'Privée : la rendre publique' : 'Publique : la rendre privée') + '">' + (p.prive ? '🔒' : '🌐') + '</button>' : '')
@@ -331,6 +376,7 @@
     v.innerHTML = '<div class="gal-vue-top"><span id="galVueN"></span><div>'
       + (editeur() ? '<button type="button" data-g="v-dep">📁 Déplacer</button><button type="button" data-g="v-lock" id="galVueLock"></button><button type="button" data-g="v-suppr" aria-label="Supprimer">🗑️</button>' : '')
       + '<button type="button" data-g="v-fermer" aria-label="Fermer">✕</button></div></div>'
+      + '<div class="gal-vue-like" id="galVueLike"></div>'
       + '<button type="button" class="gal-nav g" data-g="v-prec" aria-label="Précédente">‹</button>'
       + '<img id="galVueImg" alt="Photo">'
       + '<button type="button" class="gal-nav d" data-g="v-suiv" aria-label="Suivante">›</button>';
@@ -350,6 +396,7 @@
     var p = vue.liste[vue.i]; if (!p) return;
     var img = q('galVueImg'); img.src = p.mini; img.classList.add('flou');
     q('galVueN').textContent = (vue.i + 1) + ' / ' + vue.liste.length;
+    var vl = q('galVueLike'); if (vl) vl.innerHTML = coeur(p);
     var lk = q('galVueLock'); if (lk) lk.textContent = p.prive ? '🔒 Privée' : '🌐 Publique';
     var mon = ++jeton, gros = new Image();
     gros.onload = function () { if (mon === jeton && q('galVueImg')) { img.src = p.image; img.classList.remove('flou'); } };
@@ -384,7 +431,8 @@
     var el = e.target.closest && e.target.closest('[data-g]');
     if (!el) return;
     var g = el.dataset.g;
-    if (g === 'ajouter') ajouter();
+    if (g === 'like') { e.stopPropagation(); aime(el.dataset.id); }
+    else if (g === 'ajouter') ajouter();
     else if (g === 'voir') {
       if (sel) { var k = sel.indexOf(el.dataset.id); if (k >= 0) sel.splice(k, 1); else sel.push(el.dataset.id); renderGalerie(); }
       else voir(el.dataset.id);
@@ -442,6 +490,10 @@
     '.gal-lien{border:1px solid var(--border);background:#fff;border-radius:999px;padding:8px 12px;font:600 .72rem var(--font);color:var(--txt2);cursor:pointer;min-height:36px;white-space:nowrap}',
     '.gal-lock{position:absolute;top:4px;right:4px;width:34px;height:34px;border:none;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;font-size:.85rem;cursor:pointer;display:grid;place-items:center}',
     '.gal-lock.priv{background:var(--accent)}',
+    '.gal-like{position:absolute;left:4px;bottom:4px;border:none;border-radius:999px;background:rgba(0,0,0,.55);color:#fff;font:700 .74rem var(--font);padding:0 10px;min-height:34px;min-width:34px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:3px;z-index:1}',
+    '.gal-like.on{background:rgba(255,255,255,.92);color:#222}.gal-like.lu{pointer-events:none;min-height:26px;padding:0 8px;font-size:.7rem}',
+    '.gal-vue-like{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom));z-index:3}',
+    '.gal-vue-like .gal-like{position:static;min-height:48px;padding:0 20px;font-size:1rem;background:rgba(255,255,255,.18)}.gal-vue-like .gal-like.on{background:rgba(255,255,255,.92)}',
     '.gal-sheet{position:fixed;inset:0;z-index:3000;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;backdrop-filter:blur(4px)}',
     '.gal-sheet-in{width:100%;max-height:92vh;overflow:auto;background:#fff;border-radius:24px 24px 0 0;padding:0 16px calc(16px + env(safe-area-inset-bottom));animation:slideUp .25s ease}',
     '.gal-poignee{width:36px;height:4px;background:#ddd;border-radius:2px;margin:12px auto 14px}',
