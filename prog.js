@@ -53,7 +53,9 @@ function renderDaysBar() {
       const wd = dt.toLocaleDateString('fr-FR', { weekday: 'short' }).replace('.', '');
       return `<button class="pd ${sel.includes(d.date_voyage) ? 'on' : ''} ${d.date_voyage === today ? 'today' : ''}" data-act="day" data-d="${esc(d.date_voyage)}"><i>${wd}</i><b>${dt.getDate()}</b></button>`;
     }).join('')}</div>`;
-  box.querySelector('.pd.on:not(.pd-opt)')?.scrollIntoView({ block: 'nearest', inline: 'center' });
+  // Centre le jour choisi dans la barre SANS toucher au scroll vertical de la page
+  const on = box.querySelector('.pd.on:not(.pd-opt)'), bar = box.querySelector('.pd-bar');
+  if (on && bar) bar.scrollLeft = on.offsetLeft - (bar.clientWidth - on.offsetWidth) / 2;
 }
 
 /* Une phrase sous le sélecteur : ce que montre la vue active. */
@@ -66,6 +68,16 @@ const PROG_AIDE = {
 
 /* ───────────── Rendu principal ───────────── */
 function renderProgrammeVues() {
+  // Le contenu est recréé : on fige la hauteur et on restaure le scroll, sinon la page remonte en haut à chaque rafraîchissement.
+  const y = window.scrollY, body0 = document.getElementById('progBody');
+  if (body0) body0.style.minHeight = body0.offsetHeight + 'px';
+  try { renderProgrammeVuesCore(); }
+  finally {
+    if (body0) body0.style.minHeight = '';
+    if (Math.abs(window.scrollY - y) > 2) window.scrollTo({ top: y, behavior: 'instant' });
+  }
+}
+function renderProgrammeVuesCore() {
   ensureProgrammeTab();
   const body = document.getElementById('progBody'); if (!body) return;
   if (!['vital', 'leger', 'detail', 'claude'].includes(progView)) progView = 'leger'; // anciennes valeurs mémorisées
