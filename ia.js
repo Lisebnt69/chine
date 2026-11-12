@@ -342,6 +342,16 @@ function cerveauCard(c) {
 }
 
 function renderCerveau() {
+  // Contenu recréé : on fige la hauteur et on restaure le scroll, sinon la page remonte en haut à chaque rafraîchissement.
+  const y = window.scrollY, body0 = document.getElementById('cerBody');
+  if (body0) body0.style.minHeight = body0.offsetHeight + 'px';
+  try { renderCerveauCore(); }
+  finally {
+    if (body0) body0.style.minHeight = '';
+    if (Math.abs(window.scrollY - y) > 2) window.scrollTo({ top: y, behavior: 'instant' });
+  }
+}
+function renderCerveauCore() {
   ensureProgrammeTab();
   const body = document.getElementById('cerBody'); if (!body) return;
   const q = document.getElementById('cerQ')?.value || '';
