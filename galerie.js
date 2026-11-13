@@ -16,6 +16,7 @@
   var filtre = '';        // ville filtrée dans la galerie ('' = toutes)
   var villeEnvoi = '';
   var cible = null;       // album existant auquel on ajoute des photos : {lot, album, ville}
+  var visibles = [];      // ids des photos affichées (après filtres), pour « tout sélectionner »
   var sel = null;         // mode sélection : liste d'ids cochés, ou null
   var dep = null;         // déplacement en cours : {ids, nouveau, ville}
   var likes = {};         // id photo -> nombre de likes
@@ -145,12 +146,17 @@
       html += '<div class="gal-vide">📷 Aucune photo pour l\'instant.<br><span>'
         + (editeur() ? 'Ajoute les premières avec le bouton ci-dessus.' : 'Matis et Lise en partageront bientôt.') + '</span></div>';
     }
+    visibles = [];
+    liste.forEach(function (a) { a.items.forEach(function (p) { visibles.push(p.id); }); });
     liste.forEach(function (a) {
       var nbPriv = a.items.filter(function (p) { return p.prive; }).length;
       html += '<section class="gal-album"><header><div><h2>' + esc(titre(a)) + '</h2><p>'
         + (a.ville && titre(a) !== a.ville ? '📍 ' + esc(a.ville) + ' · ' : '') + a.items.length + ' photo' + (a.items.length > 1 ? 's' : '')
         + (editeur() && nbPriv ? ' · ' + nbPriv + ' privée' + (nbPriv > 1 ? 's' : '') : '') + '</p></div>';
-      if (editeur()) {
+      if (editeur() && sel) {
+        var toutes = a.items.every(function (p) { return sel.indexOf(p.id) >= 0; });
+        html += '<div class="gal-hbtn"><button type="button" class="gal-lien" data-g="sel-album" data-lot="' + esc(a.lot) + '">' + (toutes ? '☐ Aucune' : '☑ Tout l\'album') + '</button></div>';
+      } else if (editeur()) {
         html += '<div class="gal-hbtn"><button type="button" class="gal-lien" data-g="plus" data-lot="' + esc(a.lot) + '">＋ Photos</button>'
           + '<button type="button" class="gal-lien" data-g="modif" data-lot="' + esc(a.lot) + '" aria-label="Modifier l\'album">✏️</button></div>';
         html += '<button type="button" class="gal-lien" data-g="tout" data-lot="' + esc(a.lot) + '" data-prive="' + (nbPriv < a.items.length ? 1 : 0) + '">'
@@ -235,30 +241,30 @@
   }
 
   /* Réduction maison : donne toujours un vrai JPEG, ou une erreur claire. (compressImage de l'app renvoie le fichier d'origine
-     quand le navigateur ne sait pas le décoder : HEIC, énorme photo… et Supabase refuse alors tout fichier > 3 Mo.) */
-  async function reduire(file, maxW, q) {
-    var src, w, h;
-    try {
-      src = await createImageBitmap(file, { imageOrientation: 'from-image' });
-      w = src.width; h = src.height;
-    } catch (e) {
-      src = await new Promise(function (ok, ko) {
+     quand le navigateur ne sait pas le décoder : HEIC, énorme photo… et Supabase refuse alors tout fichier > 3 Mo.)
+     La photo n'est décodée qu'UNE fois : la grande et la vignette en sortent (plus rapide, moins de mémoire sur mobile). */
+  async function decoder(file) {
+    try { return await createImageBitmap(file, { imageOrientation: 'from-image' }); }
+    catch (e) {
+      return new Promise(function (ok, ko) {
         var im = new Image(), u = URL.createObjectURL(file);
-        im.onload = function () { URL.revokeObjectURL(u); ok(im); };
+        im.onload = function () { URL.revokeObjectURL(u); im.width0 = im.naturalWidth; im.height0 = im.naturalHeight; ok(im); };
         im.onerror = function () { URL.revokeObjectURL(u); ko(new Error('format non lisible (HEIC ?)')); };
         im.src = u;
       });
-      w = src.naturalWidth; h = src.naturalHeight;
     }
+  }
+  async function reduire(src, maxW, q) {
+    var w = src.width0 || src.width, h = src.height0 || src.height;
     if (!w || !h) throw new Error('image vide');
     var k = Math.min(1, maxW / Math.max(w, h));
     var c = document.createElement('canvas');
     c.width = Math.max(1, Math.round(w * k)); c.height = Math.max(1, Math.round(h * k));
     c.getContext('2d').drawImage(src, 0, 0, c.width, c.height);
-    if (src.close) src.close();
     var blob = await new Promise(function (ok) { c.toBlob(ok, 'image/jpeg', q); });
+    c.width = c.height = 0; // libère la mémoire du canvas tout de suite
     if (!blob) throw new Error('compression impossible');
-    if (blob.size > 2800000 && q > 0.5) return reduire(file, maxW, q - 0.2); // sous la limite du bucket (3 Mo)
+    if (blob.size > 2800000 && q > 0.5) return reduire(src, maxW, q - 0.2); // sous la limite du bucket (3 Mo)
     return blob;
   }
 
@@ -271,36 +277,78 @@
     throw err;
   }
 
+  /* Empreinte d'un fichier (nom + taille + date) : sert à ne pas renvoyer une photo déjà dans la galerie. */
+  function empreinte(f) { return f.name + '|' + f.size + '|' + f.lastModified; }
+  async function dejaEnvoyees(cles) {
+    var deja = {};
+    try {
+      for (var i = 0; i < cles.length; i += 40) {
+        var r = await sb.from('photos').select('source').in('source', cles.slice(i, i + 40));
+        if (r.error) throw r.error;
+        (r.data || []).forEach(function (x) { deja[x.source] = true; });
+      }
+    } catch (e) { /* colonne pas encore créée : on envoie tout */ }
+    return deja;
+  }
+
+  var PARALLELE = 4; // photos envoyées en même temps
+
   async function publier() {
     if (!envoi || envoi.busy) return;
     envoi.busy = true;
     var titreAlbum = cible ? cible.album : ((q('galTitre') && q('galTitre').value.trim()) || null);
     var villePub = cible ? cible.ville : (villeEnvoi || null);
     var lot = cible ? cible.lot : nouveauLot();
-    var go = q('galGo'), n = envoi.files.length, ok = 0, rate = 0, raison = '';
-    var base = Date.now();
-    for (var i = 0; i < n; i++) {
-      if (go) { go.disabled = true; go.textContent = 'Envoi ' + (i + 1) + ' / ' + n + '…'; }
+    var go = q('galGo'), files = envoi.files, priv = envoi.prive.slice();
+    if (go) { go.disabled = true; go.textContent = 'Vérification…'; }
+    var cles = files.map(empreinte), deja = await dejaEnvoyees(cles), vus = {}, aEnvoyer = [], ignorees = 0;
+    cles.forEach(function (c, i) { if (deja[c] || vus[c]) ignorees++; else { vus[c] = true; aEnvoyer.push(i); } });
+    var n = aEnvoyer.length, fait = 0, ok = 0, rate = 0, raisons = {}, base = Date.now(), st = sb.storage.from('photos'), opt = { contentType: 'image/jpeg', cacheControl: '31536000' };
+    function progres() { if (go) go.textContent = 'Envoi ' + Math.min(fait + 1, n) + ' / ' + n + '…'; }
+    progres();
+
+    async function une(i) {
+      var src;
       try {
-        var grande = await reduire(envoi.files[i], 1600, 0.8);
-        var mini = await reduire(envoi.files[i], 400, 0.7);
+        src = await decoder(files[i]);
+        var grande = await reduire(src, 1600, 0.8), mini = await reduire(src, 400, 0.7);
+        if (src.close) src.close();
         var nom = lot + '/' + Date.now().toString(36) + i, idPhoto = nouveauLot();
-        var st = sb.storage.from('photos'), opt = { contentType: 'image/jpeg', cacheControl: '31536000' };
         await avecRetry(async function () {
-          var u1 = await st.upload(nom + '.jpg', grande, Object.assign({ upsert: true }, opt));
-          var u2 = await st.upload(nom + '-m.jpg', mini, Object.assign({ upsert: true }, opt));
-          if (u1.error || u2.error) throw (u1.error || u2.error);
+          var r = await Promise.all([st.upload(nom + '.jpg', grande, Object.assign({ upsert: true }, opt)), st.upload(nom + '-m.jpg', mini, Object.assign({ upsert: true }, opt))]);
+          if (r[0].error || r[1].error) throw (r[0].error || r[1].error);
         }, 3).catch(async function (e) { await st.remove([nom + '.jpg', nom + '-m.jpg']); throw e; });
-        var r = await avecRetry(async function () { var x = await sb.from('photos').insert({
-          id: idPhoto, auteur: currentUser, lot: lot, album: titreAlbum, ville: villePub, prive: envoi.prive[i],
-          mini: st.getPublicUrl(nom + '-m.jpg').data.publicUrl, image: st.getPublicUrl(nom + '.jpg').data.publicUrl,
-          created_at: new Date(base + i).toISOString() // garde l'ordre choisi dans l'album
-        }); if (x.error && x.error.code !== '23505') throw x.error; return x; }, 3).catch(async function (e) { await st.remove([nom + '.jpg', nom + '-m.jpg']); throw e; });
+        await avecRetry(async function () {
+          var x = await sb.from('photos').insert({
+            id: idPhoto, auteur: currentUser, lot: lot, album: titreAlbum, ville: villePub, prive: priv[i], source: cles[i],
+            mini: st.getPublicUrl(nom + '-m.jpg').data.publicUrl, image: st.getPublicUrl(nom + '.jpg').data.publicUrl,
+            created_at: new Date(base + i).toISOString() // garde l'ordre choisi dans l'album
+          });
+          if (x.error && x.error.code !== '23505') throw x.error; // 23505 : déjà inséré à l'essai précédent
+        }, 3).catch(async function (e) { await st.remove([nom + '.jpg', nom + '-m.jpg']); throw e; });
         ok++;
-      } catch (e) { rate++; raison = raison || (e && e.message) || 'erreur réseau'; if (window.console) console.warn('photo ' + (i + 1) + ' :', e); }
+      } catch (e) {
+        rate++;
+        var m = (e && e.message) || 'erreur réseau'; raisons[m] = (raisons[m] || 0) + 1;
+        if (window.console) console.warn('photo ' + files[i].name + ' :', e);
+      }
+      fait++; progres();
     }
+
+    var file = aEnvoyer.slice();
+    await Promise.all(Array.apply(null, Array(Math.min(PARALLELE, n))).map(async function () {
+      while (file.length) await une(file.shift());
+    }));
+
     fermerFeuille();
-    showToast(rate ? '⚠️ ' + ok + ' envoyée' + (ok > 1 ? 's' : '') + ', ' + rate + ' en échec (' + raison + ')' : '✅ ' + ok + ' photo' + (ok > 1 ? 's' : '') + ' ajoutée' + (ok > 1 ? 's' : ''));
+    var pl = function (k) { return k > 1 ? 's' : ''; };
+    var msg = ok ? '✅ ' + ok + ' photo' + pl(ok) + ' ajoutée' + pl(ok) : '';
+    if (ignorees) msg += (msg ? ' · ' : '') + '⏭️ ' + ignorees + ' déjà dans la galerie';
+    if (rate) {
+      var top = Object.keys(raisons).sort(function (a, b) { return raisons[b] - raisons[a]; })[0];
+      msg += (msg ? ' · ' : '') + '⚠️ ' + rate + ' en échec (' + top + ') : choisis-les de nouveau, celles déjà envoyées seront ignorées';
+    }
+    showToast(msg || 'Rien à envoyer');
     renderGalerie();
   }
 
@@ -310,6 +358,7 @@
     if (!sel) return;
     b = document.createElement('div'); b.id = 'galSelBar'; b.className = 'gal-selbar';
     b.innerHTML = '<span>' + sel.length + ' sélectionnée' + (sel.length > 1 ? 's' : '') + '</span>'
+      + '<button type="button" data-g="sel-tout">' + (visibles.length && sel.length >= visibles.length ? 'Aucune' : 'Tout') + '</button>'
       + '<button type="button" data-g="sel-dep"' + (sel.length ? '' : ' disabled') + '>📁 Déplacer vers…</button>'
       + '<button type="button" data-g="choisir">Annuler</button>';
     (q('tab-galerie') || document.body).appendChild(b); // dans l'onglet : la barre disparaît avec lui
@@ -498,6 +547,14 @@
       else voir(el.dataset.id);
     }
     else if (g === 'choisir') { sel = sel ? null : []; renderGalerie(); }
+    else if (g === 'sel-tout') { sel = (visibles.length && sel.length >= visibles.length) ? [] : visibles.slice(); renderGalerie(); }
+    else if (g === 'sel-album') {
+      var ids2 = photos.filter(function (p) { return p.lot === el.dataset.lot; }).map(function (p) { return p.id; });
+      var toutes2 = ids2.every(function (i) { return sel.indexOf(i) >= 0; });
+      sel = sel.filter(function (i) { return ids2.indexOf(i) < 0; });
+      if (!toutes2) sel = sel.concat(ids2);
+      renderGalerie();
+    }
     else if (g === 'sel-dep') { if (sel && sel.length) deplacer(sel.slice()); }
     else if (g === 'v-dep') { var pv = vue && vue.liste[vue.i]; if (pv) deplacer([pv.id]); }
     else if (g === 'dep-vers') choisirDest(el.dataset.lot);
@@ -540,7 +597,7 @@
     '.gal-vide{text-align:center;padding:40px 20px;color:var(--txt2);font-size:.88rem}.gal-vide span{font-size:.74rem;color:var(--txt3)}',
     '.gal-album{margin-bottom:18px}',
     '.gal-case{position:absolute;top:5px;right:5px;width:24px;height:24px;border-radius:50%;border:2px solid #fff;background:rgba(0,0,0,.35);color:#fff;font-size:.8rem;display:grid;place-items:center}.gal-coche{outline:3px solid var(--accent);outline-offset:-3px}.gal-coche .gal-case{background:var(--accent)}',
-    '.gal-selbar{position:fixed;left:12px;right:12px;bottom:calc(var(--nav,68px) + 10px + env(safe-area-inset-bottom));z-index:2500;display:flex;align-items:center;gap:8px;background:var(--txt);color:#fff;border-radius:16px;padding:10px 12px;box-shadow:var(--shadow-lg)}.gal-selbar span{flex:1;font-size:.8rem}.gal-selbar button{border:none;border-radius:999px;padding:9px 13px;font:700 .78rem var(--font);cursor:pointer;min-height:40px;background:rgba(255,255,255,.18);color:#fff}.gal-selbar button:first-of-type{background:var(--accent)}.gal-selbar button:disabled{opacity:.4}',
+    '.gal-selbar{position:fixed;left:12px;right:12px;bottom:calc(var(--nav,68px) + 10px + env(safe-area-inset-bottom));z-index:2500;display:flex;align-items:center;gap:8px;background:var(--txt);color:#fff;border-radius:16px;padding:10px 12px;box-shadow:var(--shadow-lg)}.gal-selbar span{flex:1;font-size:.8rem}.gal-selbar button{border:none;border-radius:999px;padding:9px 13px;font:700 .78rem var(--font);cursor:pointer;min-height:40px;background:rgba(255,255,255,.18);color:#fff}.gal-selbar button[data-g=sel-dep]{background:var(--accent)}.gal-selbar button:disabled{opacity:.4}',
     '.gal-dest{display:flex;flex-direction:column;gap:8px}.gal-dest button{display:flex;justify-content:space-between;align-items:center;gap:10px;text-align:left;padding:13px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);background:#fff;font:600 .86rem var(--font);color:var(--txt);cursor:pointer;min-height:48px}.gal-dest span{font-size:.72rem;color:var(--txt2);font-weight:500}.gal-dest .neuf{justify-content:center;border-style:dashed;color:var(--accent)}',
     '.gal-hbtn{display:flex;gap:6px;margin-left:auto}.gal-cible{margin:0 0 4px;font-size:.84rem;color:var(--txt2)}.gal-danger{color:var(--accent);margin-top:10px}',
     '.gal-villes{display:flex;gap:6px;overflow-x:auto;padding:0 16px 12px;align-items:center;scrollbar-width:none}.gal-choix{padding:10px 0 0}.gal-choix>span{font-size:.74rem;color:var(--txt2);white-space:nowrap}',
