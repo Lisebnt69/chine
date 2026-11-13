@@ -66,7 +66,12 @@
   function rafraichirLikes(id) {
     var p = photos.find(function (x) { return x.id === id; }); if (!p) return;
     document.querySelectorAll('.gal-like[data-id="' + id + '"]').forEach(function (b) {
-      var t = document.createElement('div'); t.innerHTML = coeur(p); if (t.firstChild) b.replaceWith(t.firstChild);
+      // on met le bouton à jour sur place (sans le remplacer) : un bouton retiré en plein tap peut faire déraper le geste
+      var moi = !!mesLikes[id], n = likes[id] || 0;
+      b.className = 'gal-like' + (moi ? ' on' : '');
+      b.setAttribute('aria-pressed', moi);
+      b.setAttribute('aria-label', moi ? 'Retirer mon like' : 'Liker la photo');
+      b.textContent = (moi ? '❤️' : '🤍') + (n ? ' ' + n : '');
     });
   }
 
@@ -380,7 +385,10 @@
       + '<button type="button" class="gal-nav g" data-g="v-prec" aria-label="Précédente">‹</button>'
       + '<img id="galVueImg" alt="Photo">'
       + '<button type="button" class="gal-nav d" data-g="v-suiv" aria-label="Suivante">›</button>';
-    v.addEventListener('touchstart', function (e) { vue && (vue.x = e.touches[0].clientX); }, { passive: true });
+    v.addEventListener('touchstart', function (e) {
+      // un tap sur un bouton (like, fermer…) n'est jamais un début de glissement
+      if (vue) vue.x = (e.target.closest && e.target.closest('button')) ? null : e.touches[0].clientX;
+    }, { passive: true });
     v.addEventListener('touchend', function (e) {
       if (!vue || vue.x == null) return;
       var dx = e.changedTouches[0].clientX - vue.x; vue.x = null;
@@ -490,7 +498,7 @@
     '.gal-lien{border:1px solid var(--border);background:#fff;border-radius:999px;padding:8px 12px;font:600 .72rem var(--font);color:var(--txt2);cursor:pointer;min-height:36px;white-space:nowrap}',
     '.gal-lock{position:absolute;top:4px;right:4px;width:34px;height:34px;border:none;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;font-size:.85rem;cursor:pointer;display:grid;place-items:center}',
     '.gal-lock.priv{background:var(--accent)}',
-    '.gal-like{position:absolute;left:4px;bottom:4px;border:none;border-radius:999px;background:rgba(0,0,0,.55);color:#fff;font:700 .74rem var(--font);padding:0 10px;min-height:34px;min-width:34px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:3px;z-index:1}',
+    '.gal-like{touch-action:manipulation;-webkit-tap-highlight-color:transparent;position:absolute;left:4px;bottom:4px;border:none;border-radius:999px;background:rgba(0,0,0,.55);color:#fff;font:700 .74rem var(--font);padding:0 10px;min-height:34px;min-width:34px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:3px;z-index:1}',
     '.gal-like.on{background:rgba(255,255,255,.92);color:#222}.gal-like.lu{pointer-events:none;min-height:26px;padding:0 8px;font-size:.7rem}',
     '.gal-vue-like{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom));z-index:3}',
     '.gal-vue-like .gal-like{position:static;min-height:48px;padding:0 20px;font-size:1rem;background:rgba(255,255,255,.18)}.gal-vue-like .gal-like.on{background:rgba(255,255,255,.92)}',
