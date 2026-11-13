@@ -12,6 +12,7 @@
   var photos = [];        // vignettes visibles pour moi : {id, created_at, auteur, lot, album, prive, mini}
   var envoi = null;       // brouillon d'envoi : {files, prive:[bool], busy}
   var vue = null;
+  var filtreJour = '';    // jour filtré (AAAA-MM-JJ, '' = tous)
   var filtre = '';        // ville filtrée dans la galerie ('' = toutes)
   var villeEnvoi = '';
   var cible = null;       // album existant auquel on ajoute des photos : {lot, album, ville}
@@ -88,11 +89,16 @@
     var map = {}, ordre = [];
     photos.forEach(function (p) {
       if (!map[p.lot]) { map[p.lot] = { lot: p.lot, album: p.album, ville: p.ville, date: p.created_at, items: [] }; ordre.push(map[p.lot]); }
+      if (p.created_at < map[p.lot].date) map[p.lot].date = p.created_at; // l'album date de sa 1re photo
       map[p.lot].items.push(p);
     });
+    ordre.sort(function (x, y) { return x.date < y.date ? -1 : x.date > y.date ? 1 : 0; }); // ordre de création
     ordre.forEach(function (a) { a.items.sort(function (x, y) { return x.created_at < y.created_at ? -1 : 1; }); });
     return ordre;
   }
+
+  function jourDe(a) { var d = new Date(a.date); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+  function jourTxt(j) { var t = j.split('-'); return new Date(+t[0], +t[1] - 1, +t[2]).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' }); }
 
   function titre(a) {
     if (a.album) return a.album;
@@ -126,7 +132,15 @@
       villes.forEach(function (v) { html += '<button type="button" class="gal-chip' + (filtre === v ? ' on' : '') + '" data-g="ville" data-v="' + esc(v) + '">📍 ' + esc(v) + '</button>'; });
       html += '</div>';
     }
-    var liste = tous.filter(function (a) { return !filtre || a.ville === filtre; });
+    var jours = [];
+    tous.forEach(function (a) { var j = jourDe(a); if (jours.indexOf(j) < 0) jours.push(j); });
+    if (filtreJour && jours.indexOf(filtreJour) < 0) filtreJour = '';
+    if (jours.length > 1) {
+      html += '<div class="gal-villes"><button type="button" class="gal-chip' + (!filtreJour ? ' on' : '') + '" data-g="jour" data-v="">Tous les jours</button>';
+      jours.forEach(function (j) { html += '<button type="button" class="gal-chip' + (filtreJour === j ? ' on' : '') + '" data-g="jour" data-v="' + j + '">📅 ' + esc(jourTxt(j)) + '</button>'; });
+      html += '</div>';
+    }
+    var liste = tous.filter(function (a) { return (!filtre || a.ville === filtre) && (!filtreJour || jourDe(a) === filtreJour); });
     if (!liste.length) {
       html += '<div class="gal-vide">📷 Aucune photo pour l\'instant.<br><span>'
         + (editeur() ? 'Ajoute les premières avec le bouton ci-dessus.' : 'Matis et Lise en partageront bientôt.') + '</span></div>';
@@ -467,6 +481,7 @@
     else if (g === 'ed-ok') enregistrer();
     else if (g === 'ed-annuler') { edit = null; var e0 = q('galEdit'); if (e0) e0.remove(); }
     else if (g === 'ed-suppr') supprimerAlbum();
+    else if (g === 'jour') { filtreJour = el.dataset.v; renderGalerie(); }
     else if (g === 'ville') { filtre = el.dataset.v; renderGalerie(); }
     else if (g === 'env-ville') { villeEnvoi = el.dataset.v; var t3 = q('galTitre') && q('galTitre').value; feuille(); if (t3) q('galTitre').value = t3; }
     else if (g === 'env-go') publier();
