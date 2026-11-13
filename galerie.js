@@ -92,7 +92,7 @@
       if (p.created_at < map[p.lot].date) map[p.lot].date = p.created_at; // l'album date de sa 1re photo
       map[p.lot].items.push(p);
     });
-    ordre.sort(function (x, y) { return x.date < y.date ? -1 : x.date > y.date ? 1 : 0; }); // ordre de création
+    ordre.sort(function (x, y) { return x.date < y.date ? 1 : x.date > y.date ? -1 : 0; }); // le dernier jour en haut
     ordre.forEach(function (a) { a.items.sort(function (x, y) { return x.created_at < y.created_at ? -1 : 1; }); });
     return ordre;
   }
