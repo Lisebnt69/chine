@@ -234,35 +234,73 @@
     var s = q('galSheet'); if (s) s.remove();
   }
 
+  /* Réduction maison : donne toujours un vrai JPEG, ou une erreur claire. (compressImage de l'app renvoie le fichier d'origine
+     quand le navigateur ne sait pas le décoder : HEIC, énorme photo… et Supabase refuse alors tout fichier > 3 Mo.) */
+  async function reduire(file, maxW, q) {
+    var src, w, h;
+    try {
+      src = await createImageBitmap(file, { imageOrientation: 'from-image' });
+      w = src.width; h = src.height;
+    } catch (e) {
+      src = await new Promise(function (ok, ko) {
+        var im = new Image(), u = URL.createObjectURL(file);
+        im.onload = function () { URL.revokeObjectURL(u); ok(im); };
+        im.onerror = function () { URL.revokeObjectURL(u); ko(new Error('format non lisible (HEIC ?)')); };
+        im.src = u;
+      });
+      w = src.naturalWidth; h = src.naturalHeight;
+    }
+    if (!w || !h) throw new Error('image vide');
+    var k = Math.min(1, maxW / Math.max(w, h));
+    var c = document.createElement('canvas');
+    c.width = Math.max(1, Math.round(w * k)); c.height = Math.max(1, Math.round(h * k));
+    c.getContext('2d').drawImage(src, 0, 0, c.width, c.height);
+    if (src.close) src.close();
+    var blob = await new Promise(function (ok) { c.toBlob(ok, 'image/jpeg', q); });
+    if (!blob) throw new Error('compression impossible');
+    if (blob.size > 2800000 && q > 0.5) return reduire(file, maxW, q - 0.2); // sous la limite du bucket (3 Mo)
+    return blob;
+  }
+
+  async function avecRetry(f, essais) {
+    var err;
+    for (var t = 0; t < essais; t++) {
+      try { return await f(); }
+      catch (e) { err = e; await new Promise(function (r) { setTimeout(r, 600 * (t + 1)); }); } // coupure réseau passagère
+    }
+    throw err;
+  }
+
   async function publier() {
     if (!envoi || envoi.busy) return;
     envoi.busy = true;
     var titreAlbum = cible ? cible.album : ((q('galTitre') && q('galTitre').value.trim()) || null);
     var villePub = cible ? cible.ville : (villeEnvoi || null);
     var lot = cible ? cible.lot : nouveauLot();
-    var go = q('galGo'), n = envoi.files.length, ok = 0, rate = 0;
+    var go = q('galGo'), n = envoi.files.length, ok = 0, rate = 0, raison = '';
     var base = Date.now();
     for (var i = 0; i < n; i++) {
       if (go) { go.disabled = true; go.textContent = 'Envoi ' + (i + 1) + ' / ' + n + '…'; }
       try {
-        var grande = await (await fetch(await compressImage(envoi.files[i], 1600, 0.8))).blob();
-        var mini = await (await fetch(await compressImage(envoi.files[i], 400, 0.7))).blob();
-        var nom = lot + '/' + Date.now().toString(36) + i;
+        var grande = await reduire(envoi.files[i], 1600, 0.8);
+        var mini = await reduire(envoi.files[i], 400, 0.7);
+        var nom = lot + '/' + Date.now().toString(36) + i, idPhoto = nouveauLot();
         var st = sb.storage.from('photos'), opt = { contentType: 'image/jpeg', cacheControl: '31536000' };
-        var u1 = await st.upload(nom + '.jpg', grande, opt);
-        var u2 = await st.upload(nom + '-m.jpg', mini, opt);
-        if (u1.error || u2.error) { await st.remove([nom + '.jpg', nom + '-m.jpg']); throw (u1.error || u2.error); }
-        var r = await sb.from('photos').insert({
-          auteur: currentUser, lot: lot, album: titreAlbum, ville: villePub, prive: envoi.prive[i],
+        await avecRetry(async function () {
+          var u1 = await st.upload(nom + '.jpg', grande, Object.assign({ upsert: true }, opt));
+          var u2 = await st.upload(nom + '-m.jpg', mini, Object.assign({ upsert: true }, opt));
+          if (u1.error || u2.error) throw (u1.error || u2.error);
+        }, 3).catch(async function (e) { await st.remove([nom + '.jpg', nom + '-m.jpg']); throw e; });
+        var r = await avecRetry(async function () { var x = await sb.from('photos').insert({
+          id: idPhoto, auteur: currentUser, lot: lot, album: titreAlbum, ville: villePub, prive: envoi.prive[i],
           mini: st.getPublicUrl(nom + '-m.jpg').data.publicUrl, image: st.getPublicUrl(nom + '.jpg').data.publicUrl,
           created_at: new Date(base + i).toISOString() // garde l'ordre choisi dans l'album
-        });
-        if (r.error) { await st.remove([nom + '.jpg', nom + '-m.jpg']); throw r.error; }
+        }); if (x.error && x.error.code !== '23505') throw x.error; return x; }, 3).catch(async function (e) { await st.remove([nom + '.jpg', nom + '-m.jpg']); throw e; });
         ok++;
-      } catch (e) { rate++; }
+      } catch (e) { rate++; raison = raison || (e && e.message) || 'erreur réseau'; if (window.console) console.warn('photo ' + (i + 1) + ' :', e); }
     }
     fermerFeuille();
-    showToast(rate ? '⚠️ ' + ok + ' envoyée' + (ok > 1 ? 's' : '') + ', ' + rate + ' en échec' : '✅ ' + ok + ' photo' + (ok > 1 ? 's' : '') + ' ajoutée' + (ok > 1 ? 's' : ''));
+    showToast(rate ? '⚠️ ' + ok + ' envoyée' + (ok > 1 ? 's' : '') + ', ' + rate + ' en échec (' + raison + ')' : '✅ ' + ok + ' photo' + (ok > 1 ? 's' : '') + ' ajoutée' + (ok > 1 ? 's' : ''));
     renderGalerie();
   }
 
