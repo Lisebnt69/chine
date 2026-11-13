@@ -12,6 +12,7 @@
   var photos = [];        // vignettes visibles pour moi : {id, created_at, auteur, lot, album, prive, mini}
   var envoi = null;       // brouillon d'envoi : {files, prive:[bool], busy}
   var vue = null;
+  var filtreJour = '';    // jour filtré (AAAA-MM-JJ, '' = tous)
   var filtre = '';        // ville filtrée dans la galerie ('' = toutes)
   var villeEnvoi = '';
   var cible = null;       // album existant auquel on ajoute des photos : {lot, album, ville}
@@ -66,7 +67,12 @@
   function rafraichirLikes(id) {
     var p = photos.find(function (x) { return x.id === id; }); if (!p) return;
     document.querySelectorAll('.gal-like[data-id="' + id + '"]').forEach(function (b) {
-      var t = document.createElement('div'); t.innerHTML = coeur(p); if (t.firstChild) b.replaceWith(t.firstChild);
+      // on met le bouton à jour sur place (sans le remplacer) : un bouton retiré en plein tap peut faire déraper le geste
+      var moi = !!mesLikes[id], n = likes[id] || 0;
+      b.className = 'gal-like' + (moi ? ' on' : '');
+      b.setAttribute('aria-pressed', moi);
+      b.setAttribute('aria-label', moi ? 'Retirer mon like' : 'Liker la photo');
+      b.textContent = (moi ? '❤️' : '🤍') + (n ? ' ' + n : '');
     });
   }
 
@@ -83,11 +89,16 @@
     var map = {}, ordre = [];
     photos.forEach(function (p) {
       if (!map[p.lot]) { map[p.lot] = { lot: p.lot, album: p.album, ville: p.ville, date: p.created_at, items: [] }; ordre.push(map[p.lot]); }
+      if (p.created_at < map[p.lot].date) map[p.lot].date = p.created_at; // l'album date de sa 1re photo
       map[p.lot].items.push(p);
     });
+    ordre.sort(function (x, y) { return x.date < y.date ? -1 : x.date > y.date ? 1 : 0; }); // ordre de création
     ordre.forEach(function (a) { a.items.sort(function (x, y) { return x.created_at < y.created_at ? -1 : 1; }); });
     return ordre;
   }
+
+  function jourDe(a) { var d = new Date(a.date); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+  function jourTxt(j) { var t = j.split('-'); return new Date(+t[0], +t[1] - 1, +t[2]).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' }); }
 
   function titre(a) {
     if (a.album) return a.album;
@@ -121,7 +132,15 @@
       villes.forEach(function (v) { html += '<button type="button" class="gal-chip' + (filtre === v ? ' on' : '') + '" data-g="ville" data-v="' + esc(v) + '">📍 ' + esc(v) + '</button>'; });
       html += '</div>';
     }
-    var liste = tous.filter(function (a) { return !filtre || a.ville === filtre; });
+    var jours = [];
+    tous.forEach(function (a) { var j = jourDe(a); if (jours.indexOf(j) < 0) jours.push(j); });
+    if (filtreJour && jours.indexOf(filtreJour) < 0) filtreJour = '';
+    if (jours.length > 1) {
+      html += '<div class="gal-villes"><button type="button" class="gal-chip' + (!filtreJour ? ' on' : '') + '" data-g="jour" data-v="">Tous les jours</button>';
+      jours.forEach(function (j) { html += '<button type="button" class="gal-chip' + (filtreJour === j ? ' on' : '') + '" data-g="jour" data-v="' + j + '">📅 ' + esc(jourTxt(j)) + '</button>'; });
+      html += '</div>';
+    }
+    var liste = tous.filter(function (a) { return (!filtre || a.ville === filtre) && (!filtreJour || jourDe(a) === filtreJour); });
     if (!liste.length) {
       html += '<div class="gal-vide">📷 Aucune photo pour l\'instant.<br><span>'
         + (editeur() ? 'Ajoute les premières avec le bouton ci-dessus.' : 'Matis et Lise en partageront bientôt.') + '</span></div>';
@@ -380,7 +399,10 @@
       + '<button type="button" class="gal-nav g" data-g="v-prec" aria-label="Précédente">‹</button>'
       + '<img id="galVueImg" alt="Photo">'
       + '<button type="button" class="gal-nav d" data-g="v-suiv" aria-label="Suivante">›</button>';
-    v.addEventListener('touchstart', function (e) { vue && (vue.x = e.touches[0].clientX); }, { passive: true });
+    v.addEventListener('touchstart', function (e) {
+      // un tap sur un bouton (like, fermer…) n'est jamais un début de glissement
+      if (vue) vue.x = (e.target.closest && e.target.closest('button')) ? null : e.touches[0].clientX;
+    }, { passive: true });
     v.addEventListener('touchend', function (e) {
       if (!vue || vue.x == null) return;
       var dx = e.changedTouches[0].clientX - vue.x; vue.x = null;
@@ -459,6 +481,7 @@
     else if (g === 'ed-ok') enregistrer();
     else if (g === 'ed-annuler') { edit = null; var e0 = q('galEdit'); if (e0) e0.remove(); }
     else if (g === 'ed-suppr') supprimerAlbum();
+    else if (g === 'jour') { filtreJour = el.dataset.v; renderGalerie(); }
     else if (g === 'ville') { filtre = el.dataset.v; renderGalerie(); }
     else if (g === 'env-ville') { villeEnvoi = el.dataset.v; var t3 = q('galTitre') && q('galTitre').value; feuille(); if (t3) q('galTitre').value = t3; }
     else if (g === 'env-go') publier();
@@ -490,7 +513,7 @@
     '.gal-lien{border:1px solid var(--border);background:#fff;border-radius:999px;padding:8px 12px;font:600 .72rem var(--font);color:var(--txt2);cursor:pointer;min-height:36px;white-space:nowrap}',
     '.gal-lock{position:absolute;top:4px;right:4px;width:34px;height:34px;border:none;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;font-size:.85rem;cursor:pointer;display:grid;place-items:center}',
     '.gal-lock.priv{background:var(--accent)}',
-    '.gal-like{position:absolute;left:4px;bottom:4px;border:none;border-radius:999px;background:rgba(0,0,0,.55);color:#fff;font:700 .74rem var(--font);padding:0 10px;min-height:34px;min-width:34px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:3px;z-index:1}',
+    '.gal-like{touch-action:manipulation;-webkit-tap-highlight-color:transparent;position:absolute;left:4px;bottom:4px;border:none;border-radius:999px;background:rgba(0,0,0,.55);color:#fff;font:700 .74rem var(--font);padding:0 10px;min-height:34px;min-width:34px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:3px;z-index:1}',
     '.gal-like.on{background:rgba(255,255,255,.92);color:#222}.gal-like.lu{pointer-events:none;min-height:26px;padding:0 8px;font-size:.7rem}',
     '.gal-vue-like{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom));z-index:3}',
     '.gal-vue-like .gal-like{position:static;min-height:48px;padding:0 20px;font-size:1rem;background:rgba(255,255,255,.18)}.gal-vue-like .gal-like.on{background:rgba(255,255,255,.92)}',
