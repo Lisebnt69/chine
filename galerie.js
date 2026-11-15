@@ -125,6 +125,7 @@
         + '<span>Choisis-en plusieurs d\'un coup : elles forment un album.</span></div>';
     }
     var tous = albums();
+    if (!editeur() && tous.length) html += '<div class="gal-actions"></div>';
     var villes = [];
     tous.forEach(function (a) { if (a.ville && villes.indexOf(a.ville) < 0) villes.push(a.ville); });
     if (filtre && villes.indexOf(filtre) < 0) filtre = '';
@@ -148,6 +149,10 @@
     }
     visibles = [];
     liste.forEach(function (a) { a.items.forEach(function (p) { visibles.push(p.id); }); });
+    if (visibles.length && !sel) {
+      var btnZip = '<button type="button" class="gal-lien gal-zip" data-g="zip-tout">⬇️ ' + (filtre || filtreJour ? 'Ces photos' : 'Tout') + ' en ZIP (' + visibles.length + ')</button>';
+      html = html.replace('<div class="gal-actions">', '<div class="gal-actions">' + btnZip);
+    }
     liste.forEach(function (a) {
       var nbPriv = a.items.filter(function (p) { return p.prive; }).length;
       html += '<section class="gal-album"><header><div><h2>' + esc(titre(a)) + '</h2><p>'
@@ -158,9 +163,12 @@
         html += '<div class="gal-hbtn"><button type="button" class="gal-lien" data-g="sel-album" data-lot="' + esc(a.lot) + '">' + (toutes ? '☐ Aucune' : '☑ Tout l\'album') + '</button></div>';
       } else if (editeur()) {
         html += '<div class="gal-hbtn"><button type="button" class="gal-lien" data-g="plus" data-lot="' + esc(a.lot) + '">＋ Photos</button>'
+          + '<button type="button" class="gal-lien" data-g="zip-album" data-lot="' + esc(a.lot) + '" aria-label="Télécharger l\'album en ZIP">⬇️ ZIP</button>'
           + '<button type="button" class="gal-lien" data-g="modif" data-lot="' + esc(a.lot) + '" aria-label="Modifier l\'album">✏️</button></div>';
         html += '<button type="button" class="gal-lien" data-g="tout" data-lot="' + esc(a.lot) + '" data-prive="' + (nbPriv < a.items.length ? 1 : 0) + '">'
           + (nbPriv < a.items.length ? '🔒 Tout privé' : '🌐 Tout public') + '</button>';
+      } else {
+        html += '<div class="gal-hbtn"><button type="button" class="gal-lien" data-g="zip-album" data-lot="' + esc(a.lot) + '" aria-label="Télécharger l\'album en ZIP">⬇️ ZIP</button></div>';
       }
       html += '</header><div class="gallery-grid">';
       a.items.forEach(function (p) {
@@ -359,6 +367,7 @@
     b = document.createElement('div'); b.id = 'galSelBar'; b.className = 'gal-selbar';
     b.innerHTML = '<span>' + sel.length + ' sélectionnée' + (sel.length > 1 ? 's' : '') + '</span>'
       + '<button type="button" data-g="sel-tout">' + (visibles.length && sel.length >= visibles.length ? 'Aucune' : 'Tout') + '</button>'
+      + '<button type="button" data-g="sel-zip"' + (sel.length ? '' : ' disabled') + ' aria-label="Télécharger la sélection en ZIP">⬇️ ZIP</button>'
       + '<button type="button" data-g="sel-dep"' + (sel.length ? '' : ' disabled') + '>📁 Déplacer vers…</button>'
       + '<button type="button" data-g="choisir">Annuler</button>';
     (q('tab-galerie') || document.body).appendChild(b); // dans l'onglet : la barre disparaît avec lui
@@ -535,6 +544,125 @@
     renderGalerie();
   }
 
+  /* ── Téléchargement en ZIP ──
+     ZIP « stocké » (sans compression : les JPEG sont déjà compressés), écrit à la main pour ne dépendre
+     d'aucune librairie. Chaque photo est téléchargée en taille réelle (colonne image), une par une
+     pour ne pas saturer la mémoire du téléphone. Au-delà de ZIP_MAX photos, on découpe en plusieurs fichiers. */
+  var ZIP_MAX = 300;
+  var zipEnCours = null; // {stop}
+  var CRC = (function () {
+    var t = new Uint32Array(256);
+    for (var n = 0; n < 256; n++) { var c = n; for (var k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; }
+    return t;
+  })();
+  function crc32(u8) { var c = 0xFFFFFFFF; for (var i = 0; i < u8.length; i++) c = CRC[(c ^ u8[i]) & 0xFF] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+  function dosDate(d) {
+    return {
+      time: (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1),
+      date: ((Math.max(d.getFullYear(), 1980) - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate()
+    };
+  }
+  function creerZip(fichiers) { // [{nom, data:Uint8Array, crc, date}] -> Blob
+    var enc = new TextEncoder(), parts = [], central = [], offset = 0;
+    fichiers.forEach(function (f) {
+      var nom = enc.encode(f.nom), dd = dosDate(f.date || new Date()), size = f.data.length;
+      var h = new DataView(new ArrayBuffer(30));
+      h.setUint32(0, 0x04034b50, true); h.setUint16(4, 20, true); h.setUint16(6, 0x0800, true); // UTF-8
+      h.setUint16(8, 0, true); h.setUint16(10, dd.time, true); h.setUint16(12, dd.date, true);
+      h.setUint32(14, f.crc, true); h.setUint32(18, size, true); h.setUint32(22, size, true);
+      h.setUint16(26, nom.length, true); h.setUint16(28, 0, true);
+      parts.push(h.buffer, nom, f.data);
+      var c = new DataView(new ArrayBuffer(46));
+      c.setUint32(0, 0x02014b50, true); c.setUint16(4, 20, true); c.setUint16(6, 20, true); c.setUint16(8, 0x0800, true);
+      c.setUint16(10, 0, true); c.setUint16(12, dd.time, true); c.setUint16(14, dd.date, true);
+      c.setUint32(16, f.crc, true); c.setUint32(20, size, true); c.setUint32(24, size, true);
+      c.setUint16(28, nom.length, true); c.setUint32(42, offset, true);
+      central.push(c.buffer, nom);
+      offset += 30 + nom.length + size;
+    });
+    var tailleCentral = central.reduce(function (t, b) { return t + b.byteLength; }, 0);
+    var e = new DataView(new ArrayBuffer(22));
+    e.setUint32(0, 0x06054b50, true); e.setUint16(8, fichiers.length, true); e.setUint16(10, fichiers.length, true);
+    e.setUint32(12, tailleCentral, true); e.setUint32(16, offset, true);
+    return new Blob(parts.concat(central, [e.buffer]), { type: 'application/zip' });
+  }
+  function propre(t) { return String(t || '').replace(/[\\/:*?"<>|\u0000-\u001f]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 60) || 'Photos'; }
+  function jourIso(d) { d = new Date(d); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+  function enregistrerFichier(blob, nom) {
+    var u = URL.createObjectURL(blob), a = document.createElement('a');
+    a.href = u; a.download = nom; a.rel = 'noopener'; a.style.display = 'none';
+    document.body.appendChild(a); a.click();
+    setTimeout(function () { a.remove(); URL.revokeObjectURL(u); }, 60000); // laisse le temps au téléphone de lire le fichier
+  }
+  function pastille(txt) {
+    var b = q('galZip');
+    if (txt == null) { if (b) b.remove(); return; }
+    if (!b) {
+      b = document.createElement('div'); b.id = 'galZip'; b.className = 'gal-zipbar'; b.setAttribute('role', 'status');
+      b.innerHTML = '<span></span><button type="button" data-g="zip-stop">Annuler</button>';
+      document.body.appendChild(b);
+    }
+    b.firstChild.textContent = txt;
+  }
+  // groupes : [{dossier|null, items:[photo]}]  -> un ou plusieurs .zip nommés d'après `nomZip`
+  async function zipper(groupes, nomZip) {
+    if (zipEnCours) { showToast('⏳ Un téléchargement est déjà en cours'); return; }
+    var lignes = [];
+    groupes.forEach(function (g) {
+      g.items.forEach(function (p, i) {
+        lignes.push({ p: p, nom: (g.dossier ? propre(g.dossier) + '/' : '') + ('00' + (i + 1)).slice(-3) + '.jpg' });
+      });
+    });
+    if (!lignes.length) { showToast('Aucune photo à télécharger'); return; }
+    var nbZip = Math.ceil(lignes.length / ZIP_MAX), job = zipEnCours = { stop: false }, rate = 0, fait = 0;
+    try {
+      for (var z = 0; z < nbZip && !job.stop; z++) {
+        var tranche = lignes.slice(z * ZIP_MAX, (z + 1) * ZIP_MAX), fichiers = [];
+        for (var i = 0; i < tranche.length && !job.stop; i++) {
+          pastille('⬇️ Photo ' + (fait + 1) + ' / ' + lignes.length + (nbZip > 1 ? ' · ZIP ' + (z + 1) + '/' + nbZip : '') + '…');
+          var l = tranche[i];
+          try {
+            var data = await avecRetry(async function () {
+              var r = await fetch(l.p.image || l.p.mini, { cache: 'force-cache' });
+              if (!r.ok) throw new Error('HTTP ' + r.status);
+              return new Uint8Array(await r.arrayBuffer());
+            }, 3);
+            fichiers.push({ nom: l.nom, data: data, crc: crc32(data), date: new Date(l.p.created_at) });
+          } catch (e) { rate++; if (window.console) console.warn('zip ' + l.nom + ' :', e); }
+          fait++;
+        }
+        if (job.stop) break;
+        if (fichiers.length) {
+          pastille('📦 Création du ZIP…');
+          enregistrerFichier(creerZip(fichiers), propre(nomZip) + (nbZip > 1 ? ' (' + (z + 1) + ' sur ' + nbZip + ')' : '') + '.zip');
+        }
+      }
+      if (job.stop) showToast('Téléchargement annulé');
+      else showToast((rate ? '⚠️ ' + rate + ' photo' + (rate > 1 ? 's' : '') + ' impossible' + (rate > 1 ? 's' : '') + ' à récupérer · ' : '✅ ')
+        + (nbZip > 1 ? nbZip + ' fichiers ZIP prêts' : 'ZIP prêt'));
+    } catch (e) {
+      showToast('❌ ZIP impossible : ' + ((e && e.message) || 'mémoire insuffisante'));
+    } finally {
+      zipEnCours = null; pastille(null);
+    }
+  }
+  function telechargerAlbum(lot) {
+    var a = albums().filter(function (x) { return x.lot === lot; })[0];
+    if (!a) return;
+    zipper([{ dossier: null, items: a.items }], 'Chine 2026 - ' + titre(a));
+  }
+  function telechargerTout(ids) { // garde l'ordre et le rangement par album
+    var groupes = [];
+    albums().forEach(function (a) {
+      var items = a.items.filter(function (p) { return ids.indexOf(p.id) >= 0; });
+      if (items.length) groupes.push({ dossier: jourIso(a.date) + ' ' + titre(a), items: items });
+    });
+    groupes.reverse(); // du début du voyage à la fin
+    var vus = {}; // deux albums au même nom : on les distingue
+    groupes.forEach(function (g) { var k = propre(g.dossier); if (vus[k]) g.dossier += ' (' + (++vus[k]) + ')'; else vus[k] = 1; });
+    zipper(groupes, 'Chine 2026 - ' + (ids.length === photos.length ? 'toutes les photos' : ids.length + ' photos'));
+  }
+
   /* ── Clics (une seule écoute) ── */
   document.addEventListener('click', async function (e) {
     var el = e.target.closest && e.target.closest('[data-g]');
@@ -555,6 +683,10 @@
       if (!toutes2) sel = sel.concat(ids2);
       renderGalerie();
     }
+    else if (g === 'zip-album') telechargerAlbum(el.dataset.lot);
+    else if (g === 'zip-tout') telechargerTout(visibles.slice());
+    else if (g === 'sel-zip') { if (sel && sel.length) telechargerTout(sel.slice()); }
+    else if (g === 'zip-stop') { if (zipEnCours) zipEnCours.stop = true; }
     else if (g === 'sel-dep') { if (sel && sel.length) deplacer(sel.slice()); }
     else if (g === 'v-dep') { var pv = vue && vue.liste[vue.i]; if (pv) deplacer([pv.id]); }
     else if (g === 'dep-vers') choisirDest(el.dataset.lot);
@@ -598,6 +730,7 @@
     '.gal-album{margin-bottom:18px}',
     '.gal-case{position:absolute;top:5px;right:5px;width:24px;height:24px;border-radius:50%;border:2px solid #fff;background:rgba(0,0,0,.35);color:#fff;font-size:.8rem;display:grid;place-items:center}.gal-coche{outline:3px solid var(--accent);outline-offset:-3px}.gal-coche .gal-case{background:var(--accent)}',
     '.gal-selbar{position:fixed;left:12px;right:12px;bottom:calc(var(--nav,68px) + 10px + env(safe-area-inset-bottom));z-index:2500;display:flex;align-items:center;gap:8px;background:var(--txt);color:#fff;border-radius:16px;padding:10px 12px;box-shadow:var(--shadow-lg)}.gal-selbar span{flex:1;font-size:.8rem}.gal-selbar button{border:none;border-radius:999px;padding:9px 13px;font:700 .78rem var(--font);cursor:pointer;min-height:40px;background:rgba(255,255,255,.18);color:#fff}.gal-selbar button[data-g=sel-dep]{background:var(--accent)}.gal-selbar button:disabled{opacity:.4}',
+    '.gal-zipbar{position:fixed;left:12px;right:12px;top:calc(12px + env(safe-area-inset-top));z-index:3500;display:flex;align-items:center;gap:8px;background:var(--txt);color:#fff;border-radius:16px;padding:10px 12px;box-shadow:var(--shadow-lg)}.gal-zipbar span{flex:1;font-size:.8rem}.gal-zipbar button{border:none;border-radius:999px;padding:9px 13px;font:700 .78rem var(--font);cursor:pointer;min-height:40px;background:rgba(255,255,255,.18);color:#fff}',
     '.gal-dest{display:flex;flex-direction:column;gap:8px}.gal-dest button{display:flex;justify-content:space-between;align-items:center;gap:10px;text-align:left;padding:13px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);background:#fff;font:600 .86rem var(--font);color:var(--txt);cursor:pointer;min-height:48px}.gal-dest span{font-size:.72rem;color:var(--txt2);font-weight:500}.gal-dest .neuf{justify-content:center;border-style:dashed;color:var(--accent)}',
     '.gal-hbtn{display:flex;gap:6px;margin-left:auto}.gal-cible{margin:0 0 4px;font-size:.84rem;color:var(--txt2)}.gal-danger{color:var(--accent);margin-top:10px}',
     '.gal-villes{display:flex;gap:6px;overflow-x:auto;padding:0 16px 12px;align-items:center;scrollbar-width:none}.gal-choix{padding:10px 0 0}.gal-choix>span{font-size:.74rem;color:var(--txt2);white-space:nowrap}',
